@@ -1,32 +1,59 @@
+"use client";
+
 import { AgentCard } from "@/components/AgentCard";
 import ActivityLog from "@/components/ActivityLog";
-import { mockAgents, mockPRs, mockActivityLog } from "@/data/mockData";
+import { ConnectionIndicator } from "@/components/ConnectionIndicator";
+import { LoadingSkeleton } from "@/components/LoadingSkeleton";
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 export default function Home() {
-  const totalAgents = mockAgents.length;
-  const activeAgents = mockAgents.filter((a) => a.status === "working").length;
-  const errorAgents = mockAgents.filter((a) => a.status === "error").length;
-  const prsOpen = mockPRs.filter((p) => p.mergeState === "open").length;
-  const prsMerged = mockPRs.filter((p) => p.mergeState === "merged").length;
-  const ciPassing = mockPRs.filter((p) => p.ciStatus === "passing").length;
+  const { data, isLoading, error, connectionStatus, countdown, refresh } =
+    useDashboardData();
 
-  const stats = [
-    { label: "Total Agents", value: totalAgents, color: "text-white" },
-    { label: "Active", value: activeAgents, color: "text-blue-400" },
-    { label: "Errors", value: errorAgents, color: "text-red-400" },
-    { label: "PRs Open", value: prsOpen, color: "text-yellow-400" },
-    { label: "PRs Merged", value: prsMerged, color: "text-purple-400" },
-    { label: "CI Passing", value: ciPassing, color: "text-green-400" },
-  ];
+  const stats = data
+    ? [
+        {
+          label: "Total Agents",
+          value: data.agents.length,
+          color: "text-white",
+        },
+        {
+          label: "Active",
+          value: data.agents.filter((a) => a.status === "working").length,
+          color: "text-blue-400",
+        },
+        {
+          label: "Errors",
+          value: data.agents.filter((a) => a.status === "error").length,
+          color: "text-red-400",
+        },
+        {
+          label: "PRs Open",
+          value: data.prs.filter((p) => p.mergeState === "open").length,
+          color: "text-yellow-400",
+        },
+        {
+          label: "PRs Merged",
+          value: data.prs.filter((p) => p.mergeState === "merged").length,
+          color: "text-purple-400",
+        },
+        {
+          label: "CI Passing",
+          value: data.prs.filter((p) => p.ciStatus === "passing").length,
+          color: "text-green-400",
+        },
+      ]
+    : [];
 
-  // Map mock activity events to the shape ActivityLog expects
-  const activityEvents = mockActivityLog.map((evt) => ({
-    id: evt.id,
-    timestamp: evt.timestamp,
-    agentName: evt.agentName,
-    eventType: evt.eventType as import("@/components/ActivityLog").EventType,
-    description: evt.description,
-  }));
+  const activityEvents = data
+    ? data.activityLog.map((evt) => ({
+        id: evt.id,
+        timestamp: evt.timestamp,
+        agentName: evt.agentName,
+        eventType: evt.eventType as import("@/components/ActivityLog").EventType,
+        description: evt.description,
+      }))
+    : [];
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
@@ -37,52 +64,91 @@ export default function Home() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
               <span className="text-sm font-bold">F</span>
             </div>
-            <h1 className="text-xl font-bold tracking-tight">Fleet Dashboard</h1>
+            <h1 className="text-xl font-bold tracking-tight">
+              Fleet Dashboard
+            </h1>
           </div>
-          <p className="text-sm text-white/50">Real-time fleet monitoring</p>
+          <div className="flex items-center gap-4">
+            <ConnectionIndicator status={connectionStatus} />
+            <div className="flex items-center gap-2 text-xs text-white/50">
+              <span data-testid="countdown">
+                {countdown}s
+              </span>
+              <button
+                onClick={refresh}
+                disabled={isLoading}
+                className="rounded-md border border-white/20 px-2.5 py-1 text-xs text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                data-testid="refresh-button"
+              >
+                {isLoading ? "Refreshing..." : "Refresh"}
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
-        {/* Stats Bar */}
-        <section
-          aria-label="Dashboard statistics"
-          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"
+      {/* Error banner */}
+      {error && (
+        <div
+          className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8"
+          role="alert"
+          data-testid="error-banner"
         >
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-xl border border-white/10 bg-white/5 p-4 text-center"
-            >
-              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-              <p className="mt-1 text-xs text-white/50">{stat.label}</p>
-            </div>
-          ))}
-        </section>
-
-        {/* Agent Cards Grid */}
-        <section aria-label="Agent cards">
-          <h2 className="mb-4 text-lg font-semibold text-gray-100">Agents</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {mockAgents.map((agent) => (
-              <AgentCard
-                key={agent.sessionId}
-                agentName={agent.name}
-                status={agent.status}
-                issueTitle={agent.issue.title}
-                branchName={agent.branch}
-                timeElapsed={agent.timeElapsed}
-                prUrl={agent.pr?.url}
-              />
-            ))}
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <span className="font-medium">Connection error:</span> {error}
           </div>
-        </section>
+        </div>
+      )}
 
-        {/* Activity Log */}
-        <section aria-label="Activity log">
-          <ActivityLog events={activityEvents} maxHeight="max-h-[32rem]" />
-        </section>
-      </div>
+      {/* Loading state */}
+      {isLoading && !data ? (
+        <LoadingSkeleton />
+      ) : data ? (
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+          {/* Stats Bar */}
+          <section
+            aria-label="Dashboard statistics"
+            className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"
+          >
+            {stats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-xl border border-white/10 bg-white/5 p-4 text-center"
+              >
+                <p className={`text-2xl font-bold ${stat.color}`}>
+                  {stat.value}
+                </p>
+                <p className="mt-1 text-xs text-white/50">{stat.label}</p>
+              </div>
+            ))}
+          </section>
+
+          {/* Agent Cards Grid */}
+          <section aria-label="Agent cards">
+            <h2 className="mb-4 text-lg font-semibold text-gray-100">
+              Agents
+            </h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {data.agents.map((agent) => (
+                <AgentCard
+                  key={agent.sessionId}
+                  agentName={agent.name}
+                  status={agent.status}
+                  issueTitle={agent.issue.title}
+                  branchName={agent.branch}
+                  timeElapsed={agent.timeElapsed}
+                  prUrl={agent.pr?.url}
+                />
+              ))}
+            </div>
+          </section>
+
+          {/* Activity Log */}
+          <section aria-label="Activity log">
+            <ActivityLog events={activityEvents} maxHeight="max-h-[32rem]" />
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }

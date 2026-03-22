@@ -1,4 +1,4 @@
-export type EventType = "commit" | "pr_created" | "ci_failed" | "review" | "deploy";
+export type EventType = "commit" | "pr_created" | "ci_failed" | "ci_passed" | "review" | "deploy" | "error";
 
 export interface AgentEvent {
   id: string;
@@ -33,6 +33,16 @@ const eventTypeConfig: Record<EventType, { label: string; color: string; dot: st
     label: "Deploy",
     color: "bg-orange-500/20 text-orange-400 border-orange-500/40",
     dot: "bg-orange-500",
+  },
+  ci_passed: {
+    label: "CI Passed",
+    color: "bg-green-500/20 text-green-400 border-green-500/40",
+    dot: "bg-green-500",
+  },
+  error: {
+    label: "Error",
+    color: "bg-red-500/20 text-red-400 border-red-500/40",
+    dot: "bg-red-500",
   },
 };
 

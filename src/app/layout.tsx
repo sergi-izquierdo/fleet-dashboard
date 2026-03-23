@@ -7,6 +7,10 @@ export const metadata: Metadata = {
   title: "Fleet Dashboard",
   description: "Real-time fleet monitoring dashboard",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icons/icon-192x192.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -25,9 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />
-      </head>
+      <head />
       <body className="antialiased">
         <ThemeProvider>{children}</ThemeProvider>
         <ServiceWorkerRegistrar />

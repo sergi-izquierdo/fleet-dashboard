@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" rx="6" fill="#0a0a0a"/>
+  <g transform="translate(16,16)">
+    <!-- Outer ring: fleet orbit -->
+    <circle cx="0" cy="0" r="10" fill="none" stroke="#3b82f6" stroke-width="1" stroke-dasharray="2 1.5" opacity="0.5"/>
+    <!-- Central hub -->
+    <circle cx="0" cy="0" r="3.5" fill="#3b82f6"/>
+    <circle cx="0" cy="0" r="1.8" fill="#0a0a0a"/>
+    <circle cx="0" cy="0" r="0.9" fill="#22d3ee"/>
+    <!-- Agent nodes -->
+    <circle cx="0" cy="-10" r="2" fill="#22d3ee"/>
+    <circle cx="8.66" cy="5" r="2" fill="#22d3ee"/>
+    <circle cx="-8.66" cy="5" r="2" fill="#22d3ee"/>
+    <!-- Connection lines -->
+    <line x1="0" y1="-3.5" x2="0" y2="-8" stroke="#3b82f6" stroke-width="0.5" opacity="0.7"/>
+    <line x1="3" y1="1.7" x2="7" y2="4" stroke="#3b82f6" stroke-width="0.5" opacity="0.7"/>
+    <line x1="-3" y1="1.7" x2="-7" y2="4" stroke="#3b82f6" stroke-width="0.5" opacity="0.7"/>
+  </g>
+</svg>

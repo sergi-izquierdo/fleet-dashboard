@@ -6,6 +6,7 @@ import RecentPRs from "@/components/RecentPRs";
 import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import AgentStatusCards from "@/components/AgentStatusCards";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 export default function Home() {
@@ -125,6 +126,9 @@ export default function Home() {
               </div>
             ))}
           </section>
+
+          {/* Agent Sessions (tmux) */}
+          <AgentStatusCards />
 
           {/* Agent Cards Grid */}
           <section aria-label="Agent cards">

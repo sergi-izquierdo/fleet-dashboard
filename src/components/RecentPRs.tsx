@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { RecentPR } from "@/app/api/prs/route";
+import type { RecentPR } from "@/types/prs";
 
 const REFRESH_INTERVAL_MS = 30_000;
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import type { TmuxSession, SessionsResponse } from "@/types/sessions";
+import TerminalViewer from "@/components/TerminalViewer";
 
 const STATUS_CONFIG = {
   working: {
@@ -62,6 +63,7 @@ export default function AgentStatusCards() {
   const [sessions, setSessions] = useState<TmuxSession[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedSession, setSelectedSession] = useState<string | null>(null);
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -154,10 +156,11 @@ export default function AgentStatusCards() {
       )}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 stagger-children">
         {sessions.map((session) => (
-          <div
+          <button
             key={session.name}
             data-testid="session-card"
-            className="rounded-xl border border-gray-200 bg-white p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/[0.07]"
+            onClick={() => setSelectedSession(session.name)}
+            className="rounded-xl border border-gray-200 bg-white p-5 text-left transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 hover:border-blue-400/50 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/[0.07] cursor-pointer"
           >
             <div className="flex items-center justify-between">
               <h3
@@ -206,9 +209,33 @@ export default function AgentStatusCards() {
                 <span data-testid="session-uptime">{session.uptime}</span>
               </div>
             </div>
-          </div>
+            <div className="mt-3 flex items-center gap-1 text-xs text-blue-500 dark:text-blue-400">
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              <span>View terminal</span>
+            </div>
+          </button>
         ))}
       </div>
+
+      {selectedSession && (
+        <TerminalViewer
+          sessionName={selectedSession}
+          onClose={() => setSelectedSession(null)}
+        />
+      )}
     </section>
   );
 }

@@ -44,16 +44,32 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
-      {/* Theme toggle in top-right corner */}
-      <div className="absolute right-4 top-4">
+    <div className="login-page relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gray-50 px-4 dark:bg-gray-950">
+      {/* Animated background orbs */}
+      <div className="login-orb login-orb-1" aria-hidden="true" />
+      <div className="login-orb login-orb-2" aria-hidden="true" />
+      <div className="login-orb login-orb-3" aria-hidden="true" />
+
+      {/* Grid overlay */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.03] dark:opacity-[0.04]"
+        aria-hidden="true"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(59,130,246,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.5) 1px, transparent 1px)",
+          backgroundSize: "60px 60px",
+        }}
+      />
+
+      {/* Theme toggle */}
+      <div className="absolute right-4 top-4 z-10">
         <ThemeToggle />
       </div>
 
-      <div className="w-full max-w-sm space-y-8">
+      <div className="login-card-enter relative z-10 w-full max-w-sm space-y-8">
         {/* Logo & Title */}
         <div className="flex flex-col items-center space-y-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/20">
+          <div className="login-logo-pulse relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 shadow-lg shadow-blue-600/25">
             <Image
               src="/icons/icon-192x192.svg"
               alt="Fleet logo"
@@ -66,19 +82,19 @@ export default function LoginPage() {
             <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
               Fleet Dashboard
             </h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-white/50">
+            <p className="mt-1.5 text-sm text-gray-500 dark:text-white/50">
               Sign in to your account
             </p>
           </div>
         </div>
 
-        {/* Login Card */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/5">
+        {/* Login Card — glass morphism */}
+        <div className="login-glass rounded-2xl border border-gray-200/60 bg-white/70 p-6 shadow-xl shadow-black/5 backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.04] dark:shadow-black/20">
           {/* Google SSO */}
           <button
             type="button"
             onClick={handleGoogleSSO}
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-white/20 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300/80 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:border-gray-400 hover:shadow-sm dark:border-white/[0.12] dark:bg-white/[0.06] dark:text-white/90 dark:hover:border-white/20 dark:hover:bg-white/[0.1]"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -103,9 +119,9 @@ export default function LoginPage() {
 
           {/* Divider */}
           <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
-            <span className="text-xs text-gray-400 dark:text-white/40">or</span>
-            <div className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
+            <div className="h-px flex-1 bg-gray-200 dark:bg-white/[0.08]" />
+            <span className="text-xs font-medium text-gray-400 dark:text-white/30">or</span>
+            <div className="h-px flex-1 bg-gray-200 dark:bg-white/[0.08]" />
           </div>
 
           {/* Email/Password Form */}
@@ -125,7 +141,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 autoComplete="email"
-                className="login-input w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 dark:border-white/20 dark:bg-white/5 dark:text-white dark:placeholder:text-white/30"
+                className="login-input w-full rounded-xl border border-gray-300/80 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 dark:border-white/[0.12] dark:bg-white/[0.04] dark:text-white dark:placeholder:text-white/25"
               />
             </div>
 
@@ -144,7 +160,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 autoComplete="current-password"
-                className="login-input w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 dark:border-white/20 dark:bg-white/5 dark:text-white dark:placeholder:text-white/30"
+                className="login-input w-full rounded-xl border border-gray-300/80 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 dark:border-white/[0.12] dark:bg-white/[0.04] dark:text-white dark:placeholder:text-white/25"
               />
             </div>
 
@@ -152,7 +168,7 @@ export default function LoginPage() {
             {error && (
               <div
                 role="alert"
-                className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400"
+                className="rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-sm text-red-600 dark:border-red-400/20 dark:text-red-400"
               >
                 {error}
               </div>
@@ -161,7 +177,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-sm font-medium text-white shadow-md shadow-blue-600/20 transition-all duration-200 hover:from-blue-700 hover:to-blue-600 hover:shadow-lg hover:shadow-blue-600/30 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? "Signing in..." : "Sign in"}
             </button>
@@ -169,7 +185,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-gray-400 dark:text-white/30">
+        <p className="text-center text-xs text-gray-400 dark:text-white/25">
           Fleet Dashboard &middot; Secure access only
         </p>
       </div>

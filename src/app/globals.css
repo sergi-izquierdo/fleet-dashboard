@@ -18,18 +18,124 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Login input focus animations */
+/* ── Login page animations ── */
+
+/* Floating background orbs */
+.login-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+.login-orb-1 {
+  width: 400px;
+  height: 400px;
+  background: rgba(59, 130, 246, 0.12);
+  top: -10%;
+  right: -10%;
+  animation: login-float 12s ease-in-out infinite;
+}
+
+.login-orb-2 {
+  width: 300px;
+  height: 300px;
+  background: rgba(139, 92, 246, 0.08);
+  bottom: -5%;
+  left: -10%;
+  animation: login-float 16s ease-in-out infinite reverse;
+}
+
+.login-orb-3 {
+  width: 200px;
+  height: 200px;
+  background: rgba(6, 182, 212, 0.06);
+  top: 40%;
+  left: 60%;
+  animation: login-float 10s ease-in-out infinite 2s;
+}
+
+.dark .login-orb-1 {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.dark .login-orb-2 {
+  background: rgba(139, 92, 246, 0.06);
+}
+
+.dark .login-orb-3 {
+  background: rgba(6, 182, 212, 0.04);
+}
+
+@keyframes login-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(20px, -20px) scale(1.05); }
+  66% { transform: translate(-15px, 15px) scale(0.95); }
+}
+
+/* Card entrance animation */
+.login-card-enter {
+  animation: login-slide-up 0.5s ease-out;
+}
+
+@keyframes login-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Logo subtle pulse */
+.login-logo-pulse {
+  animation: login-pulse 3s ease-in-out infinite;
+}
+
+@keyframes login-pulse {
+  0%, 100% { box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.25); }
+  50% { box-shadow: 0 10px 25px -3px rgba(59, 130, 246, 0.4); }
+}
+
+/* Input focus animations */
 .login-input {
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease,
+    background-color 0.2s ease;
   outline: none;
 }
 
 .login-input:focus {
   border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  background-color: #fff;
 }
 
 .dark .login-input:focus {
   border-color: #60a5fa;
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Glass card subtle border glow on hover */
+.login-glass {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-glass:hover {
+  border-color: rgba(59, 130, 246, 0.15);
+}
+
+.dark .login-glass:hover {
+  border-color: rgba(96, 165, 250, 0.12);
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .login-orb,
+  .login-card-enter,
+  .login-logo-pulse {
+    animation: none;
+  }
 }

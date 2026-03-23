@@ -19,7 +19,7 @@ describe("GET /api/prs", () => {
 
     expect(response.status).toBe(200);
     expect(Array.isArray(data)).toBe(true);
-    expect(data.length).toBe(10);
+    expect(data.length).toBe(13);
     // Each PR should have the expected shape
     expect(data[0]).toHaveProperty("title");
     expect(data[0]).toHaveProperty("repo");
@@ -42,7 +42,7 @@ describe("GET /api/prs", () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.length).toBe(10);
+    expect(data.length).toBe(13);
   });
 
   it("returns mock data when GitHub API returns non-OK status", async () => {
@@ -57,7 +57,7 @@ describe("GET /api/prs", () => {
 
     expect(response.status).toBe(200);
     expect(Array.isArray(data)).toBe(true);
-    expect(data.length).toBe(10);
+    expect(data.length).toBe(13);
   });
 
   it("returns GitHub data when API succeeds", async () => {

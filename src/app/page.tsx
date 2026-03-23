@@ -3,6 +3,7 @@
 import { AgentCard } from "@/components/AgentCard";
 import ActivityLog from "@/components/ActivityLog";
 import RecentPRs from "@/components/RecentPRs";
+import MergeQueue from "@/components/MergeQueue";
 import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -151,6 +152,11 @@ export default function Home() {
                 />
               ))}
             </div>
+          </section>
+
+          {/* PR Merge Queue */}
+          <section aria-label="PR merge queue">
+            <MergeQueue />
           </section>
 
           {/* Recent PRs */}

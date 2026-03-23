@@ -51,7 +51,7 @@ function transformActivityEvent(raw: Record<string, unknown>): ActivityEvent {
   };
 }
 
-export function transformAOResponse(
+function transformAOResponse(
   data: Record<string, unknown>
 ): DashboardData {
   const agents = Array.isArray(data.agents)

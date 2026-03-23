@@ -1,6 +1,32 @@
-import { Agent, PR, ActivityEvent, DashboardData } from "@/types/dashboard";
+import {
+  Agent,
+  PR,
+  ActivityEvent,
+  DashboardData,
+  HealthTimelineEntry,
+  HealthStatus,
+} from "@/types/dashboard";
 
 const REPO_URL = "https://github.com/sergi-izquierdo/fleet-dashboard";
+
+function generateHealthTimeline(
+  pattern: HealthStatus[],
+  hours: number = 24,
+  intervalMinutes: number = 30,
+): HealthTimelineEntry[] {
+  const now = new Date();
+  const entries: HealthTimelineEntry[] = [];
+  const totalPoints = Math.floor((hours * 60) / intervalMinutes);
+
+  for (let i = totalPoints - 1; i >= 0; i--) {
+    const timestamp = new Date(
+      now.getTime() - i * intervalMinutes * 60 * 1000,
+    );
+    const status = pattern[i % pattern.length];
+    entries.push({ timestamp: timestamp.toISOString(), status });
+  }
+  return entries;
+}
 
 export const mockAgents: Agent[] = [
   {
@@ -14,6 +40,14 @@ export const mockAgents: Agent[] = [
     },
     branch: "feat/issue-12-auth-flow",
     timeElapsed: "14m 32s",
+    healthTimeline: generateHealthTimeline([
+      "working",
+      "working",
+      "working",
+      "idle",
+      "working",
+      "working",
+    ]),
   },
   {
     name: "agent-beta",
@@ -30,6 +64,14 @@ export const mockAgents: Agent[] = [
       url: `${REPO_URL}/pull/21`,
       number: 21,
     },
+    healthTimeline: generateHealthTimeline([
+      "working",
+      "idle",
+      "idle",
+      "working",
+      "working",
+      "idle",
+    ]),
   },
   {
     name: "agent-gamma",
@@ -46,6 +88,14 @@ export const mockAgents: Agent[] = [
       url: `${REPO_URL}/pull/23`,
       number: 23,
     },
+    healthTimeline: generateHealthTimeline([
+      "working",
+      "working",
+      "working",
+      "working",
+      "working",
+      "idle",
+    ]),
   },
   {
     name: "agent-delta",
@@ -62,6 +112,14 @@ export const mockAgents: Agent[] = [
       url: `${REPO_URL}/pull/19`,
       number: 19,
     },
+    healthTimeline: generateHealthTimeline([
+      "working",
+      "working",
+      "idle",
+      "idle",
+      "idle",
+      "idle",
+    ]),
   },
   {
     name: "agent-epsilon",
@@ -74,6 +132,14 @@ export const mockAgents: Agent[] = [
     },
     branch: "feat/issue-22-pg-migration",
     timeElapsed: "8m 47s",
+    healthTimeline: generateHealthTimeline([
+      "working",
+      "error",
+      "error",
+      "working",
+      "error",
+      "idle",
+    ]),
   },
 ];
 

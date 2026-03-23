@@ -14,6 +14,7 @@ import TokenUsageDashboard from "@/components/TokenUsageDashboard";
 import { ToastContainer, showToast } from "@/components/Toast";
 import { BottomNav, type MobileTab } from "@/components/BottomNav";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import ProgressTracker from "@/components/ProgressTracker";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 export default function Home() {
@@ -188,6 +189,11 @@ export default function Home() {
 
             {/* Desktop: show all sections */}
             {/* Mobile: show only the active tab's section */}
+
+            {/* Issue Progress Tracker */}
+            <section aria-label="Issue progress">
+              <ProgressTracker />
+            </section>
 
             {/* Agents Tab */}
             <div className={activeTab !== "agents" ? "hidden md:block" : ""}>

@@ -1,33 +1,33 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const mockExecAsync = vi.fn();
+const mockExecFileAsync = vi.fn();
 
-vi.mock("@/lib/execAsync", () => ({
-  execAsync: (...args: unknown[]) => mockExecAsync(...args),
+vi.mock("@/lib/execFileAsync", () => ({
+  execFileAsync: (...args: unknown[]) => mockExecFileAsync(...args),
 }));
 
 import { GET } from "@/app/api/sessions/route";
 import { parseTmuxList, determineStatus, extractBranch, computeUptime } from "@/lib/sessionHelpers";
 
 beforeEach(() => {
-  mockExecAsync.mockReset();
+  mockExecFileAsync.mockReset();
 });
 
 describe("GET /api/sessions", () => {
   it("returns sessions with parsed data on success", async () => {
     // tmux ls
-    mockExecAsync.mockResolvedValueOnce({
+    mockExecFileAsync.mockResolvedValueOnce({
       stdout:
         "agent-1: 2 windows (created Mon Mar 23 10:00:00 2026)\nagent-2: 1 windows (created Mon Mar 23 09:00:00 2026)\n",
       stderr: "",
     });
     // capture-pane for agent-1
-    mockExecAsync.mockResolvedValueOnce({
+    mockExecFileAsync.mockResolvedValueOnce({
       stdout: "$ npm run build\nCompiling...\ngit:(feat/new-feature)\n",
       stderr: "",
     });
     // capture-pane for agent-2
-    mockExecAsync.mockResolvedValueOnce({
+    mockExecFileAsync.mockResolvedValueOnce({
       stdout: "$ \n",
       stderr: "",
     });
@@ -49,11 +49,11 @@ describe("GET /api/sessions", () => {
   });
 
   it("returns stuck status when pane output contains errors", async () => {
-    mockExecAsync.mockResolvedValueOnce({
+    mockExecFileAsync.mockResolvedValueOnce({
       stdout: "worker: 1 windows (created Mon Mar 23 08:00:00 2026)\n",
       stderr: "",
     });
-    mockExecAsync.mockResolvedValueOnce({
+    mockExecFileAsync.mockResolvedValueOnce({
       stdout:
         "error: ENOENT: no such file or directory\nfatal: unable to continue\n",
       stderr: "",
@@ -67,7 +67,7 @@ describe("GET /api/sessions", () => {
   });
 
   it("returns empty array with error when tmux is not running", async () => {
-    mockExecAsync.mockRejectedValueOnce(
+    mockExecFileAsync.mockRejectedValueOnce(
       new Error("no server running on /tmp/tmux-1000/default")
     );
 
@@ -80,7 +80,7 @@ describe("GET /api/sessions", () => {
   });
 
   it("returns empty array with error when tmux is not installed", async () => {
-    mockExecAsync.mockRejectedValueOnce(
+    mockExecFileAsync.mockRejectedValueOnce(
       new Error("command not found: tmux")
     );
 
@@ -93,7 +93,7 @@ describe("GET /api/sessions", () => {
   });
 
   it("returns error message for unexpected exec failures", async () => {
-    mockExecAsync.mockRejectedValueOnce(new Error("unexpected failure"));
+    mockExecFileAsync.mockRejectedValueOnce(new Error("unexpected failure"));
 
     const response = await GET();
     const data = await response.json();
@@ -106,13 +106,13 @@ describe("GET /api/sessions", () => {
   });
 
   it("handles capture-pane failure gracefully for individual sessions", async () => {
-    mockExecAsync.mockResolvedValueOnce({
+    mockExecFileAsync.mockResolvedValueOnce({
       stdout:
         "agent-1: 1 windows (created Mon Mar 23 10:00:00 2026)\n",
       stderr: "",
     });
     // capture-pane fails
-    mockExecAsync.mockRejectedValueOnce(new Error("pane not found"));
+    mockExecFileAsync.mockRejectedValueOnce(new Error("pane not found"));
 
     const response = await GET();
     const data = await response.json();
@@ -124,11 +124,11 @@ describe("GET /api/sessions", () => {
   });
 
   it("extracts branch from various prompt formats", async () => {
-    mockExecAsync.mockResolvedValueOnce({
+    mockExecFileAsync.mockResolvedValueOnce({
       stdout: "dev: 1 windows (created Mon Mar 23 10:00:00 2026)\n",
       stderr: "",
     });
-    mockExecAsync.mockResolvedValueOnce({
+    mockExecFileAsync.mockResolvedValueOnce({
       stdout: "user@host ~/project (main) $\nRunning tests...\n",
       stderr: "",
     });

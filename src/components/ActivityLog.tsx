@@ -68,8 +68,8 @@ export default function ActivityLog({ events, maxHeight = "max-h-96" }: Activity
   );
 
   return (
-    <div className="rounded-xl border border-gray-700 bg-gray-900 p-4">
-      <h2 className="mb-3 text-lg font-semibold text-gray-100">Activity Log</h2>
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+      <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Activity Log</h2>
       <div className={`${maxHeight} overflow-y-auto pr-1`} data-testid="activity-log-scroll">
         {sorted.length === 0 ? (
           <p className="py-4 text-center text-sm text-gray-500">No events to display.</p>
@@ -80,18 +80,18 @@ export default function ActivityLog({ events, maxHeight = "max-h-96" }: Activity
               return (
                 <li
                   key={event.id}
-                  className="relative flex gap-3 rounded-lg border border-gray-800 bg-gray-800/50 p-3"
+                  className="relative flex gap-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-3"
                 >
                   <div className="flex flex-col items-center pt-1">
                     <span
                       className={`h-2.5 w-2.5 rounded-full ${config.dot}`}
                       data-testid={`dot-${event.eventType}`}
                     />
-                    <span className="mt-1 h-full w-px bg-gray-700" />
+                    <span className="mt-1 h-full w-px bg-gray-300 dark:bg-gray-700" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-medium text-gray-200">
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                         {event.agentName}
                       </span>
                       <span
@@ -107,7 +107,7 @@ export default function ActivityLog({ events, maxHeight = "max-h-96" }: Activity
                         {formatTimestamp(event.timestamp)}
                       </time>
                     </div>
-                    <p className="mt-1 text-sm text-gray-400">{event.description}</p>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{event.description}</p>
                   </div>
                 </li>
               );

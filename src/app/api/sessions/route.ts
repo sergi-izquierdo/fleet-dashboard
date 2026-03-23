@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { execAsync } from "@/lib/execAsync";
+import { execFileAsync } from "@/lib/execFileAsync";
 import { parseTmuxList, computeUptime, determineStatus, extractBranch } from "@/lib/sessionHelpers";
 import type {
   TmuxSession,
@@ -8,8 +8,8 @@ import type {
 
 async function capturePane(sessionName: string): Promise<string> {
   try {
-    const { stdout } = await execAsync(
-      `tmux capture-pane -t ${JSON.stringify(sessionName)} -p -l 50`
+    const { stdout } = await execFileAsync(
+      "tmux", ["capture-pane", "-t", sessionName, "-p", "-l", "50"]
     );
     return stdout;
   } catch {
@@ -19,7 +19,7 @@ async function capturePane(sessionName: string): Promise<string> {
 
 export async function GET() {
   try {
-    const { stdout: tmuxListOutput } = await execAsync("tmux ls");
+    const { stdout: tmuxListOutput } = await execFileAsync("tmux", ["ls"]);
     const rawSessions = parseTmuxList(tmuxListOutput);
 
     const sessions: TmuxSession[] = await Promise.all(

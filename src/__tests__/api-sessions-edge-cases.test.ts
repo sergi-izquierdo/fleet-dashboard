@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const mockExecAsync = vi.fn();
+const mockExecFileAsync = vi.fn();
 
-vi.mock("@/lib/execAsync", () => ({
-  execAsync: (...args: unknown[]) => mockExecAsync(...args),
+vi.mock("@/lib/execFileAsync", () => ({
+  execFileAsync: (...args: unknown[]) => mockExecFileAsync(...args),
 }));
 
 import {
@@ -15,7 +15,7 @@ import {
 import { GET } from "@/app/api/sessions/route";
 
 beforeEach(() => {
-  mockExecAsync.mockReset();
+  mockExecFileAsync.mockReset();
 });
 
 describe("parseTmuxList edge cases", () => {
@@ -198,7 +198,7 @@ describe("extractBranch edge cases", () => {
 
 describe("GET /api/sessions additional edge cases", () => {
   it("handles 'No such file' error as tmux not running", async () => {
-    mockExecAsync.mockRejectedValueOnce(
+    mockExecFileAsync.mockRejectedValueOnce(
       new Error("No such file or directory: /tmp/tmux-1000/default")
     );
 
@@ -211,7 +211,7 @@ describe("GET /api/sessions additional edge cases", () => {
   });
 
   it("handles non-Error thrown values", async () => {
-    mockExecAsync.mockRejectedValueOnce("string error");
+    mockExecFileAsync.mockRejectedValueOnce("string error");
 
     const response = await GET();
     const data = await response.json();
@@ -222,7 +222,7 @@ describe("GET /api/sessions additional edge cases", () => {
   });
 
   it("returns valid JSON structure even with empty tmux output", async () => {
-    mockExecAsync.mockResolvedValueOnce({
+    mockExecFileAsync.mockResolvedValueOnce({
       stdout: "",
       stderr: "",
     });
@@ -236,7 +236,7 @@ describe("GET /api/sessions additional edge cases", () => {
   });
 
   it("handles tmux output with only whitespace", async () => {
-    mockExecAsync.mockResolvedValueOnce({
+    mockExecFileAsync.mockResolvedValueOnce({
       stdout: "   \n  \n",
       stderr: "",
     });
@@ -255,14 +255,14 @@ describe("GET /api/sessions additional edge cases", () => {
         `agent-${i}: 1 windows (created Mon Mar 23 10:00:00 2026)`
     ).join("\n");
 
-    mockExecAsync.mockResolvedValueOnce({
+    mockExecFileAsync.mockResolvedValueOnce({
       stdout: sessionLines + "\n",
       stderr: "",
     });
 
     // Mock capture-pane for each session
     for (let i = 0; i < 5; i++) {
-      mockExecAsync.mockResolvedValueOnce({
+      mockExecFileAsync.mockResolvedValueOnce({
         stdout: "$ npm run dev\n",
         stderr: "",
       });

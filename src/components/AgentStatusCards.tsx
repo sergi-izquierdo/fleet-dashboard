@@ -29,10 +29,10 @@ function StatusBadge({ status }: { status: TmuxSession["status"] }) {
   return (
     <span
       data-testid="session-status-badge"
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${config.badgeClass}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors duration-300 ${config.badgeClass}`}
     >
       <span
-        className={`inline-block h-2 w-2 rounded-full ${config.dotClass}`}
+        className={`inline-block h-2 w-2 rounded-full ${config.dotClass} ${status === "working" ? "animate-pulse-dot" : ""}`}
         aria-hidden="true"
       />
       {config.label}
@@ -44,7 +44,7 @@ function SkeletonCard() {
   return (
     <div
       data-testid="skeleton-card"
-      className="animate-pulse rounded-xl border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-white/5"
+      className="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-white/5 animate-shimmer"
     >
       <div className="flex items-center justify-between">
         <div className="h-5 w-28 rounded bg-gray-200 dark:bg-white/10" />
@@ -96,7 +96,7 @@ export default function AgentStatusCards() {
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
           Agent Sessions
         </h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 stagger-children">
           {Array.from({ length: 3 }).map((_, i) => (
             <SkeletonCard key={i} />
           ))}
@@ -139,7 +139,7 @@ export default function AgentStatusCards() {
   }
 
   return (
-    <section aria-label="Agent sessions">
+    <section aria-label="Agent sessions" className="animate-fade-in">
       <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
         Agent Sessions
       </h2>
@@ -152,12 +152,12 @@ export default function AgentStatusCards() {
           {error}
         </div>
       )}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 stagger-children">
         {sessions.map((session) => (
           <div
             key={session.name}
             data-testid="session-card"
-            className="rounded-xl border border-gray-200 bg-white p-5 transition-shadow hover:shadow-md dark:border-white/10 dark:bg-white/5"
+            className="rounded-xl border border-gray-200 bg-white p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/[0.07]"
           >
             <div className="flex items-center justify-between">
               <h3

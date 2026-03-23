@@ -11,37 +11,37 @@ export interface AgentEvent {
 const eventTypeConfig: Record<EventType, { label: string; color: string; dot: string }> = {
   commit: {
     label: "Commit",
-    color: "bg-blue-500/20 text-blue-400 border-blue-500/40",
+    color: "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/40",
     dot: "bg-blue-500",
   },
   pr_created: {
     label: "PR Created",
-    color: "bg-green-500/20 text-green-400 border-green-500/40",
+    color: "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/40",
     dot: "bg-green-500",
   },
   ci_failed: {
     label: "CI Failed",
-    color: "bg-red-500/20 text-red-400 border-red-500/40",
+    color: "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/40",
     dot: "bg-red-500",
   },
   review: {
     label: "Review",
-    color: "bg-purple-500/20 text-purple-400 border-purple-500/40",
+    color: "bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/40",
     dot: "bg-purple-500",
   },
   deploy: {
     label: "Deploy",
-    color: "bg-orange-500/20 text-orange-400 border-orange-500/40",
+    color: "bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/40",
     dot: "bg-orange-500",
   },
   ci_passed: {
     label: "CI Passed",
-    color: "bg-green-500/20 text-green-400 border-green-500/40",
+    color: "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/40",
     dot: "bg-green-500",
   },
   error: {
     label: "Error",
-    color: "bg-red-500/20 text-red-400 border-red-500/40",
+    color: "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/40",
     dot: "bg-red-500",
   },
 };
@@ -68,26 +68,27 @@ export default function ActivityLog({ events, maxHeight = "max-h-96" }: Activity
   );
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 animate-fade-in">
       <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Activity Log</h2>
       <div className={`${maxHeight} overflow-y-auto pr-1`} data-testid="activity-log-scroll">
         {sorted.length === 0 ? (
-          <p className="py-4 text-center text-sm text-gray-500">No events to display.</p>
+          <p className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">No events to display.</p>
         ) : (
-          <ul className="space-y-3" role="list">
-            {sorted.map((event) => {
+          <ul className="space-y-2" role="list">
+            {sorted.map((event, index) => {
               const config = eventTypeConfig[event.eventType];
               return (
                 <li
                   key={event.id}
-                  className="relative flex gap-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-3"
+                  className="relative flex gap-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-3 transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-gray-800/80 animate-slide-up"
+                  style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
                 >
                   <div className="flex flex-col items-center pt-1">
                     <span
                       className={`h-2.5 w-2.5 rounded-full ${config.dot}`}
                       data-testid={`dot-${event.eventType}`}
                     />
-                    <span className="mt-1 h-full w-px bg-gray-300 dark:bg-gray-700" />
+                    <span className="mt-1 h-full w-px bg-gray-200 dark:bg-gray-700" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -101,7 +102,7 @@ export default function ActivityLog({ events, maxHeight = "max-h-96" }: Activity
                         {config.label}
                       </span>
                       <time
-                        className="ml-auto text-xs text-gray-500"
+                        className="ml-auto text-xs text-gray-400 dark:text-gray-500"
                         dateTime={event.timestamp}
                       >
                         {formatTimestamp(event.timestamp)}

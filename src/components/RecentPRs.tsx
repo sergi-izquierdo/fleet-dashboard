@@ -11,15 +11,15 @@ const statusConfig: Record<
 > = {
   open: {
     label: "Open",
-    className: "bg-green-600/20 text-green-400 border-green-600/30",
+    className: "bg-green-600/20 text-green-600 dark:text-green-400 border-green-600/30",
   },
   merged: {
     label: "Merged",
-    className: "bg-purple-600/20 text-purple-400 border-purple-600/30",
+    className: "bg-purple-600/20 text-purple-600 dark:text-purple-400 border-purple-600/30",
   },
   closed: {
     label: "Closed",
-    className: "bg-red-600/20 text-red-400 border-red-600/30",
+    className: "bg-red-600/20 text-red-600 dark:text-red-400 border-red-600/30",
   },
 };
 
@@ -29,19 +29,19 @@ const ciStatusConfig: Record<
 > = {
   passing: {
     label: "CI Passing",
-    className: "bg-green-600/20 text-green-400 border-green-600/30",
+    className: "bg-green-600/20 text-green-600 dark:text-green-400 border-green-600/30",
   },
   failing: {
     label: "CI Failing",
-    className: "bg-red-600/20 text-red-400 border-red-600/30",
+    className: "bg-red-600/20 text-red-600 dark:text-red-400 border-red-600/30",
   },
   pending: {
     label: "CI Pending",
-    className: "bg-yellow-600/20 text-yellow-400 border-yellow-600/30",
+    className: "bg-yellow-600/20 text-yellow-600 dark:text-yellow-400 border-yellow-600/30",
   },
   unknown: {
     label: "CI Unknown",
-    className: "bg-gray-600/20 text-gray-400 border-gray-600/30",
+    className: "bg-gray-600/20 text-gray-500 dark:text-gray-400 border-gray-600/30",
   },
 };
 
@@ -88,30 +88,30 @@ export default function RecentPRs() {
   }, [fetchPRs]);
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 animate-fade-in">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent PRs</h2>
-        <span className="text-xs text-gray-500">Auto-refreshes every 30s</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500">Auto-refreshes every 30s</span>
       </div>
 
       {isLoading && prs.length === 0 ? (
-        <div data-testid="prs-loading" className="space-y-3">
+        <div data-testid="prs-loading" className="space-y-3 stagger-children">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="h-16 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-800"
+              className="h-16 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800 animate-shimmer"
             />
           ))}
         </div>
       ) : error && prs.length === 0 ? (
         <div
           data-testid="prs-error"
-          className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400"
+          className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-500 dark:text-red-400"
         >
           {error}
         </div>
       ) : prs.length === 0 ? (
-        <p className="py-4 text-center text-sm text-gray-500" data-testid="prs-empty">
+        <p className="py-4 text-center text-sm text-gray-500 dark:text-gray-400" data-testid="prs-empty">
           No recent PRs found.
         </p>
       ) : (
@@ -119,7 +119,7 @@ export default function RecentPRs() {
           className="max-h-[32rem] space-y-2 overflow-y-auto pr-1"
           data-testid="prs-list"
         >
-          {prs.map((pr) => {
+          {prs.map((pr, index) => {
             const statusCfg = statusConfig[pr.status];
             const ciCfg = ciStatusConfig[pr.ciStatus];
             const repoShort = pr.repo.split("/").pop() ?? pr.repo;
@@ -127,7 +127,8 @@ export default function RecentPRs() {
             return (
               <div
                 key={`${pr.repo}-${pr.number}`}
-                className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-3"
+                className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-3 transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-gray-800/80 animate-slide-up"
+                style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
                 data-testid="pr-item"
               >
                 <div className="min-w-0 flex-1">
@@ -136,12 +137,12 @@ export default function RecentPRs() {
                       href={pr.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="truncate text-sm font-medium text-blue-400 hover:text-blue-300 hover:underline"
+                      className="truncate text-sm font-medium text-blue-500 dark:text-blue-400 hover:text-blue-400 dark:hover:text-blue-300 hover:underline transition-colors"
                     >
                       #{pr.number} {pr.title}
                     </a>
                   </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                     <span data-testid="pr-repo">{repoShort}</span>
                     <span>by {pr.author}</span>
                     <time dateTime={pr.createdAt} data-testid="pr-time">

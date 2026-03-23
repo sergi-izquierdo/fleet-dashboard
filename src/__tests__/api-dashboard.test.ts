@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { GET, transformAOResponse } from "@/app/api/dashboard/route";
+import { GET } from "@/app/api/dashboard/route";
+import { transformAOResponse } from "@/lib/transformAOResponse";
 import { mockDashboardData } from "@/data/mockData";
 
 // Mock the global fetch

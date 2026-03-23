@@ -2,6 +2,7 @@
 
 import { AgentCard } from "@/components/AgentCard";
 import ActivityLog from "@/components/ActivityLog";
+import RecentPRs from "@/components/RecentPRs";
 import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -141,6 +142,11 @@ export default function Home() {
                 />
               ))}
             </div>
+          </section>
+
+          {/* Recent PRs */}
+          <section aria-label="Recent PRs">
+            <RecentPRs />
           </section>
 
           {/* Activity Log */}

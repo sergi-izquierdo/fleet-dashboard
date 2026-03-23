@@ -4,6 +4,7 @@ import { AgentCard } from "@/components/AgentCard";
 import ActivityLog from "@/components/ActivityLog";
 import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 export default function Home() {
@@ -15,7 +16,7 @@ export default function Home() {
         {
           label: "Total Agents",
           value: data.agents.length,
-          color: "text-white",
+          color: "text-gray-900 dark:text-white",
         },
         {
           label: "Active",
@@ -56,9 +57,9 @@ export default function Home() {
     : [];
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white">
+    <main className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white">
       {/* Header */}
-      <header className="border-b border-white/10 bg-gray-900/80 backdrop-blur-sm">
+      <header className="border-b border-gray-200 bg-white/80 dark:border-white/10 dark:bg-gray-900/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
@@ -69,15 +70,16 @@ export default function Home() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             <ConnectionIndicator status={connectionStatus} />
-            <div className="flex items-center gap-2 text-xs text-white/50">
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-white/50">
               <span data-testid="countdown">
                 {countdown}s
               </span>
               <button
                 onClick={refresh}
                 disabled={isLoading}
-                className="rounded-md border border-white/20 px-2.5 py-1 text-xs text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="rounded-md border border-gray-300 dark:border-white/20 px-2.5 py-1 text-xs text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 data-testid="refresh-button"
               >
                 {isLoading ? "Refreshing..." : "Refresh"}
@@ -113,19 +115,19 @@ export default function Home() {
             {stats.map((stat) => (
               <div
                 key={stat.label}
-                className="rounded-xl border border-white/10 bg-white/5 p-4 text-center"
+                className="rounded-xl border border-gray-200 bg-gray-100 dark:border-white/10 dark:bg-white/5 p-4 text-center"
               >
                 <p className={`text-2xl font-bold ${stat.color}`}>
                   {stat.value}
                 </p>
-                <p className="mt-1 text-xs text-white/50">{stat.label}</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-white/50">{stat.label}</p>
               </div>
             ))}
           </section>
 
           {/* Agent Cards Grid */}
           <section aria-label="Agent cards">
-            <h2 className="mb-4 text-lg font-semibold text-gray-100">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
               Agents
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">

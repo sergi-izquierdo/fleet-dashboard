@@ -1,7 +1,7 @@
 import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import RecentPRs, { timeAgo } from "@/components/RecentPRs";
-import type { RecentPR } from "@/app/api/prs/route";
+import type { RecentPR } from "@/types/prs";
 
 const mockPRs: RecentPR[] = [
   {

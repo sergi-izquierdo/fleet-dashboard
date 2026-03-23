@@ -72,10 +72,10 @@ export default function AgentStatusCards() {
       const data: SessionsResponse = await res.json();
       if (data.error) {
         setError(data.error);
-        setSessions(data.sessions);
+        setSessions(data.sessions ?? []);
       } else {
         setError(null);
-        setSessions(data.sessions);
+        setSessions(data.sessions ?? []);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch sessions");

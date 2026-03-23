@@ -5,9 +5,17 @@ import { mockDashboardData } from "@/data/mockData";
 
 describe("Home page", () => {
   beforeEach(() => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockDashboardData,
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/api/sessions")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ sessions: [] }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => mockDashboardData,
+      });
     });
   });
 

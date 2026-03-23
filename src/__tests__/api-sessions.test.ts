@@ -6,7 +6,8 @@ vi.mock("@/lib/execAsync", () => ({
   execAsync: (...args: unknown[]) => mockExecAsync(...args),
 }));
 
-import { GET, parseTmuxList, determineStatus, extractBranch, computeUptime } from "@/app/api/sessions/route";
+import { GET } from "@/app/api/sessions/route";
+import { parseTmuxList, determineStatus, extractBranch, computeUptime } from "@/lib/sessionHelpers";
 
 beforeEach(() => {
   mockExecAsync.mockReset();

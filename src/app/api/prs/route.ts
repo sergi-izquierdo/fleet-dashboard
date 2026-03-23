@@ -1,15 +1,5 @@
 import { NextResponse } from "next/server";
-
-export interface RecentPR {
-  title: string;
-  repo: string;
-  status: "open" | "merged" | "closed";
-  ciStatus: "passing" | "failing" | "pending" | "unknown";
-  createdAt: string;
-  url: string;
-  number: number;
-  author: string;
-}
+import type { RecentPR } from "@/types/prs";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const REPOS = (

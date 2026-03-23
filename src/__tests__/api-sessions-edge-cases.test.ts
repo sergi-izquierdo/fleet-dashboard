@@ -7,12 +7,12 @@ vi.mock("@/lib/execAsync", () => ({
 }));
 
 import {
-  GET,
   parseTmuxList,
   determineStatus,
   extractBranch,
   computeUptime,
-} from "@/app/api/sessions/route";
+} from "@/lib/sessionHelpers";
+import { GET } from "@/app/api/sessions/route";
 
 beforeEach(() => {
   mockExecAsync.mockReset();

@@ -28,7 +28,7 @@ export function ThemeToggle() {
   if (!mounted) {
     return (
       <button
-        className="rounded-md border border-white/20 px-2.5 py-1 text-xs text-white/70 transition-colors"
+        className="rounded-md border border-gray-300 dark:border-white/20 px-2.5 py-1 text-xs text-gray-600 dark:text-white/70 transition-all duration-150"
         aria-label="Toggle theme"
         data-testid="theme-toggle"
         disabled
@@ -47,7 +47,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={cycleTheme}
-      className="rounded-md border border-white/20 dark:border-white/20 border-gray-300 px-2.5 py-1 text-xs text-white/70 dark:text-white/70 text-gray-600 hover:bg-white/10 dark:hover:bg-white/10 hover:bg-gray-100 hover:text-gray-900 dark:hover:text-white transition-colors"
+      className="rounded-md border border-gray-300 dark:border-white/20 px-2.5 py-1 text-xs text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white transition-all duration-150 active:scale-95"
       aria-label="Toggle theme"
       data-testid="theme-toggle"
     >

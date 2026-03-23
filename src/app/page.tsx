@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { AgentCard } from "@/components/AgentCard";
 import ActivityLog from "@/components/ActivityLog";
 import RecentPRs from "@/components/RecentPRs";
@@ -10,11 +11,47 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import AgentStatusCards from "@/components/AgentStatusCards";
 import TokenUsageDashboard from "@/components/TokenUsageDashboard";
+import { ToastContainer, showToast } from "@/components/Toast";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 export default function Home() {
   const { data, isLoading, error, connectionStatus, countdown, refresh } =
     useDashboardData();
+
+  const prevAgentsRef = useRef<Map<string, string>>(new Map());
+
+  // Toast notifications for real-time status changes
+  useEffect(() => {
+    if (!data) return;
+    const prevAgents = prevAgentsRef.current;
+
+    if (prevAgents.size > 0) {
+      for (const agent of data.agents) {
+        const prevStatus = prevAgents.get(agent.sessionId);
+        if (prevStatus && prevStatus !== agent.status) {
+          const typeMap: Record<string, "success" | "error" | "info" | "warning"> = {
+            merged: "success",
+            approved: "success",
+            error: "error",
+            working: "info",
+            pr_open: "info",
+            review_pending: "warning",
+          };
+          showToast({
+            type: typeMap[agent.status] ?? "info",
+            title: `${agent.name}: ${agent.status.replace("_", " ")}`,
+            description: agent.issue.title,
+          });
+        }
+      }
+    }
+
+    const next = new Map<string, string>();
+    for (const agent of data.agents) {
+      next.set(agent.sessionId, agent.status);
+    }
+    prevAgentsRef.current = next;
+  }, [data]);
 
   const stats = data
     ? [
@@ -26,27 +63,27 @@ export default function Home() {
         {
           label: "Active",
           value: data.agents.filter((a) => a.status === "working").length,
-          color: "text-blue-400",
+          color: "text-blue-600 dark:text-blue-400",
         },
         {
           label: "Errors",
           value: data.agents.filter((a) => a.status === "error").length,
-          color: "text-red-400",
+          color: "text-red-600 dark:text-red-400",
         },
         {
           label: "PRs Open",
           value: data.prs.filter((p) => p.mergeState === "open").length,
-          color: "text-yellow-400",
+          color: "text-yellow-600 dark:text-yellow-400",
         },
         {
           label: "PRs Merged",
           value: data.prs.filter((p) => p.mergeState === "merged").length,
-          color: "text-purple-400",
+          color: "text-purple-600 dark:text-purple-400",
         },
         {
           label: "CI Passing",
           value: data.prs.filter((p) => p.ciStatus === "passing").length,
-          color: "text-green-400",
+          color: "text-green-600 dark:text-green-400",
         },
       ]
     : [];
@@ -63,11 +100,13 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white">
+      <ToastContainer />
+
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white/80 dark:border-white/10 dark:bg-gray-900/80 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 dark:border-white/10 dark:bg-gray-900/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
               <span className="text-sm font-bold">F</span>
             </div>
             <h1 className="text-xl font-bold tracking-tight">
@@ -85,7 +124,7 @@ export default function Home() {
               <button
                 onClick={refresh}
                 disabled={isLoading}
-                className="rounded-md border border-gray-300 dark:border-white/20 px-2.5 py-1 text-xs text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="rounded-md border border-gray-300 dark:border-white/20 px-2.5 py-1 text-xs text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 active:scale-95"
                 data-testid="refresh-button"
               >
                 {isLoading ? "Refreshing..." : "Refresh"}
@@ -98,11 +137,11 @@ export default function Home() {
       {/* Error banner */}
       {error && (
         <div
-          className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8"
+          className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8 animate-slide-up"
           role="alert"
           data-testid="error-banner"
         >
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
             <span className="font-medium">Connection error:</span> {error}
           </div>
         </div>
@@ -116,12 +155,12 @@ export default function Home() {
           {/* Stats Bar */}
           <section
             aria-label="Dashboard statistics"
-            className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"
+            className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 stagger-children"
           >
             {stats.map((stat) => (
               <div
                 key={stat.label}
-                className="rounded-xl border border-gray-200 bg-gray-100 dark:border-white/10 dark:bg-white/5 p-4 text-center"
+                className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-4 text-center transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 dark:hover:border-white/20"
               >
                 <p className={`text-2xl font-bold ${stat.color}`}>
                   {stat.value}
@@ -135,11 +174,11 @@ export default function Home() {
           <AgentStatusCards />
 
           {/* Agent Cards Grid */}
-          <section aria-label="Agent cards">
+          <section aria-label="Agent cards" className="animate-fade-in">
             <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
               Agents
             </h2>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 stagger-children">
               {data.agents.map((agent) => (
                 <AgentCard
                   key={agent.sessionId}

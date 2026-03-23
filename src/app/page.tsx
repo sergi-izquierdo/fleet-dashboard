@@ -9,6 +9,7 @@ import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import AgentStatusCards from "@/components/AgentStatusCards";
+import TokenUsageDashboard from "@/components/TokenUsageDashboard";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 export default function Home() {
@@ -162,6 +163,11 @@ export default function Home() {
           {/* Recent PRs */}
           <section aria-label="Recent PRs">
             <RecentPRs />
+          </section>
+
+          {/* Cost & Token Usage */}
+          <section aria-label="Cost and token usage">
+            <TokenUsageDashboard />
           </section>
 
           {/* Activity Log */}

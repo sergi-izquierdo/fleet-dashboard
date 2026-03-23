@@ -6,6 +6,7 @@ import RecentPRs from "@/components/RecentPRs";
 import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import AgentStatusCards from "@/components/AgentStatusCards";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
@@ -73,6 +74,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
+            <NotificationCenter />
             <ConnectionIndicator status={connectionStatus} />
             <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-white/50">
               <span data-testid="countdown">

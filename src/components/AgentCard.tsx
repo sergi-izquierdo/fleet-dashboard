@@ -21,6 +21,7 @@ export interface AgentCardProps {
   timeElapsed: string;
   prUrl?: string;
   healthTimeline?: HealthTimelineEntry[];
+  onViewTerminal?: () => void;
 }
 
 const statusConfig: Record<
@@ -73,13 +74,31 @@ export function AgentCard({
   timeElapsed,
   prUrl,
   healthTimeline,
+  onViewTerminal,
 }: AgentCardProps) {
   const { label, bgClass, textClass, dotClass } = statusConfig[status];
   const [showTimeline, setShowTimeline] = useState(false);
 
   return (
     <>
-      <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 space-y-3 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 dark:hover:border-white/20 dark:hover:bg-white/[0.07]">
+      <div
+        className={`rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 space-y-3 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 dark:hover:border-white/20 dark:hover:bg-white/[0.07] ${
+          onViewTerminal ? "cursor-pointer" : ""
+        }`}
+        onClick={onViewTerminal}
+        role={onViewTerminal ? "button" : undefined}
+        tabIndex={onViewTerminal ? 0 : undefined}
+        onKeyDown={
+          onViewTerminal
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onViewTerminal();
+                }
+              }
+            : undefined
+        }
+      >
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
             {agentName}
@@ -112,16 +131,38 @@ export function AgentCard({
 
         <div className="flex items-center justify-between text-xs text-gray-400 dark:text-white/40">
           <span>{timeElapsed}</span>
-          {prUrl ? (
-            <a
-              href={prUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 dark:text-blue-400 hover:text-blue-400 dark:hover:text-blue-300 underline transition-colors"
-            >
-              View PR
-            </a>
-          ) : null}
+          <div className="flex items-center gap-3">
+            {onViewTerminal && (
+              <span className="text-blue-500 dark:text-blue-400 flex items-center gap-1">
+                <svg
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                Terminal
+              </span>
+            )}
+            {prUrl ? (
+              <a
+                href={prUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 dark:text-blue-400 hover:text-blue-400 dark:hover:text-blue-300 underline transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                View PR
+              </a>
+            ) : null}
+          </div>
         </div>
       </div>
 

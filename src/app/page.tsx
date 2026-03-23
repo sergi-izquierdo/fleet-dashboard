@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useTheme } from "next-themes";
 import { AgentCard } from "@/components/AgentCard";
 import ActivityLog from "@/components/ActivityLog";
 import RecentPRs from "@/components/RecentPRs";
@@ -15,12 +16,19 @@ import { ToastContainer, showToast } from "@/components/Toast";
 import { BottomNav, type MobileTab } from "@/components/BottomNav";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import ProgressTracker from "@/components/ProgressTracker";
+import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+
+const themes = ["light", "dark", "system"] as const;
 
 export default function Home() {
   const { data, isLoading, error, connectionStatus, countdown, refresh } =
     useDashboardData();
   const [activeTab, setActiveTab] = useState<MobileTab>("agents");
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteKey, setPaletteKey] = useState(0);
+  const { theme, setTheme } = useTheme();
 
   const prevAgentsRef = useRef<Map<string, string>>(new Map());
 
@@ -56,6 +64,44 @@ export default function Home() {
     }
     prevAgentsRef.current = next;
   }, [data]);
+
+  const cycleTheme = useCallback(() => {
+    const currentIndex = themes.indexOf(theme as (typeof themes)[number]);
+    const nextIndex = (currentIndex + 1) % themes.length;
+    setTheme(themes[nextIndex]);
+  }, [theme, setTheme]);
+
+  const scrollToSection = useCallback((id: string) => {
+    document.getElementById(`section-${id}`)?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  const openPalette = useCallback(() => {
+    setPaletteKey((k) => k + 1);
+    setPaletteOpen(true);
+  }, []);
+
+  const togglePalette = useCallback(() => {
+    setPaletteOpen((prev) => {
+      if (!prev) setPaletteKey((k) => k + 1);
+      return !prev;
+    });
+  }, []);
+
+  useKeyboardShortcuts({
+    onToggleCommandPalette: togglePalette,
+    onRefresh: refresh,
+    onToggleTheme: cycleTheme,
+  });
+
+  const commandItems = useMemo(
+    () =>
+      buildCommandItems(data, {
+        refresh,
+        toggleTheme: cycleTheme,
+        scrollToSection,
+      }),
+    [data, refresh, cycleTheme, scrollToSection],
+  );
 
   const stats = data
     ? [
@@ -106,6 +152,14 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white pb-[72px] md:pb-0">
       <ToastContainer />
 
+      {/* Command Palette */}
+      <CommandPalette
+        key={paletteKey}
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        items={commandItems}
+      />
+
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 dark:border-white/10 dark:bg-gray-900/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
@@ -118,6 +172,19 @@ export default function Home() {
             </h1>
           </div>
           <div className="flex items-center gap-3 sm:gap-4">
+            <button
+              onClick={openPalette}
+              className="hidden sm:flex items-center gap-2 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-1.5 text-xs text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-700 dark:hover:text-white/70 transition-colors"
+              data-testid="command-palette-trigger"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span>Search...</span>
+              <kbd className="rounded border border-gray-300 dark:border-white/20 px-1 py-0.5 text-[10px] font-medium">
+                ⌘K
+              </kbd>
+            </button>
             <ThemeToggle />
             <NotificationCenter />
             <ConnectionIndicator status={connectionStatus} />
@@ -171,6 +238,7 @@ export default function Home() {
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
             {/* Stats Bar - always visible */}
             <section
+              id="section-stats"
               aria-label="Dashboard statistics"
               className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 stagger-children"
             >
@@ -198,10 +266,12 @@ export default function Home() {
             {/* Agents Tab */}
             <div className={activeTab !== "agents" ? "hidden md:block" : ""}>
               <div className="space-y-6">
-                <AgentStatusCards />
+                <div id="section-sessions">
+                  <AgentStatusCards />
+                </div>
 
                 {/* Agent Cards Grid */}
-                <section aria-label="Agent cards" className="animate-fade-in">
+                <section id="section-agents" aria-label="Agent cards" className="animate-fade-in">
                   <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
                     Agents
                   </h2>
@@ -230,7 +300,7 @@ export default function Home() {
                 <MergeQueue />
               </section>
 
-              <section aria-label="Recent PRs" className="mt-6">
+              <section id="section-prs" aria-label="Recent PRs" className="mt-6">
                 <RecentPRs />
               </section>
             </div>
@@ -242,7 +312,7 @@ export default function Home() {
                 <TokenUsageDashboard />
               </section>
 
-              <section aria-label="Activity log" className="mt-6">
+              <section id="section-activity" aria-label="Activity log" className="mt-6">
                 <ActivityLog events={activityEvents} maxHeight="max-h-[32rem]" />
               </section>
             </div>

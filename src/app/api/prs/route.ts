@@ -76,6 +76,7 @@ async function fetchPRsFromGitHub(): Promise<RecentPR[]> {
           url: pr.html_url,
           number: pr.number,
           author: pr.user?.login ?? "unknown",
+          hasConflicts: pr.mergeable === false,
         });
       }
     } catch {
@@ -90,7 +91,7 @@ async function fetchPRsFromGitHub(): Promise<RecentPR[]> {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  return allPRs.slice(0, 10);
+  return allPRs;
 }
 
 function getMockPRs(): RecentPR[] {
@@ -105,6 +106,7 @@ function getMockPRs(): RecentPR[] {
       url: "https://github.com/sergi-izquierdo/fleet-dashboard/pull/19",
       number: 19,
       author: "agent-delta",
+      hasConflicts: false,
     },
     {
       title: "fix: resolve memory leak in websocket handler",
@@ -115,6 +117,7 @@ function getMockPRs(): RecentPR[] {
       url: "https://github.com/sergi-izquierdo/fleet-dashboard/pull/20",
       number: 20,
       author: "agent-alpha",
+      hasConflicts: false,
     },
     {
       title: "feat: implement dark mode toggle",
@@ -125,6 +128,7 @@ function getMockPRs(): RecentPR[] {
       url: "https://github.com/sergi-izquierdo/fleet-dashboard/pull/21",
       number: 21,
       author: "agent-beta",
+      hasConflicts: false,
     },
     {
       title: "chore: upgrade dependencies to latest",
@@ -135,6 +139,7 @@ function getMockPRs(): RecentPR[] {
       url: "https://github.com/sergi-izquierdo/fleet-dashboard/pull/22",
       number: 22,
       author: "agent-gamma",
+      hasConflicts: true,
     },
     {
       title: "fix: pagination on search results",
@@ -145,6 +150,7 @@ function getMockPRs(): RecentPR[] {
       url: "https://github.com/sergi-izquierdo/fleet-dashboard/pull/23",
       number: 23,
       author: "agent-gamma",
+      hasConflicts: false,
     },
     {
       title: "feat: add role-based access control",
@@ -155,6 +161,7 @@ function getMockPRs(): RecentPR[] {
       url: "https://github.com/sergi-izquierdo/fleet-dashboard/pull/24",
       number: 24,
       author: "agent-alpha",
+      hasConflicts: false,
     },
     {
       title: "docs: update API reference for v2 endpoints",
@@ -165,6 +172,7 @@ function getMockPRs(): RecentPR[] {
       url: "https://github.com/sergi-izquierdo/fleet-dashboard/pull/25",
       number: 25,
       author: "agent-beta",
+      hasConflicts: false,
     },
     {
       title: "feat: real-time notifications via SSE",
@@ -175,6 +183,40 @@ function getMockPRs(): RecentPR[] {
       url: "https://github.com/sergi-izquierdo/fleet-dashboard/pull/26",
       number: 26,
       author: "agent-epsilon",
+      hasConflicts: false,
+    },
+    {
+      title: "feat: add user analytics dashboard",
+      repo: "sergi-izquierdo/fleet-api",
+      status: "open",
+      ciStatus: "passing",
+      createdAt: new Date(now.getTime() - 40 * 60000).toISOString(),
+      url: "https://github.com/sergi-izquierdo/fleet-api/pull/42",
+      number: 42,
+      author: "agent-beta",
+      hasConflicts: false,
+    },
+    {
+      title: "fix: rate limiter edge case",
+      repo: "sergi-izquierdo/fleet-api",
+      status: "open",
+      ciStatus: "failing",
+      createdAt: new Date(now.getTime() - 70 * 60000).toISOString(),
+      url: "https://github.com/sergi-izquierdo/fleet-api/pull/41",
+      number: 41,
+      author: "agent-delta",
+      hasConflicts: true,
+    },
+    {
+      title: "chore: migrate to ESM modules",
+      repo: "sergi-izquierdo/fleet-api",
+      status: "open",
+      ciStatus: "pending",
+      createdAt: new Date(now.getTime() - 120 * 60000).toISOString(),
+      url: "https://github.com/sergi-izquierdo/fleet-api/pull/39",
+      number: 39,
+      author: "agent-alpha",
+      hasConflicts: false,
     },
     {
       title: "refactor: extract auth middleware",
@@ -185,6 +227,7 @@ function getMockPRs(): RecentPR[] {
       url: "https://github.com/sergi-izquierdo/fleet-dashboard/pull/17",
       number: 17,
       author: "agent-delta",
+      hasConflicts: false,
     },
     {
       title: "test: add integration tests for API routes",
@@ -195,6 +238,7 @@ function getMockPRs(): RecentPR[] {
       url: "https://github.com/sergi-izquierdo/fleet-dashboard/pull/16",
       number: 16,
       author: "agent-alpha",
+      hasConflicts: false,
     },
   ];
 }

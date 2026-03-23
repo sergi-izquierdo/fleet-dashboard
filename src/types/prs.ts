@@ -7,4 +7,5 @@ export interface RecentPR {
   url: string;
   number: number;
   author: string;
+  hasConflicts?: boolean;
 }

@@ -145,6 +145,7 @@ export default function Home() {
                   branchName={agent.branch}
                   timeElapsed={agent.timeElapsed}
                   prUrl={agent.pr?.url}
+                  healthTimeline={agent.healthTimeline}
                 />
               ))}
             </div>

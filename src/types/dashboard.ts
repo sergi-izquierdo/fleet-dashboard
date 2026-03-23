@@ -1,3 +1,10 @@
+export type HealthStatus = "working" | "idle" | "error";
+
+export interface HealthTimelineEntry {
+  timestamp: string;
+  status: HealthStatus;
+}
+
 export interface Agent {
   name: string;
   sessionId: string;
@@ -19,6 +26,7 @@ export interface Agent {
     url: string;
     number: number;
   };
+  healthTimeline?: HealthTimelineEntry[];
 }
 
 export interface PR {

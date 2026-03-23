@@ -17,6 +17,7 @@ import { BottomNav, type MobileTab } from "@/components/BottomNav";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import ProgressTracker from "@/components/ProgressTracker";
 import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
+import { Footer } from "@/components/Footer";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
@@ -322,6 +323,9 @@ export default function Home() {
 
       {/* Bottom Navigation - mobile only */}
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {/* Footer */}
+      <Footer />
     </main>
   );
 }

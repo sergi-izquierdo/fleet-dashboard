@@ -62,9 +62,9 @@ export function AgentCard({
   const { label, bgClass, textClass } = statusConfig[status];
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+    <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/5 p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white truncate">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
           {agentName}
         </h3>
         <span
@@ -75,17 +75,17 @@ export function AgentCard({
         </span>
       </div>
 
-      <p className="text-sm text-white/70 truncate" title={issueTitle}>
+      <p className="text-sm text-gray-600 dark:text-white/70 truncate" title={issueTitle}>
         {issueTitle}
       </p>
 
-      <div className="flex items-center gap-2 text-xs text-white/50">
-        <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono truncate">
+      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-white/50">
+        <code className="rounded bg-gray-200 dark:bg-white/10 px-1.5 py-0.5 font-mono truncate">
           {branchName}
         </code>
       </div>
 
-      <div className="flex items-center justify-between text-xs text-white/40">
+      <div className="flex items-center justify-between text-xs text-gray-400 dark:text-white/40">
         <span>{timeElapsed}</span>
         {prUrl ? (
           <a

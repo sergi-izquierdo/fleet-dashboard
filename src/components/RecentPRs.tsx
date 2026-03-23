@@ -88,9 +88,9 @@ export default function RecentPRs() {
   }, [fetchPRs]);
 
   return (
-    <div className="rounded-xl border border-gray-700 bg-gray-900 p-4">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-100">Recent PRs</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent PRs</h2>
         <span className="text-xs text-gray-500">Auto-refreshes every 30s</span>
       </div>
 
@@ -99,7 +99,7 @@ export default function RecentPRs() {
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="h-16 animate-pulse rounded-lg bg-gray-800"
+              className="h-16 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-800"
             />
           ))}
         </div>
@@ -127,7 +127,7 @@ export default function RecentPRs() {
             return (
               <div
                 key={`${pr.repo}-${pr.number}`}
-                className="flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-800/50 p-3"
+                className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-3"
                 data-testid="pr-item"
               >
                 <div className="min-w-0 flex-1">

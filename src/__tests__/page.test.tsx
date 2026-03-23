@@ -56,6 +56,19 @@ describe("Home page", () => {
     expect(elements.length).toBeGreaterThan(0);
   });
 
+  it("renders bottom navigation", () => {
+    render(<Home />);
+    expect(screen.getByRole("navigation", { name: /mobile navigation/i })).toBeInTheDocument();
+  });
+
+  it("renders pull-to-refresh container after loading", async () => {
+    render(<Home />);
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
+    });
+    expect(screen.getByTestId("pull-to-refresh")).toBeInTheDocument();
+  });
+
   it("shows error banner on fetch failure", async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(
       new Error("Network error")

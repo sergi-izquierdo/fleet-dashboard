@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AgentCard } from "@/components/AgentCard";
 import ActivityLog from "@/components/ActivityLog";
 import RecentPRs from "@/components/RecentPRs";
@@ -12,11 +12,14 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import AgentStatusCards from "@/components/AgentStatusCards";
 import TokenUsageDashboard from "@/components/TokenUsageDashboard";
 import { ToastContainer, showToast } from "@/components/Toast";
+import { BottomNav, type MobileTab } from "@/components/BottomNav";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 export default function Home() {
   const { data, isLoading, error, connectionStatus, countdown, refresh } =
     useDashboardData();
+  const [activeTab, setActiveTab] = useState<MobileTab>("agents");
 
   const prevAgentsRef = useRef<Map<string, string>>(new Map());
 
@@ -99,12 +102,12 @@ export default function Home() {
     : [];
 
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white">
+    <main className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white pb-[72px] md:pb-0">
       <ToastContainer />
 
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 dark:border-white/10 dark:bg-gray-900/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
               <span className="text-sm font-bold">F</span>
@@ -113,23 +116,35 @@ export default function Home() {
               Fleet Dashboard
             </h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <ThemeToggle />
             <NotificationCenter />
             <ConnectionIndicator status={connectionStatus} />
-            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-white/50">
+            <div className="hidden items-center gap-2 text-xs text-gray-500 dark:text-white/50 sm:flex">
               <span data-testid="countdown">
                 {countdown}s
               </span>
               <button
                 onClick={refresh}
                 disabled={isLoading}
-                className="rounded-md border border-gray-300 dark:border-white/20 px-2.5 py-1 text-xs text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 active:scale-95"
+                className="rounded-md border border-gray-300 dark:border-white/20 px-2.5 py-1 text-xs text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 data-testid="refresh-button"
               >
                 {isLoading ? "Refreshing..." : "Refresh"}
               </button>
             </div>
+            {/* Mobile refresh button - compact */}
+            <button
+              onClick={refresh}
+              disabled={isLoading}
+              className="flex h-[44px] w-[44px] items-center justify-center rounded-md border border-gray-300 text-gray-600 dark:border-white/20 dark:text-white/70 sm:hidden disabled:opacity-50"
+              data-testid="refresh-button-mobile"
+              aria-label="Refresh data"
+            >
+              <svg className={`h-5 w-5 ${isLoading ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
           </div>
         </div>
       </header>
@@ -151,70 +166,86 @@ export default function Home() {
       {isLoading && !data ? (
         <LoadingSkeleton />
       ) : data ? (
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
-          {/* Stats Bar */}
-          <section
-            aria-label="Dashboard statistics"
-            className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 stagger-children"
-          >
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-4 text-center transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 dark:hover:border-white/20"
-              >
-                <p className={`text-2xl font-bold ${stat.color}`}>
-                  {stat.value}
-                </p>
-                <p className="mt-1 text-xs text-gray-500 dark:text-white/50">{stat.label}</p>
-              </div>
-            ))}
-          </section>
-
-          {/* Agent Sessions (tmux) */}
-          <AgentStatusCards />
-
-          {/* Agent Cards Grid */}
-          <section aria-label="Agent cards" className="animate-fade-in">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Agents
-            </h2>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 stagger-children">
-              {data.agents.map((agent) => (
-                <AgentCard
-                  key={agent.sessionId}
-                  agentName={agent.name}
-                  status={agent.status}
-                  issueTitle={agent.issue.title}
-                  branchName={agent.branch}
-                  timeElapsed={agent.timeElapsed}
-                  prUrl={agent.pr?.url}
-                  healthTimeline={agent.healthTimeline}
-                />
+        <PullToRefresh onRefresh={refresh}>
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+            {/* Stats Bar - always visible */}
+            <section
+              aria-label="Dashboard statistics"
+              className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 stagger-children"
+            >
+              {stats.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-4 text-center transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 dark:hover:border-white/20"
+                >
+                  <p className={`text-2xl font-bold ${stat.color}`}>
+                    {stat.value}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-white/50">{stat.label}</p>
+                </div>
               ))}
+            </section>
+
+            {/* Desktop: show all sections */}
+            {/* Mobile: show only the active tab's section */}
+
+            {/* Agents Tab */}
+            <div className={activeTab !== "agents" ? "hidden md:block" : ""}>
+              <div className="space-y-6">
+                <AgentStatusCards />
+
+                {/* Agent Cards Grid */}
+                <section aria-label="Agent cards" className="animate-fade-in">
+                  <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Agents
+                  </h2>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 stagger-children">
+                    {data.agents.map((agent) => (
+                      <AgentCard
+                        key={agent.sessionId}
+                        agentName={agent.name}
+                        status={agent.status}
+                        issueTitle={agent.issue.title}
+                        branchName={agent.branch}
+                        timeElapsed={agent.timeElapsed}
+                        prUrl={agent.pr?.url}
+                        healthTimeline={agent.healthTimeline}
+                      />
+                    ))}
+                  </div>
+                </section>
+              </div>
             </div>
-          </section>
 
-          {/* PR Merge Queue */}
-          <section aria-label="PR merge queue">
-            <MergeQueue />
-          </section>
+            {/* PRs Tab */}
+            <div className={activeTab !== "prs" ? "hidden md:block" : ""}>
+              {/* PR Merge Queue */}
+              <section aria-label="PR merge queue">
+                <MergeQueue />
+              </section>
 
-          {/* Recent PRs */}
-          <section aria-label="Recent PRs">
-            <RecentPRs />
-          </section>
+              <section aria-label="Recent PRs" className="mt-6">
+                <RecentPRs />
+              </section>
+            </div>
 
-          {/* Cost & Token Usage */}
-          <section aria-label="Cost and token usage">
-            <TokenUsageDashboard />
-          </section>
+            {/* Activity Tab */}
+            <div className={activeTab !== "activity" ? "hidden md:block" : ""}>
+              {/* Cost & Token Usage */}
+              <section aria-label="Cost and token usage">
+                <TokenUsageDashboard />
+              </section>
 
-          {/* Activity Log */}
-          <section aria-label="Activity log">
-            <ActivityLog events={activityEvents} maxHeight="max-h-[32rem]" />
-          </section>
-        </div>
+              <section aria-label="Activity log" className="mt-6">
+                <ActivityLog events={activityEvents} maxHeight="max-h-[32rem]" />
+              </section>
+            </div>
+          </div>
+        </PullToRefresh>
       ) : null}
+
+      {/* Bottom Navigation - mobile only */}
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </main>
   );
 }

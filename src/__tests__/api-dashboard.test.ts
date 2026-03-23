@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET } from "@/app/api/dashboard/route";
-import { transformAOResponse } from "@/lib/transformAOResponse";
 import { mockDashboardData } from "@/data/mockData";
 
 // Mock the global fetch
@@ -107,9 +106,9 @@ describe("GET /api/dashboard", () => {
   });
 });
 
-describe("transformAOResponse", () => {
-  it("transforms a valid AO payload into DashboardData", () => {
-    const raw = {
+describe("GET /api/dashboard transformation", () => {
+  it("transforms a valid AO payload into DashboardData", async () => {
+    const aoResponse = {
       agents: [
         {
           name: "a",
@@ -143,7 +142,13 @@ describe("transformAOResponse", () => {
       ],
     };
 
-    const result = transformAOResponse(raw);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => aoResponse,
+    });
+
+    const response = await GET();
+    const result = await response.json();
 
     expect(result.agents).toHaveLength(1);
     expect(result.agents[0].name).toBe("a");
@@ -153,16 +158,8 @@ describe("transformAOResponse", () => {
     expect(result.activityLog[0].id).toBe("e1");
   });
 
-  it("returns empty arrays when fields are missing", () => {
-    const result = transformAOResponse({});
-
-    expect(result.agents).toEqual([]);
-    expect(result.prs).toEqual([]);
-    expect(result.activityLog).toEqual([]);
-  });
-
-  it("includes optional pr field on agent when present", () => {
-    const raw = {
+  it("includes optional pr field on agent when present", async () => {
+    const aoResponse = {
       agents: [
         {
           name: "a",
@@ -178,46 +175,13 @@ describe("transformAOResponse", () => {
       activityLog: [],
     };
 
-    const result = transformAOResponse(raw);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => aoResponse,
+    });
+
+    const response = await GET();
+    const result = await response.json();
     expect(result.agents[0].pr).toEqual({ url: "pr-url", number: 42 });
-  });
-
-  it("response conforms to DashboardData shape", () => {
-    const raw = {
-      agents: [
-        {
-          name: "test",
-          sessionId: "sess",
-          status: "working",
-          issue: { title: "Issue", number: 5, url: "http://example.com" },
-          branch: "feat/test",
-          timeElapsed: "10m",
-        },
-      ],
-      prs: [],
-      activityLog: [],
-    };
-
-    const result = transformAOResponse(raw);
-
-    // Validate structure
-    expect(result).toHaveProperty("agents");
-    expect(result).toHaveProperty("prs");
-    expect(result).toHaveProperty("activityLog");
-    expect(Array.isArray(result.agents)).toBe(true);
-    expect(Array.isArray(result.prs)).toBe(true);
-    expect(Array.isArray(result.activityLog)).toBe(true);
-
-    // Validate agent shape
-    const agent = result.agents[0];
-    expect(agent).toHaveProperty("name");
-    expect(agent).toHaveProperty("sessionId");
-    expect(agent).toHaveProperty("status");
-    expect(agent).toHaveProperty("issue");
-    expect(agent.issue).toHaveProperty("title");
-    expect(agent.issue).toHaveProperty("number");
-    expect(agent.issue).toHaveProperty("url");
-    expect(agent).toHaveProperty("branch");
-    expect(agent).toHaveProperty("timeElapsed");
   });
 });

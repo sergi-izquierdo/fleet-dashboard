@@ -52,7 +52,9 @@ describe("ActivityLog", () => {
 
   it("shows empty state when no events", () => {
     render(<ActivityLog events={[]} />);
-    expect(screen.getByText("No events to display.")).toBeInTheDocument();
+    expect(screen.getByText("No recent activity")).toBeInTheDocument();
+    expect(screen.getByText("Events from your agents will appear here as they work.")).toBeInTheDocument();
+    expect(screen.getByTestId("empty-state")).toBeInTheDocument();
   });
 
   it("renders all events", () => {

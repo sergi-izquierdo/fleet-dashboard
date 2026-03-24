@@ -18,6 +18,7 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 import ProgressTracker from "@/components/ProgressTracker";
 import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
 import { Footer } from "@/components/Footer";
+import { LogoutButton } from "@/components/LogoutButton";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
@@ -187,6 +188,7 @@ export default function Home() {
               </kbd>
             </button>
             <ThemeToggle />
+            <LogoutButton />
             <NotificationCenter />
             <ConnectionIndicator status={connectionStatus} />
             <div className="hidden items-center gap-2 text-xs text-gray-500 dark:text-white/50 sm:flex">

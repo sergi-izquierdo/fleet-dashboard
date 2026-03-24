@@ -1,3 +1,8 @@
+"use client";
+
+import { getRelativeTime } from "@/lib/relativeTime";
+import { useRelativeTick } from "@/hooks/useRelativeTime";
+
 export type EventType = "commit" | "pr_created" | "ci_failed" | "ci_passed" | "review" | "deploy" | "error";
 
 export interface AgentEvent {
@@ -63,6 +68,7 @@ interface ActivityLogProps {
 }
 
 export default function ActivityLog({ events, maxHeight = "max-h-96" }: ActivityLogProps) {
+  useRelativeTick();
   const sorted = [...events].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
@@ -104,8 +110,9 @@ export default function ActivityLog({ events, maxHeight = "max-h-96" }: Activity
                       <time
                         className="ml-auto text-xs text-gray-400 dark:text-gray-500"
                         dateTime={event.timestamp}
+                        title={formatTimestamp(event.timestamp)}
                       >
-                        {formatTimestamp(event.timestamp)}
+                        {getRelativeTime(event.timestamp)}
                       </time>
                     </div>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{event.description}</p>

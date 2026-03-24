@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import type { ActivityEvent, PR } from "@/types/dashboard";
+import { getRelativeTime } from "@/lib/relativeTime";
+import { useRelativeTick } from "@/hooks/useRelativeTime";
 
 type TimelineDotType = "merged" | "agent_spawn" | "error" | "stale_recovery";
 
@@ -112,6 +114,7 @@ export default function FleetActivityTimeline({
   prs,
 }: FleetActivityTimelineProps) {
   const [hoveredDot, setHoveredDot] = useState<string | null>(null);
+  useRelativeTick();
 
   const now = useMemo(() => new Date(), []);
   const timelineStart = useMemo(
@@ -259,8 +262,8 @@ export default function FleetActivityTimeline({
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                       {dot.description}
                     </p>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
-                      {formatHour(dot.timestamp)}
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1" title={formatHour(dot.timestamp)}>
+                      {getRelativeTime(dot.timestamp.toISOString())}
                     </p>
                   </div>
                 )}

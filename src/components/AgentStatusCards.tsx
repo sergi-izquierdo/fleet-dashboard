@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import type { TmuxSession, SessionsResponse } from "@/types/sessions";
 import TerminalViewer from "@/components/TerminalViewer";
+import EmptyState from "@/components/EmptyState";
 
 const STATUS_CONFIG = {
   working: {
@@ -130,17 +131,18 @@ export default function AgentStatusCards() {
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
           Agent Sessions
         </h2>
-        <div
-          data-testid="sessions-empty"
-          className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center dark:border-white/10 dark:bg-white/5"
-        >
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
-            <svg className="h-6 w-6 text-gray-400 dark:text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h9a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0015.75 4.5h-9A2.25 2.25 0 004.5 6.75v10.5A2.25 2.25 0 006.75 19.5z" />
-            </svg>
-          </div>
-          <p className="text-sm font-medium text-gray-900 dark:text-white">No active agents</p>
-          <p className="mt-1 text-xs text-gray-500 dark:text-white/50">Create issues with the <code className="rounded bg-gray-100 dark:bg-white/10 px-1 py-0.5 font-mono text-xs">agent-local</code> label to start work</p>
+        <div data-testid="sessions-empty">
+          <EmptyState
+            icon={
+              <svg className="h-6 w-6 text-gray-400 dark:text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h9a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0015.75 4.5h-9A2.25 2.25 0 004.5 6.75v10.5A2.25 2.25 0 006.75 19.5z" />
+              </svg>
+            }
+            title="No active agents"
+            description={
+              <>Create issues with the <code className="rounded bg-gray-100 dark:bg-white/10 px-1 py-0.5 font-mono text-xs">agent-local</code> label to start work</>
+            }
+          />
         </div>
       </section>
     );

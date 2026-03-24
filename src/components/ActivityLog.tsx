@@ -1,3 +1,5 @@
+import EmptyState from "@/components/EmptyState";
+
 export type EventType = "commit" | "pr_created" | "ci_failed" | "ci_passed" | "review" | "deploy" | "error";
 
 export interface AgentEvent {
@@ -72,7 +74,15 @@ export default function ActivityLog({ events, maxHeight = "max-h-96" }: Activity
       <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Activity Log</h2>
       <div className={`${maxHeight} overflow-y-auto pr-1`} data-testid="activity-log-scroll">
         {sorted.length === 0 ? (
-          <p className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">No events to display.</p>
+          <EmptyState
+            icon={
+              <svg className="h-6 w-6 text-gray-400 dark:text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            }
+            title="No recent activity"
+            description="Events from your agents will appear here as they work."
+          />
         ) : (
           <ul className="space-y-2" role="list">
             {sorted.map((event, index) => {

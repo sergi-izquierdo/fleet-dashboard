@@ -1,7 +1,33 @@
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import Home from "@/app/page";
-import { mockDashboardData } from "@/data/mockData";
+import type { DashboardData } from "@/types/dashboard";
+
+const testDashboardData: DashboardData = {
+  agents: [
+    {
+      name: "issue-42",
+      sessionId: "sess-001",
+      status: "working",
+      issue: { title: "Add login flow", number: 42, url: "" },
+      branch: "feat/issue-42-login",
+      timeElapsed: "10m 05s",
+    },
+  ],
+  prs: [
+    {
+      number: 1,
+      url: "",
+      title: "feat: add login flow",
+      ciStatus: "passing",
+      reviewStatus: "pending",
+      mergeState: "open",
+      author: "issue-42",
+      branch: "feat/issue-42-login",
+    },
+  ],
+  activityLog: [],
+};
 
 describe("Home page", () => {
   beforeEach(() => {
@@ -14,7 +40,7 @@ describe("Home page", () => {
       }
       return Promise.resolve({
         ok: true,
-        json: async () => mockDashboardData,
+        json: async () => testDashboardData,
       });
     });
   });
@@ -51,8 +77,7 @@ describe("Home page", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
-    // agent-alpha appears in both AgentCard and ActivityLog, use getAllByText
-    const elements = screen.getAllByText("agent-alpha");
+    const elements = screen.getAllByText("issue-42");
     expect(elements.length).toBeGreaterThan(0);
   });
 

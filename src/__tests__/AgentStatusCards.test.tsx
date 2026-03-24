@@ -103,6 +103,9 @@ describe("AgentStatusCards", () => {
     expect(
       screen.getByText("No active agents")
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(/agent-local/)
+    ).toBeInTheDocument();
   });
 
   it("shows API error with empty sessions", async () => {

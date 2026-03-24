@@ -42,7 +42,7 @@ function SkeletonChart() {
 }
 
 export default function TokenUsageDashboard() {
-  const { data, isLoading, error, range, setRange } = useTokenUsage();
+  const { data, isLoading, error, range, setRange, isLangfuseOnline } = useTokenUsage();
 
   return (
     <div
@@ -79,6 +79,17 @@ export default function TokenUsageDashboard() {
           className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400"
         >
           {error}
+        </div>
+      )}
+
+      {/* Langfuse offline banner */}
+      {!isLoading && data && !isLangfuseOnline && (
+        <div
+          data-testid="langfuse-offline"
+          className="mb-4 flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-600 dark:text-yellow-400"
+        >
+          <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
+          Langfuse offline — showing sample data
         </div>
       )}
 

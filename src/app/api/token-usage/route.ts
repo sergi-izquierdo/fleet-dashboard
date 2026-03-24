@@ -6,7 +6,7 @@ import type {
   TimeRange,
 } from "@/types/tokenUsage";
 
-const LANGFUSE_URL = process.env.LANGFUSE_URL || "http://localhost:3100";
+const LANGFUSE_URL = process.env.LANGFUSE_URL || "http://localhost:3050";
 const LANGFUSE_PUBLIC_KEY = process.env.LANGFUSE_PUBLIC_KEY || "";
 const LANGFUSE_SECRET_KEY = process.env.LANGFUSE_SECRET_KEY || "";
 const FETCH_TIMEOUT_MS = 10_000;
@@ -217,7 +217,7 @@ function generateMockData(range: TimeRange): TokenUsageResponse {
   const totalTokens = byProject.reduce((s, p) => s + p.totalTokens, 0);
   const totalCost = byProject.reduce((s, p) => s + p.cost, 0);
 
-  return { timeSeries, byProject, totalCost, totalTokens };
+  return { timeSeries, byProject, totalCost, totalTokens, source: "mock" as const };
 }
 
 export async function GET(request: NextRequest) {
@@ -245,7 +245,7 @@ export async function GET(request: NextRequest) {
     const totalCost = byProject.reduce((s, p) => s + p.cost, 0);
 
     return NextResponse.json(
-      { timeSeries, byProject, totalCost, totalTokens } satisfies TokenUsageResponse,
+      { timeSeries, byProject, totalCost, totalTokens, source: "langfuse" } satisfies TokenUsageResponse,
       { status: 200 }
     );
   } catch (error) {

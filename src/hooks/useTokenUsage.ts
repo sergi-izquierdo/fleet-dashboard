@@ -11,6 +11,7 @@ export interface UseTokenUsageReturn {
   error: string | null;
   range: TimeRange;
   setRange: (range: TimeRange) => void;
+  isLangfuseOnline: boolean;
 }
 
 export function useTokenUsage(): UseTokenUsageReturn {
@@ -42,5 +43,7 @@ export function useTokenUsage(): UseTokenUsageReturn {
     return () => clearInterval(interval);
   }, [fetchData, range]);
 
-  return { data, isLoading, error, range, setRange };
+  const isLangfuseOnline = data?.source === "langfuse";
+
+  return { data, isLoading, error, range, setRange, isLangfuseOnline };
 }

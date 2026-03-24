@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const AUTH_TOKEN = "fleet-session-token-v1";
+const AUTH_TOKEN = process.env.FLEET_AUTH_SECRET ?? "fleet-session-token-v1";
 
 const PUBLIC_PATHS = ["/login", "/api/auth", "/offline"];
 

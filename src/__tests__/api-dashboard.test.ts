@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 import { GET } from "@/app/api/dashboard/route";
+import * as apiCache from "@/lib/apiCache";
 
 // Mock execFileAsync so tmux calls don't hit the real system
 vi.mock("@/lib/execFileAsync", () => ({
@@ -21,8 +23,13 @@ vi.mock("fs", async () => {
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
+function makeRequest(query = "") {
+  return new NextRequest(`http://localhost/api/dashboard${query}`);
+}
+
 beforeEach(() => {
   mockFetch.mockReset();
+  apiCache.clear();
 });
 
 describe("GET /api/dashboard", () => {
@@ -70,7 +77,7 @@ describe("GET /api/dashboard", () => {
       json: async () => aoResponse,
     });
 
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -88,7 +95,7 @@ describe("GET /api/dashboard", () => {
     // GitHub PR fetch also fails
     mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -106,7 +113,7 @@ describe("GET /api/dashboard", () => {
     // GitHub PR fetch also fails
     mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -119,7 +126,7 @@ describe("GET /api/dashboard", () => {
     mockFetch.mockRejectedValueOnce(new DOMException("Aborted", "AbortError"));
     mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -168,7 +175,7 @@ describe("GET /api/dashboard transformation", () => {
       json: async () => aoResponse,
     });
 
-    const response = await GET();
+    const response = await GET(makeRequest());
     const result = await response.json();
 
     expect(result.agents).toHaveLength(1);
@@ -201,7 +208,7 @@ describe("GET /api/dashboard transformation", () => {
       json: async () => aoResponse,
     });
 
-    const response = await GET();
+    const response = await GET(makeRequest());
     const result = await response.json();
     expect(result.agents[0].pr).toEqual({ url: "pr-url", number: 42 });
   });

@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import type { FleetIssueProgress, RepoIssueProgress } from "@/types/issues";
-import { getCached, setCache } from "./cache";
+import * as apiCache from "@/lib/apiCache";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const MANAGED_REPOS = [
@@ -144,10 +144,20 @@ function getEmptyProgress(): FleetIssueProgress {
   };
 }
 
-export async function GET() {
-  const cached = getCached();
-  if (cached) {
-    return NextResponse.json(cached, { status: 200 });
+const CACHE_KEY = "api:issues";
+const CACHE_TTL_MS = 60_000;
+
+export async function GET(request: NextRequest) {
+  const fresh = request.nextUrl.searchParams.get("fresh") === "true";
+
+  if (!fresh) {
+    const cached = apiCache.get<FleetIssueProgress>(CACHE_KEY);
+    if (cached) {
+      return NextResponse.json(cached, {
+        status: 200,
+        headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=30" },
+      });
+    }
   }
 
   try {
@@ -193,9 +203,12 @@ export async function GET() {
         : 0;
 
     const result: FleetIssueProgress = { repos: repoResults, overall };
-    setCache(result);
+    apiCache.set(CACHE_KEY, result, CACHE_TTL_MS);
 
-    return NextResponse.json(result, { status: 200 });
+    return NextResponse.json(result, {
+      status: 200,
+      headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=30" },
+    });
   } catch (error) {
     console.error(
       "Failed to fetch issues:",

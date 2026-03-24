@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
 // Mock fetch globally before importing the route
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
+
+function makeRequest(query = "") {
+  return new NextRequest(`http://localhost/api/prs${query}`);
+}
 
 describe("GET /api/prs", () => {
   beforeEach(() => {
@@ -14,7 +19,7 @@ describe("GET /api/prs", () => {
     fetchMock.mockRejectedValue(new Error("Network error"));
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -29,7 +34,7 @@ describe("GET /api/prs", () => {
     });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -43,7 +48,7 @@ describe("GET /api/prs", () => {
     });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -80,7 +85,7 @@ describe("GET /api/prs", () => {
       });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -117,7 +122,7 @@ describe("GET /api/prs", () => {
       });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(data[0].status).toBe("merged");

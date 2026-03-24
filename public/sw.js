@@ -31,6 +31,16 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
+  // Skip non-GET requests (POST, PUT, etc.) — Cache API does not support them
+  if (request.method !== "GET") {
+    return;
+  }
+
+  // Skip non-HTTP(S) schemes (e.g. chrome-extension://) — they cannot be cached
+  if (!request.url.startsWith("http")) {
+    return;
+  }
+
   // Never cache API requests — they must always be fresh
   if (request.url.includes("/api/")) {
     return;

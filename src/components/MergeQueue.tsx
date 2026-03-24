@@ -58,7 +58,7 @@ export default function MergeQueue() {
   const [error, setError] = useState<string | null>(null);
 
   const [filterRepo, setFilterRepo] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("open");
   const [filterAuthor, setFilterAuthor] = useState<string>("all");
 
   const fetchPRs = useCallback(async () => {

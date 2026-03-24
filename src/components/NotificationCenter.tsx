@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import type { Notification } from "@/types/notifications";
 import { severityConfig, eventTypeLabels } from "@/types/notifications";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -125,7 +125,12 @@ function NotificationItem({
   );
 }
 
+const subscribe = () => () => {};
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 export function NotificationCenter() {
+  const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const {
     notifications,
     unreadCount,
@@ -212,6 +217,32 @@ export function NotificationCenter() {
       return () => document.removeEventListener("keydown", handleKeyDown);
     }
   }, [isOpen]);
+
+  if (!mounted) {
+    return (
+      <div className="relative">
+        <button
+          className="relative rounded-md border border-gray-300 dark:border-white/20 p-1.5 text-gray-600 dark:text-white/70 transition-colors"
+          aria-label="Notifications"
+          data-testid="notification-bell"
+          disabled
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="h-4 w-4"
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.25 9a6.75 6.75 0 0113.5 0v.75c0 2.123.8 4.057 2.118 5.52a.75.75 0 01-.297 1.206c-1.544.57-3.16.99-4.831 1.243a3.75 3.75 0 11-7.48 0 24.585 24.585 0 01-4.831-1.244.75.75 0 01-.298-1.205A8.217 8.217 0 005.25 9.75V9zm4.502 8.9a2.25 2.25 0 004.496 0 25.057 25.057 0 01-4.496 0z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="relative" ref={dropdownRef}>

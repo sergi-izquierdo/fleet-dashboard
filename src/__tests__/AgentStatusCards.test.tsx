@@ -104,7 +104,7 @@ describe("AgentStatusCards", () => {
       screen.getByText("No active agents")
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/agent-local/)
+      screen.getByText(/Start by labeling an issue/)
     ).toBeInTheDocument();
   });
 

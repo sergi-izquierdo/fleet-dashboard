@@ -152,6 +152,25 @@ describe("TokenUsageDashboard", () => {
     });
   });
 
+  it("shows empty state when no data is returned", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => null,
+      })
+    );
+
+    await act(async () => {
+      render(<TokenUsageDashboard />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("token-usage-empty")).toBeDefined();
+      expect(screen.getByText("No data yet")).toBeDefined();
+    });
+  });
+
   it("changes range when buttons are clicked", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

@@ -84,7 +84,19 @@ export default function TokenUsageDashboard() {
 
       {isLoading && !data ? (
         <SkeletonChart />
-      ) : data ? (
+      ) : !data ? (
+        <div className="px-4 py-8 text-center" data-testid="token-usage-empty">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
+            <svg className="h-6 w-6 text-gray-400 dark:text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+              <rect x="3" y="8" width="4" height="12" rx="1" strokeLinecap="round" />
+              <rect x="10" y="5" width="4" height="15" rx="1" strokeLinecap="round" />
+              <rect x="17" y="10" width="4" height="10" rx="1" strokeLinecap="round" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-gray-900 dark:text-white">No data yet</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-white/50">Token usage will appear once agents start running</p>
+        </div>
+      ) : (
         <div className="space-y-6">
           {/* Summary Stats */}
           <div
@@ -330,7 +342,7 @@ export default function TokenUsageDashboard() {
             </div>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

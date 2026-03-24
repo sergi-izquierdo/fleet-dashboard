@@ -139,7 +139,7 @@ describe("RecentPRs", () => {
     await waitFor(() => {
       expect(screen.getByTestId("prs-empty")).toBeInTheDocument();
     });
-    expect(screen.getByText("No recent PRs found.")).toBeInTheDocument();
+    expect(screen.getByText("All clear")).toBeInTheDocument();
   });
 
   it("auto-refreshes every 30 seconds", async () => {

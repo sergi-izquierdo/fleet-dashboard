@@ -140,7 +140,7 @@ export default function AgentStatusCards() {
             </svg>
           </div>
           <p className="text-sm font-medium text-gray-900 dark:text-white">No active agents</p>
-          <p className="mt-1 text-xs text-gray-500 dark:text-white/50">Create issues with the <code className="rounded bg-gray-100 dark:bg-white/10 px-1 py-0.5 font-mono text-xs">agent-local</code> label to start work</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-white/50">Start by labeling an issue with <code className="rounded bg-gray-100 dark:bg-white/10 px-1 py-0.5 font-mono text-xs">agent-local</code></p>
         </div>
       </section>
     );

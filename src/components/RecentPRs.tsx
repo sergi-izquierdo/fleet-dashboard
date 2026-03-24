@@ -111,9 +111,16 @@ export default function RecentPRs() {
           {error}
         </div>
       ) : prs.length === 0 ? (
-        <p className="py-4 text-center text-sm text-gray-500 dark:text-gray-400" data-testid="prs-empty">
-          No recent PRs found.
-        </p>
+        <div className="px-4 py-8 text-center" data-testid="prs-empty">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
+            <svg className="h-6 w-6 text-gray-400 dark:text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+              <circle cx="12" cy="12" r="9" strokeLinecap="round" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-gray-900 dark:text-white">All clear</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-white/50">No open pull requests right now</p>
+        </div>
       ) : (
         <div
           className="max-h-[32rem] space-y-2 overflow-y-auto pr-1"

@@ -90,7 +90,7 @@ describe("FleetActivityTimeline", () => {
     render(<FleetActivityTimeline activityLog={[]} prs={[]} />);
     expect(screen.getByTestId("timeline-empty")).toBeInTheDocument();
     expect(
-      screen.getByText("No fleet activity in the last 24 hours."),
+      screen.getByText("Quiet fleet"),
     ).toBeInTheDocument();
   });
 

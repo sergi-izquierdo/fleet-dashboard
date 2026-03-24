@@ -72,7 +72,16 @@ export default function ActivityLog({ events, maxHeight = "max-h-96" }: Activity
       <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Activity Log</h2>
       <div className={`${maxHeight} overflow-y-auto pr-1`} data-testid="activity-log-scroll">
         {sorted.length === 0 ? (
-          <p className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">No events to display.</p>
+          <div className="px-4 py-8 text-center" data-testid="activity-log-empty">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
+              <svg className="h-6 w-6 text-gray-400 dark:text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                <circle cx="12" cy="12" r="9" strokeLinecap="round" strokeDasharray="4 3" />
+                <circle cx="12" cy="12" r="3" strokeLinecap="round" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">No activity yet</p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-white/50">Events will appear here as agents work</p>
+          </div>
         ) : (
           <ul className="space-y-2" role="list">
             {sorted.map((event, index) => {

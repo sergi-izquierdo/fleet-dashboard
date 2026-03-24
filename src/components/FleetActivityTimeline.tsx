@@ -285,12 +285,19 @@ export default function FleetActivityTimeline({
 
       {/* Empty state */}
       {dots.length === 0 && (
-        <p
-          className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2"
-          data-testid="timeline-empty"
-        >
-          No fleet activity in the last 24 hours.
-        </p>
+        <div className="px-4 py-6 text-center" data-testid="timeline-empty">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
+            <svg className="h-6 w-6 text-gray-400 dark:text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+              <circle cx="12" cy="12" r="3" />
+              <circle cx="4" cy="12" r="1.5" />
+              <circle cx="20" cy="12" r="1.5" />
+              <line x1="7" y1="12" x2="9" y2="12" strokeLinecap="round" />
+              <line x1="15" y1="12" x2="17" y2="12" strokeLinecap="round" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-gray-900 dark:text-white">Quiet fleet</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-white/50">No activity in the last 24 hours</p>
+        </div>
       )}
     </div>
   );

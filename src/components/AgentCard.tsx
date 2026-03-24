@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { HealthTimelineEntry } from "@/types/dashboard";
+import { useRelativeTime } from "@/hooks/useRelativeTime";
 import { HealthSparkline } from "./HealthSparkline";
 import { HealthTimelineModal } from "./HealthTimelineModal";
 
@@ -19,6 +20,7 @@ export interface AgentCardProps {
   issueTitle: string;
   branchName: string;
   timeElapsed: string;
+  startedAt?: string | Date;
   prUrl?: string;
   healthTimeline?: HealthTimelineEntry[];
   onViewTerminal?: () => void;
@@ -72,12 +74,14 @@ export function AgentCard({
   issueTitle,
   branchName,
   timeElapsed,
+  startedAt,
   prUrl,
   healthTimeline,
   onViewTerminal,
 }: AgentCardProps) {
   const { label, bgClass, textClass, dotClass } = statusConfig[status];
   const [showTimeline, setShowTimeline] = useState(false);
+  const relativeTime = useRelativeTime(startedAt ?? new Date());
 
   return (
     <>
@@ -130,7 +134,7 @@ export function AgentCard({
         </div>
 
         <div className="flex items-center justify-between text-xs text-gray-400 dark:text-white/40">
-          <span>{timeElapsed}</span>
+          <span>{startedAt ? relativeTime : timeElapsed}</span>
           <div className="flex items-center gap-3">
             {onViewTerminal && (
               <span className="text-blue-500 dark:text-blue-400 flex items-center gap-1">

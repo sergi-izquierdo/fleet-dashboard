@@ -1,4 +1,7 @@
+"use client";
+
 import EmptyState from "@/components/EmptyState";
+import { useRelativeTime } from "@/hooks/useRelativeTime";
 
 export type EventType = "commit" | "pr_created" | "ci_failed" | "ci_passed" | "review" | "deploy" | "error";
 
@@ -48,15 +51,17 @@ const eventTypeConfig: Record<EventType, { label: string; color: string; dot: st
   },
 };
 
-function formatTimestamp(isoString: string): string {
-  const date = new Date(isoString);
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+function RelativeTimestamp({ timestamp }: { timestamp: string }) {
+  const relative = useRelativeTime(timestamp);
+  return (
+    <time
+      className="ml-auto text-xs text-gray-400 dark:text-gray-500"
+      dateTime={timestamp}
+      title={new Date(timestamp).toLocaleString()}
+    >
+      {relative}
+    </time>
+  );
 }
 
 interface ActivityLogProps {
@@ -111,12 +116,7 @@ export default function ActivityLog({ events, maxHeight = "max-h-96" }: Activity
                       >
                         {config.label}
                       </span>
-                      <time
-                        className="ml-auto text-xs text-gray-400 dark:text-gray-500"
-                        dateTime={event.timestamp}
-                      >
-                        {formatTimestamp(event.timestamp)}
-                      </time>
+                      <RelativeTimestamp timestamp={event.timestamp} />
                     </div>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{event.description}</p>
                   </div>

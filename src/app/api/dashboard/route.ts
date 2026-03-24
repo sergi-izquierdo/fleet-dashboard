@@ -143,6 +143,7 @@ async function fetchRealAgents(): Promise<Agent[]> {
           status: determineStatus(paneOutput),
           uptime: computeUptime(created),
           branch: extractBranch(paneOutput),
+          taskName: "unknown",
         };
       }),
     );

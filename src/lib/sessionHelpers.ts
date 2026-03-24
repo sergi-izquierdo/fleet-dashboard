@@ -100,6 +100,29 @@ export function determineStatus(paneOutput: string): SessionStatus {
 }
 
 /**
+ * Extract the task name (issue title) from captured pane output.
+ * Looks for common Claude prompt patterns that reference an issue.
+ */
+export function extractTaskName(paneOutput: string): string {
+  // Match patterns like "issue #123: some title" or "Issue #42 - fix login"
+  const issuePatterns = [
+    /issue\s*#?\d+[:\s-]+(.+)/i,
+    /(?:fix|feat|chore|refactor|docs|test|ci)[:/]\s*(.+?)(?:\n|$)/i,
+    /working on[:\s]+(.+?)(?:\n|$)/i,
+    /task[:\s]+(.+?)(?:\n|$)/i,
+  ];
+
+  for (const pattern of issuePatterns) {
+    const match = paneOutput.match(pattern);
+    if (match) {
+      return match[1].trim().slice(0, 100);
+    }
+  }
+
+  return "unknown";
+}
+
+/**
  * Extract the current git branch from pane output.
  */
 export function extractBranch(paneOutput: string): string {

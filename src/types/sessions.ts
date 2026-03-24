@@ -5,6 +5,7 @@ export interface TmuxSession {
   status: SessionStatus;
   uptime: string;
   branch: string;
+  taskName: string;
 }
 
 export interface SessionsResponse {

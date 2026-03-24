@@ -177,6 +177,15 @@ export default function AgentStatusCards() {
               </h3>
               <StatusBadge status={session.status} />
             </div>
+            {session.taskName !== "unknown" && (
+              <p
+                data-testid="session-task-name"
+                className="mt-2 truncate text-xs text-gray-600 dark:text-white/60"
+                title={session.taskName}
+              >
+                {session.taskName}
+              </p>
+            )}
             <div className="mt-3 space-y-1.5">
               <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-white/50">
                 <svg
@@ -190,7 +199,7 @@ export default function AgentStatusCards() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                    d="M6 3v12m0 0a3 3 0 103 3V9a3 3 0 10-3 3m12-6v6m0 0a3 3 0 103 3V9a3 3 0 10-3-3"
                   />
                 </svg>
                 <span data-testid="session-branch" className="truncate" title={session.branch}>

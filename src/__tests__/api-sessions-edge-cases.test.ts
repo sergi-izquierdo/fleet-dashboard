@@ -14,6 +14,33 @@ import {
 } from "@/lib/sessionHelpers";
 import { GET } from "@/app/api/sessions/route";
 
+function setupMocks(options: {
+  tmuxLs?: { stdout: string; stderr: string } | Error;
+  panes?: Record<string, string>;
+  branches?: Record<string, string>;
+}) {
+  mockExecFileAsync.mockImplementation(
+    (bin: string, args: string[]) => {
+      if (args[0] === "ls") {
+        if (options.tmuxLs instanceof Error) return Promise.reject(options.tmuxLs);
+        return Promise.resolve(options.tmuxLs ?? { stdout: "", stderr: "" });
+      }
+      if (args[0] === "capture-pane") {
+        const session = args[2];
+        const output = options.panes?.[session] ?? "";
+        return Promise.resolve({ stdout: output, stderr: "" });
+      }
+      if (args[0] === "-C" && args[2] === "branch") {
+        const sessionName = (args[1] as string).split("/").pop() ?? "";
+        const branch = options.branches?.[sessionName];
+        if (branch) return Promise.resolve({ stdout: branch + "\n", stderr: "" });
+        return Promise.reject(new Error("not a git repo"));
+      }
+      return Promise.reject(new Error("unexpected call"));
+    }
+  );
+}
+
 beforeEach(() => {
   mockExecFileAsync.mockReset();
 });
@@ -198,9 +225,7 @@ describe("extractBranch edge cases", () => {
 
 describe("GET /api/sessions additional edge cases", () => {
   it("handles 'No such file' error as tmux not running", async () => {
-    mockExecFileAsync.mockRejectedValueOnce(
-      new Error("No such file or directory: /tmp/tmux-1000/default")
-    );
+    setupMocks({ tmuxLs: new Error("No such file or directory: /tmp/tmux-1000/default") });
 
     const response = await GET();
     const data = await response.json();
@@ -211,7 +236,7 @@ describe("GET /api/sessions additional edge cases", () => {
   });
 
   it("handles non-Error thrown values", async () => {
-    mockExecFileAsync.mockRejectedValueOnce("string error");
+    mockExecFileAsync.mockRejectedValue("string error");
 
     const response = await GET();
     const data = await response.json();
@@ -222,10 +247,7 @@ describe("GET /api/sessions additional edge cases", () => {
   });
 
   it("returns valid JSON structure even with empty tmux output", async () => {
-    mockExecFileAsync.mockResolvedValueOnce({
-      stdout: "",
-      stderr: "",
-    });
+    setupMocks({ tmuxLs: { stdout: "", stderr: "" } });
 
     const response = await GET();
     const data = await response.json();
@@ -236,10 +258,7 @@ describe("GET /api/sessions additional edge cases", () => {
   });
 
   it("handles tmux output with only whitespace", async () => {
-    mockExecFileAsync.mockResolvedValueOnce({
-      stdout: "   \n  \n",
-      stderr: "",
-    });
+    setupMocks({ tmuxLs: { stdout: "   \n  \n", stderr: "" } });
 
     const response = await GET();
     const data = await response.json();
@@ -255,18 +274,15 @@ describe("GET /api/sessions additional edge cases", () => {
         `agent-${i}: 1 windows (created Mon Mar 23 10:00:00 2026)`
     ).join("\n");
 
-    mockExecFileAsync.mockResolvedValueOnce({
-      stdout: sessionLines + "\n",
-      stderr: "",
-    });
-
-    // Mock capture-pane for each session
+    const panes: Record<string, string> = {};
     for (let i = 0; i < 5; i++) {
-      mockExecFileAsync.mockResolvedValueOnce({
-        stdout: "$ npm run dev\n",
-        stderr: "",
-      });
+      panes[`agent-${i}`] = "$ npm run dev\n";
     }
+
+    setupMocks({
+      tmuxLs: { stdout: sessionLines + "\n", stderr: "" },
+      panes,
+    });
 
     const response = await GET();
     const data = await response.json();

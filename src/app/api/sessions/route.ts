@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { accessSync, constants } from "fs";
 import { execFileAsync } from "@/lib/execFileAsync";
-import { parseTmuxList, computeUptime, determineStatus, extractBranch } from "@/lib/sessionHelpers";
+import { parseTmuxList, computeUptime, determineStatus, extractBranch, extractTaskName } from "@/lib/sessionHelpers";
 import type {
   TmuxSession,
   SessionsResponse,
@@ -18,6 +18,9 @@ function tmuxExists(): boolean {
   }
 }
 
+const GIT_BIN = "/usr/bin/git";
+const WORKTREE_BASE = process.cwd().replace(/\/\.worktrees\/[^/]+$/, "/.worktrees");
+
 async function capturePane(sessionName: string): Promise<string> {
   try {
     const { stdout } = await execFileAsync(
@@ -26,6 +29,19 @@ async function capturePane(sessionName: string): Promise<string> {
     return stdout;
   } catch {
     return "";
+  }
+}
+
+async function getGitBranch(sessionName: string): Promise<string | null> {
+  const worktreePath = `${WORKTREE_BASE}/${sessionName}`;
+  try {
+    const { stdout } = await execFileAsync(
+      GIT_BIN, ["-C", worktreePath, "branch", "--show-current"]
+    );
+    const branch = stdout.trim();
+    return branch || null;
+  } catch {
+    return null;
   }
 }
 
@@ -41,12 +57,16 @@ export async function GET() {
 
     const sessions: TmuxSession[] = await Promise.all(
       rawSessions.map(async ({ name, created }) => {
-        const paneOutput = await capturePane(name);
+        const [paneOutput, gitBranch] = await Promise.all([
+          capturePane(name),
+          getGitBranch(name),
+        ]);
         return {
           name,
           status: determineStatus(paneOutput),
           uptime: computeUptime(created),
-          branch: extractBranch(paneOutput),
+          branch: gitBranch ?? extractBranch(paneOutput),
+          taskName: extractTaskName(paneOutput),
         };
       })
     );

@@ -2,11 +2,17 @@ import { NextResponse } from "next/server";
 import type { FleetIssueProgress, RepoIssueProgress } from "@/types/issues";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const REPOS = (
-  process.env.FLEET_REPOS || "sergi-izquierdo/fleet-dashboard"
-)
+const MANAGED_REPOS = [
+  "sergi-izquierdo/fleet-dashboard",
+  "sergi-izquierdo/synapse-notes",
+  "sergi-izquierdo/autotask-engine",
+  "sergi-izquierdo/pavello-larapita-app",
+];
+
+const REPOS = (process.env.FLEET_REPOS || MANAGED_REPOS.join(","))
   .split(",")
-  .map((r) => r.trim());
+  .map((r) => r.trim())
+  .filter((r) => MANAGED_REPOS.includes(r));
 
 const FETCH_TIMEOUT_MS = 8000;
 
@@ -106,12 +112,28 @@ function getMockProgress(): FleetIssueProgress {
       labels: { queued: 3, inProgress: 3, cloud: 2, done: 12 },
     },
     {
-      repo: "sergi-izquierdo/cardmarket-wizard",
-      total: 15,
-      open: 5,
-      closed: 10,
+      repo: "sergi-izquierdo/synapse-notes",
+      total: 12,
+      open: 4,
+      closed: 8,
       percentComplete: 67,
-      labels: { queued: 2, inProgress: 2, cloud: 1, done: 10 },
+      labels: { queued: 1, inProgress: 2, cloud: 1, done: 8 },
+    },
+    {
+      repo: "sergi-izquierdo/autotask-engine",
+      total: 10,
+      open: 3,
+      closed: 7,
+      percentComplete: 70,
+      labels: { queued: 1, inProgress: 1, cloud: 1, done: 7 },
+    },
+    {
+      repo: "sergi-izquierdo/pavello-larapita-app",
+      total: 8,
+      open: 2,
+      closed: 6,
+      percentComplete: 75,
+      labels: { queued: 1, inProgress: 1, cloud: 0, done: 6 },
     },
   ];
 

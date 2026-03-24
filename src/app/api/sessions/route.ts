@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { accessSync, constants } from "fs";
 import { execFileAsync } from "@/lib/execFileAsync";
 import { parseTmuxList, computeUptime, determineStatus, extractBranch } from "@/lib/sessionHelpers";
 import type {
@@ -6,10 +7,21 @@ import type {
   SessionsResponse,
 } from "@/types/sessions";
 
+const TMUX_BIN = "/usr/bin/tmux";
+
+function tmuxExists(): boolean {
+  try {
+    accessSync(TMUX_BIN, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function capturePane(sessionName: string): Promise<string> {
   try {
     const { stdout } = await execFileAsync(
-      "tmux", ["capture-pane", "-t", sessionName, "-p", "-l", "50"]
+      TMUX_BIN, ["capture-pane", "-t", sessionName, "-p", "-l", "50"]
     );
     return stdout;
   } catch {
@@ -18,8 +30,13 @@ async function capturePane(sessionName: string): Promise<string> {
 }
 
 export async function GET() {
+  if (!tmuxExists()) {
+    const response: SessionsResponse = { sessions: [] };
+    return NextResponse.json(response, { status: 200 });
+  }
+
   try {
-    const { stdout: tmuxListOutput } = await execFileAsync("tmux", ["ls"]);
+    const { stdout: tmuxListOutput } = await execFileAsync(TMUX_BIN, ["ls"]);
     const rawSessions = parseTmuxList(tmuxListOutput);
 
     const sessions: TmuxSession[] = await Promise.all(

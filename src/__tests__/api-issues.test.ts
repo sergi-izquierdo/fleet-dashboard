@@ -9,7 +9,7 @@ describe("GET /api/issues", () => {
     fetchMock.mockReset();
   });
 
-  it("returns mock data when GitHub API fails", async () => {
+  it("returns empty data when GitHub API fails", async () => {
     fetchMock.mockRejectedValue(new Error("Network error"));
 
     const { GET } = await import("@/app/api/issues/route");
@@ -20,12 +20,12 @@ describe("GET /api/issues", () => {
     expect(data).toHaveProperty("repos");
     expect(data).toHaveProperty("overall");
     expect(Array.isArray(data.repos)).toBe(true);
-    expect(data.repos.length).toBeGreaterThan(0);
-    expect(data.overall).toHaveProperty("total");
-    expect(data.overall).toHaveProperty("percentComplete");
+    expect(data.repos).toHaveLength(0);
+    expect(data.overall.total).toBe(0);
+    expect(data.overall.percentComplete).toBe(0);
   });
 
-  it("returns mock data when GitHub API returns non-OK status", async () => {
+  it("returns empty data when GitHub API returns non-OK status", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
       status: 403,
@@ -37,7 +37,7 @@ describe("GET /api/issues", () => {
 
     expect(response.status).toBe(200);
     expect(data).toHaveProperty("repos");
-    expect(data.repos.length).toBeGreaterThan(0);
+    expect(data.repos).toHaveLength(0);
   });
 
   it("returns real data when GitHub API succeeds", async () => {

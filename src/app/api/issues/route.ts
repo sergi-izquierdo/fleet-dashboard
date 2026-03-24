@@ -101,69 +101,17 @@ async function fetchIssuesForRepo(repo: string): Promise<RepoIssueProgress> {
   };
 }
 
-function getMockProgress(): FleetIssueProgress {
-  const repos: RepoIssueProgress[] = [
-    {
-      repo: "sergi-izquierdo/fleet-dashboard",
-      total: 20,
-      open: 8,
-      closed: 12,
-      percentComplete: 60,
-      labels: { queued: 3, inProgress: 3, cloud: 2, done: 12 },
-    },
-    {
-      repo: "sergi-izquierdo/synapse-notes",
-      total: 12,
-      open: 4,
-      closed: 8,
-      percentComplete: 67,
-      labels: { queued: 1, inProgress: 2, cloud: 1, done: 8 },
-    },
-    {
-      repo: "sergi-izquierdo/autotask-engine",
-      total: 10,
-      open: 3,
-      closed: 7,
-      percentComplete: 70,
-      labels: { queued: 1, inProgress: 1, cloud: 1, done: 7 },
-    },
-    {
-      repo: "sergi-izquierdo/pavello-larapita-app",
-      total: 8,
-      open: 2,
-      closed: 6,
-      percentComplete: 75,
-      labels: { queued: 1, inProgress: 1, cloud: 0, done: 6 },
-    },
-  ];
-
-  const overall = repos.reduce(
-    (acc, r) => ({
-      total: acc.total + r.total,
-      open: acc.open + r.open,
-      closed: acc.closed + r.closed,
-      percentComplete: 0,
-      labels: {
-        queued: acc.labels.queued + r.labels.queued,
-        inProgress: acc.labels.inProgress + r.labels.inProgress,
-        cloud: acc.labels.cloud + r.labels.cloud,
-        done: acc.labels.done + r.labels.done,
-      },
-    }),
-    {
+function getEmptyProgress(): FleetIssueProgress {
+  return {
+    repos: [],
+    overall: {
       total: 0,
       open: 0,
       closed: 0,
       percentComplete: 0,
       labels: { queued: 0, inProgress: 0, cloud: 0, done: 0 },
-    }
-  );
-  overall.percentComplete =
-    overall.total > 0
-      ? Math.round((overall.closed / overall.total) * 100)
-      : 0;
-
-  return { repos, overall };
+    },
+  };
 }
 
 export async function GET() {
@@ -180,7 +128,7 @@ export async function GET() {
     }
 
     if (repoResults.length === 0) {
-      return NextResponse.json(getMockProgress(), { status: 200 });
+      return NextResponse.json(getEmptyProgress(), { status: 200 });
     }
 
     const overall = repoResults.reduce(
@@ -216,6 +164,6 @@ export async function GET() {
       "Failed to fetch issues, falling back to mock data:",
       error instanceof Error ? error.message : error
     );
-    return NextResponse.json(getMockProgress(), { status: 200 });
+    return NextResponse.json(getEmptyProgress(), { status: 200 });
   }
 }

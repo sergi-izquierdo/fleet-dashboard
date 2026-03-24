@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import type { FleetIssueProgress, RepoIssueProgress } from "@/types/issues";
 
 const REFRESH_INTERVAL_MS = 30_000;
@@ -102,7 +102,11 @@ function RepoProgressCard({ repo }: { repo: RepoIssueProgress }) {
   );
 }
 
-export default function ProgressTracker() {
+interface ProgressTrackerProps {
+  selectedProject?: string;
+}
+
+export default function ProgressTracker({ selectedProject = "all" }: ProgressTrackerProps) {
   const [progress, setProgress] = useState<FleetIssueProgress | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -131,6 +135,40 @@ export default function ProgressTracker() {
     return () => clearInterval(interval);
   }, [fetchProgress]);
 
+  const filteredProgress = useMemo((): FleetIssueProgress | null => {
+    if (!progress) return null;
+    if (selectedProject === "all") return progress;
+
+    const filteredRepos = progress.repos.filter(
+      (repo) => repo.repo === selectedProject
+    );
+    const overall = filteredRepos.reduce(
+      (acc, repo) => ({
+        total: acc.total + repo.total,
+        open: acc.open + repo.open,
+        closed: acc.closed + repo.closed,
+        percentComplete: 0,
+        labels: {
+          queued: acc.labels.queued + repo.labels.queued,
+          inProgress: acc.labels.inProgress + repo.labels.inProgress,
+          cloud: acc.labels.cloud + repo.labels.cloud,
+          done: acc.labels.done + repo.labels.done,
+        },
+      }),
+      {
+        total: 0,
+        open: 0,
+        closed: 0,
+        percentComplete: 0,
+        labels: { queued: 0, inProgress: 0, cloud: 0, done: 0 },
+      }
+    );
+    overall.percentComplete =
+      overall.total > 0 ? Math.round((overall.closed / overall.total) * 100) : 0;
+
+    return { repos: filteredRepos, overall };
+  }, [progress, selectedProject]);
+
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
       <div className="mb-3 flex items-center justify-between">
@@ -142,7 +180,7 @@ export default function ProgressTracker() {
         </span>
       </div>
 
-      {isLoading && !progress ? (
+      {isLoading && !filteredProgress ? (
         <div data-testid="progress-loading" className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
@@ -151,14 +189,14 @@ export default function ProgressTracker() {
             />
           ))}
         </div>
-      ) : error && !progress ? (
+      ) : error && !filteredProgress ? (
         <div
           data-testid="progress-error"
           className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400"
         >
           {error}
         </div>
-      ) : progress ? (
+      ) : filteredProgress ? (
         <div className="space-y-4">
           {/* Overall Fleet Progress */}
           <div
@@ -167,31 +205,33 @@ export default function ProgressTracker() {
           >
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Overall Fleet Progress
+                {selectedProject === "all" ? "Overall Fleet Progress" : "Project Progress"}
               </span>
               <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                {progress.overall.percentComplete}%
+                {filteredProgress.overall.percentComplete}%
               </span>
             </div>
             <ProgressBar
-              labels={progress.overall.labels}
-              total={progress.overall.total}
+              labels={filteredProgress.overall.labels}
+              total={filteredProgress.overall.total}
             />
             <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <LabelLegend labels={progress.overall.labels} />
+              <LabelLegend labels={filteredProgress.overall.labels} />
               <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">
-                {progress.overall.closed}/{progress.overall.total} issues
+                {filteredProgress.overall.closed}/{filteredProgress.overall.total} issues
                 closed
               </span>
             </div>
           </div>
 
           {/* Per-Repo Progress */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {progress.repos.map((repo) => (
-              <RepoProgressCard key={repo.repo} repo={repo} />
-            ))}
-          </div>
+          {filteredProgress.repos.length > 1 && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {filteredProgress.repos.map((repo) => (
+                <RepoProgressCard key={repo.repo} repo={repo} />
+              ))}
+            </div>
+          )}
         </div>
       ) : null}
     </div>

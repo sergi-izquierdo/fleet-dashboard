@@ -52,7 +52,11 @@ const statusConfig: Record<
 
 type FilterStatus = "all" | "open" | "merged" | "closed";
 
-export default function MergeQueue() {
+interface MergeQueueProps {
+  selectedProject?: string;
+}
+
+export default function MergeQueue({ selectedProject = "all" }: MergeQueueProps) {
   const [prs, setPrs] = useState<RecentPR[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,24 +87,29 @@ export default function MergeQueue() {
     return () => clearInterval(interval);
   }, [fetchPRs]);
 
+  const projectFilteredPRs = useMemo(() => {
+    if (selectedProject === "all") return prs;
+    return prs.filter((pr) => pr.repo === selectedProject);
+  }, [prs, selectedProject]);
+
   const repos = useMemo(
-    () => [...new Set(prs.map((pr) => pr.repo))].sort(),
-    [prs]
+    () => [...new Set(projectFilteredPRs.map((pr) => pr.repo))].sort(),
+    [projectFilteredPRs]
   );
 
   const authors = useMemo(
-    () => [...new Set(prs.map((pr) => pr.author))].sort(),
-    [prs]
+    () => [...new Set(projectFilteredPRs.map((pr) => pr.author))].sort(),
+    [projectFilteredPRs]
   );
 
   const filteredPRs = useMemo(() => {
-    return prs.filter((pr) => {
+    return projectFilteredPRs.filter((pr) => {
       if (filterRepo !== "all" && pr.repo !== filterRepo) return false;
       if (filterStatus !== "all" && pr.status !== filterStatus) return false;
       if (filterAuthor !== "all" && pr.author !== filterAuthor) return false;
       return true;
     });
-  }, [prs, filterRepo, filterStatus, filterAuthor]);
+  }, [projectFilteredPRs, filterRepo, filterStatus, filterAuthor]);
 
   const groupedByRepo = useMemo(() => {
     const groups: Record<string, RecentPR[]> = {};

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import type { RecentPR } from "@/types/prs";
 
 const REFRESH_INTERVAL_MS = 30_000;
@@ -60,7 +60,11 @@ export function timeAgo(dateString: string): string {
   return `${diffDays}d ago`;
 }
 
-export default function RecentPRs() {
+interface RecentPRsProps {
+  selectedProject?: string;
+}
+
+export default function RecentPRs({ selectedProject = "all" }: RecentPRsProps) {
   const [prs, setPrs] = useState<RecentPR[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +91,11 @@ export default function RecentPRs() {
     return () => clearInterval(interval);
   }, [fetchPRs]);
 
+  const filteredPRs = useMemo(() => {
+    if (selectedProject === "all") return prs;
+    return prs.filter((pr) => pr.repo === selectedProject);
+  }, [prs, selectedProject]);
+
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 animate-fade-in">
       <div className="mb-3 flex items-center justify-between">
@@ -94,7 +103,7 @@ export default function RecentPRs() {
         <span className="text-xs text-gray-400 dark:text-gray-500">Auto-refreshes every 30s</span>
       </div>
 
-      {isLoading && prs.length === 0 ? (
+      {isLoading && filteredPRs.length === 0 ? (
         <div data-testid="prs-loading" className="space-y-3 stagger-children">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
@@ -103,14 +112,14 @@ export default function RecentPRs() {
             />
           ))}
         </div>
-      ) : error && prs.length === 0 ? (
+      ) : error && filteredPRs.length === 0 ? (
         <div
           data-testid="prs-error"
           className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-500 dark:text-red-400"
         >
           {error}
         </div>
-      ) : prs.length === 0 ? (
+      ) : filteredPRs.length === 0 ? (
         <p className="py-4 text-center text-sm text-gray-500 dark:text-gray-400" data-testid="prs-empty">
           No recent PRs found.
         </p>
@@ -119,7 +128,7 @@ export default function RecentPRs() {
           className="max-h-[32rem] space-y-2 overflow-y-auto pr-1"
           data-testid="prs-list"
         >
-          {prs.map((pr, index) => {
+          {filteredPRs.map((pr, index) => {
             const statusCfg = statusConfig[pr.status];
             const ciCfg = ciStatusConfig[pr.ciStatus];
             const repoShort = pr.repo.split("/").pop() ?? pr.repo;

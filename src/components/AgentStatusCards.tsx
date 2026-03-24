@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import type { TmuxSession, SessionsResponse } from "@/types/sessions";
 import TerminalViewer from "@/components/TerminalViewer";
 
@@ -59,7 +59,11 @@ function SkeletonCard() {
   );
 }
 
-export default function AgentStatusCards() {
+interface AgentStatusCardsProps {
+  selectedProject?: string;
+}
+
+export default function AgentStatusCards({ selectedProject = "all" }: AgentStatusCardsProps) {
   const [sessions, setSessions] = useState<TmuxSession[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -91,6 +95,14 @@ export default function AgentStatusCards() {
     const interval = setInterval(fetchSessions, 10000);
     return () => clearInterval(interval);
   }, [fetchSessions]);
+
+  const filteredSessions = useMemo(() => {
+    if (selectedProject === "all") return sessions;
+    const shortName = selectedProject.split("/").pop()?.toLowerCase() ?? "";
+    return sessions.filter(
+      (s) => s.name.toLowerCase().includes(shortName)
+    );
+  }, [sessions, selectedProject]);
 
   if (isLoading) {
     return (
@@ -124,7 +136,7 @@ export default function AgentStatusCards() {
     );
   }
 
-  if (sessions.length === 0) {
+  if (filteredSessions.length === 0) {
     return (
       <section aria-label="Agent sessions">
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -140,7 +152,11 @@ export default function AgentStatusCards() {
             </svg>
           </div>
           <p className="text-sm font-medium text-gray-900 dark:text-white">No active agents</p>
-          <p className="mt-1 text-xs text-gray-500 dark:text-white/50">Create issues with the <code className="rounded bg-gray-100 dark:bg-white/10 px-1 py-0.5 font-mono text-xs">agent-local</code> label to start work</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-white/50">
+            {selectedProject === "all"
+              ? <>Create issues with the <code className="rounded bg-gray-100 dark:bg-white/10 px-1 py-0.5 font-mono text-xs">agent-local</code> label to start work</>
+              : "No agents running for this project"}
+          </p>
         </div>
       </section>
     );
@@ -161,7 +177,7 @@ export default function AgentStatusCards() {
         </div>
       )}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 stagger-children">
-        {sessions.map((session) => (
+        {filteredSessions.map((session) => (
           <button
             key={session.name}
             data-testid="session-card"

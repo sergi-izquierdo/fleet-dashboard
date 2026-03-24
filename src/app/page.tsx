@@ -19,14 +19,18 @@ import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
 import { Footer } from "@/components/Footer";
 import { LogoutButton } from "@/components/LogoutButton";
 import FleetActivityTimeline from "@/components/FleetActivityTimeline";
+import { ProjectSelector } from "@/components/ProjectSelector";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useProjectFilter } from "@/hooks/useProjectFilter";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { extractRepoFromUrl } from "@/lib/repoUtils";
 
 const themes = ["light", "dark", "system"] as const;
 
 export default function Home() {
   const { data, isLoading, error, connectionStatus, countdown, refresh } =
     useDashboardData();
+  const { selectedProject, setProject } = useProjectFilter();
   const [activeTab, setActiveTab] = useState<MobileTab>("agents");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteKey, setPaletteKey] = useState(0);
@@ -105,50 +109,89 @@ export default function Home() {
     [data, refresh, cycleTheme, scrollToSection],
   );
 
+  // Derive project list from dashboard data
+  const projects = useMemo(() => {
+    if (!data) return [];
+    const repos = new Set<string>();
+    for (const agent of data.agents) {
+      const repo = extractRepoFromUrl(agent.issue.url);
+      if (repo) repos.add(repo);
+    }
+    for (const pr of data.prs) {
+      const repo = extractRepoFromUrl(pr.url);
+      if (repo) repos.add(repo);
+    }
+    return [...repos].sort();
+  }, [data]);
+
+  // Filter dashboard data by selected project
+  const filteredAgents = useMemo(() => {
+    if (!data || selectedProject === "all") return data?.agents ?? [];
+    return data.agents.filter((agent) => {
+      const repo = extractRepoFromUrl(agent.issue.url);
+      return repo === selectedProject;
+    });
+  }, [data, selectedProject]);
+
+  const filteredPrs = useMemo(() => {
+    if (!data || selectedProject === "all") return data?.prs ?? [];
+    return data.prs.filter((pr) => {
+      const repo = extractRepoFromUrl(pr.url);
+      return repo === selectedProject;
+    });
+  }, [data, selectedProject]);
+
+  const filteredActivityLog = useMemo(() => {
+    if (!data || selectedProject === "all") return data?.activityLog ?? [];
+    const shortName = selectedProject.split("/").pop() ?? selectedProject;
+    return data.activityLog.filter((evt) =>
+      evt.agentName.toLowerCase().includes(shortName.toLowerCase()) ||
+      evt.description.toLowerCase().includes(shortName.toLowerCase())
+    );
+  }, [data, selectedProject]);
+
   const stats = data
     ? [
         {
           label: "Total Agents",
-          value: data.agents.length,
+          value: filteredAgents.length,
           color: "text-gray-900 dark:text-white",
         },
         {
           label: "Active",
-          value: data.agents.filter((a) => a.status === "working").length,
+          value: filteredAgents.filter((a) => a.status === "working").length,
           color: "text-blue-600 dark:text-blue-400",
         },
         {
           label: "Errors",
-          value: data.agents.filter((a) => a.status === "error").length,
+          value: filteredAgents.filter((a) => a.status === "error").length,
           color: "text-red-600 dark:text-red-400",
         },
         {
           label: "PRs Open",
-          value: data.prs.filter((p) => p.mergeState === "open").length,
+          value: filteredPrs.filter((p) => p.mergeState === "open").length,
           color: "text-yellow-600 dark:text-yellow-400",
         },
         {
           label: "PRs Merged",
-          value: data.prs.filter((p) => p.mergeState === "merged").length,
+          value: filteredPrs.filter((p) => p.mergeState === "merged").length,
           color: "text-purple-600 dark:text-purple-400",
         },
         {
           label: "CI Passing",
-          value: data.prs.filter((p) => p.ciStatus === "passing").length,
+          value: filteredPrs.filter((p) => p.ciStatus === "passing").length,
           color: "text-green-600 dark:text-green-400",
         },
       ]
     : [];
 
-  const activityEvents = data
-    ? data.activityLog.map((evt) => ({
-        id: evt.id,
-        timestamp: evt.timestamp,
-        agentName: evt.agentName,
-        eventType: evt.eventType as import("@/components/ActivityLog").EventType,
-        description: evt.description,
-      }))
-    : [];
+  const activityEvents = filteredActivityLog.map((evt) => ({
+    id: evt.id,
+    timestamp: evt.timestamp,
+    agentName: evt.agentName,
+    eventType: evt.eventType as import("@/components/ActivityLog").EventType,
+    description: evt.description,
+  }));
 
   return (
     <main className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white pb-[72px] md:pb-0">
@@ -172,6 +215,13 @@ export default function Home() {
             <h1 className="text-xl font-bold tracking-tight">
               Fleet Dashboard
             </h1>
+            {data && projects.length > 0 && (
+              <ProjectSelector
+                projects={projects}
+                selectedProject={selectedProject}
+                onChange={setProject}
+              />
+            )}
           </div>
           <div className="flex items-center gap-3 sm:gap-4">
             <button
@@ -240,7 +290,7 @@ export default function Home() {
         <PullToRefresh onRefresh={refresh}>
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
             {/* Stats Bar - hidden when fleet is idle */}
-            {data.agents.length > 0 ? (
+            {filteredAgents.length > 0 ? (
               <section
                 id="section-stats"
                 aria-label="Dashboard statistics"
@@ -273,8 +323,8 @@ export default function Home() {
             {/* Fleet Activity Timeline */}
             <section aria-label="Fleet activity timeline">
               <FleetActivityTimeline
-                activityLog={data.activityLog}
-                prs={data.prs}
+                activityLog={filteredActivityLog}
+                prs={filteredPrs}
               />
             </section>
 
@@ -283,13 +333,13 @@ export default function Home() {
 
             {/* Issue Progress Tracker */}
             <section aria-label="Issue progress">
-              <ProgressTracker />
+              <ProgressTracker selectedProject={selectedProject} />
             </section>
 
             {/* Agents Tab */}
             <div className={activeTab !== "agents" ? "hidden md:block" : ""}>
               <div id="section-sessions">
-                <AgentStatusCards />
+                <AgentStatusCards selectedProject={selectedProject} />
               </div>
             </div>
 
@@ -297,11 +347,11 @@ export default function Home() {
             <div className={activeTab !== "prs" ? "hidden md:block" : ""}>
               {/* PR Merge Queue */}
               <section aria-label="PR merge queue">
-                <MergeQueue />
+                <MergeQueue selectedProject={selectedProject} />
               </section>
 
               <section id="section-prs" aria-label="Recent PRs" className="mt-6">
-                <RecentPRs />
+                <RecentPRs selectedProject={selectedProject} />
               </section>
             </div>
 

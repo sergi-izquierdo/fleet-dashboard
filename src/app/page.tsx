@@ -19,6 +19,7 @@ import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
 import { Footer } from "@/components/Footer";
 import { LogoutButton } from "@/components/LogoutButton";
 import FleetActivityTimeline from "@/components/FleetActivityTimeline";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
@@ -272,10 +273,12 @@ export default function Home() {
 
             {/* Fleet Activity Timeline */}
             <section aria-label="Fleet activity timeline">
-              <FleetActivityTimeline
-                activityLog={data.activityLog}
-                prs={data.prs}
-              />
+              <SectionErrorBoundary sectionName="Fleet Activity Timeline">
+                <FleetActivityTimeline
+                  activityLog={data.activityLog}
+                  prs={data.prs}
+                />
+              </SectionErrorBoundary>
             </section>
 
             {/* Desktop: show all sections */}
@@ -283,13 +286,17 @@ export default function Home() {
 
             {/* Issue Progress Tracker */}
             <section aria-label="Issue progress">
-              <ProgressTracker />
+              <SectionErrorBoundary sectionName="Issue Progress">
+                <ProgressTracker />
+              </SectionErrorBoundary>
             </section>
 
             {/* Agents Tab */}
             <div className={activeTab !== "agents" ? "hidden md:block" : ""}>
               <div id="section-sessions">
-                <AgentStatusCards />
+                <SectionErrorBoundary sectionName="Agents">
+                  <AgentStatusCards />
+                </SectionErrorBoundary>
               </div>
             </div>
 
@@ -297,11 +304,15 @@ export default function Home() {
             <div className={activeTab !== "prs" ? "hidden md:block" : ""}>
               {/* PR Merge Queue */}
               <section aria-label="PR merge queue">
-                <MergeQueue />
+                <SectionErrorBoundary sectionName="Merge Queue">
+                  <MergeQueue />
+                </SectionErrorBoundary>
               </section>
 
               <section id="section-prs" aria-label="Recent PRs" className="mt-6">
-                <RecentPRs />
+                <SectionErrorBoundary sectionName="Recent PRs">
+                  <RecentPRs />
+                </SectionErrorBoundary>
               </section>
             </div>
 
@@ -309,11 +320,15 @@ export default function Home() {
             <div className={activeTab !== "activity" ? "hidden md:block" : ""}>
               {/* Cost & Token Usage */}
               <section aria-label="Cost and token usage">
-                <TokenUsageDashboard />
+                <SectionErrorBoundary sectionName="Token Usage">
+                  <TokenUsageDashboard />
+                </SectionErrorBoundary>
               </section>
 
               <section id="section-activity" aria-label="Activity log" className="mt-6">
-                <ActivityLog events={activityEvents} maxHeight="max-h-[32rem]" />
+                <SectionErrorBoundary sectionName="Activity Log">
+                  <ActivityLog events={activityEvents} maxHeight="max-h-[32rem]" />
+                </SectionErrorBoundary>
               </section>
             </div>
           </div>

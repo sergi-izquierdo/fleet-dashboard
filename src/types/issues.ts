@@ -27,3 +27,26 @@ export interface FleetIssueProgress {
     };
   };
 }
+
+export interface RepoIssueDetail {
+  number: number;
+  title: string;
+  labels: string[];
+  url: string;
+}
+
+export interface RepoPRDetail {
+  number: number;
+  title: string;
+  url: string;
+  author: string;
+  ciStatus: "passing" | "failing" | "pending" | "unknown";
+  createdAt: string;
+}
+
+export interface RepoDetailData {
+  repo: string;
+  openIssues: RepoIssueDetail[];
+  openPRs: RepoPRDetail[];
+  recentMergedPRs: RepoPRDetail[];
+}

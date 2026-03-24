@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { FleetIssueProgress, RepoIssueProgress } from "@/types/issues";
+import { RepoDetailModal } from "./RepoDetailModal";
 
 const REFRESH_INTERVAL_MS = 30_000;
 
@@ -75,21 +76,44 @@ function LabelLegend({ labels }: { labels: RepoIssueProgress["labels"] }) {
   );
 }
 
-function RepoProgressCard({ repo }: { repo: RepoIssueProgress }) {
+function RepoProgressCard({
+  repo,
+  onSelect,
+}: {
+  repo: RepoIssueProgress;
+  onSelect: (repoName: string) => void;
+}) {
   const repoShort = repo.repo.split("/").pop() ?? repo.repo;
 
   return (
-    <div
-      className="rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-4"
+    <button
+      type="button"
+      className="w-full text-left rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-4 cursor-pointer transition-colors hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
       data-testid="repo-progress"
+      onClick={() => onSelect(repo.repo)}
+      aria-label={`View details for ${repoShort}`}
     >
       <div className="mb-2 flex items-center justify-between">
         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
           {repoShort}
         </span>
-        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          {repo.percentComplete}%
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {repo.percentComplete}%
+          </span>
+          <svg
+            className="h-4 w-4 text-gray-400"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              fillRule="evenodd"
+              d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </div>
       </div>
       <ProgressBar labels={repo.labels} total={repo.total} />
       <div className="mt-2 flex items-center justify-between">
@@ -98,7 +122,7 @@ function RepoProgressCard({ repo }: { repo: RepoIssueProgress }) {
           {repo.closed}/{repo.total} issues
         </span>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -106,6 +130,7 @@ export default function ProgressTracker() {
   const [progress, setProgress] = useState<FleetIssueProgress | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
 
   const fetchProgress = useCallback(async () => {
     try {
@@ -189,11 +214,22 @@ export default function ProgressTracker() {
           {/* Per-Repo Progress */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {progress.repos.map((repo) => (
-              <RepoProgressCard key={repo.repo} repo={repo} />
+              <RepoProgressCard
+                key={repo.repo}
+                repo={repo}
+                onSelect={setSelectedRepo}
+              />
             ))}
           </div>
         </div>
       ) : null}
+
+      {selectedRepo && (
+        <RepoDetailModal
+          repo={selectedRepo}
+          onClose={() => setSelectedRepo(null)}
+        />
+      )}
     </div>
   );
 }

@@ -7,12 +7,13 @@ function mockGitHub(
   responses: Record<string, { issues: Array<{ state: string; labels: Array<{ name: string }>; pull_request?: unknown }> }>
 ) {
   fetchMock.mockImplementation(async (url: string) => {
+    const noLinkHeaders = { get: () => null };
     for (const [repoPattern, data] of Object.entries(responses)) {
       if (url.includes(repoPattern)) {
         const stateMatch = url.match(/state=(open|closed)/);
         const state = stateMatch?.[1] ?? "open";
         const filtered = data.issues.filter((i) => i.state === state);
-        return { ok: true, json: async () => filtered };
+        return { ok: true, json: async () => filtered, headers: noLinkHeaders };
       }
     }
     return { ok: false, status: 404 };
@@ -155,6 +156,65 @@ describe("GET /api/issues", () => {
     // No additional fetch calls — served from cache
     expect(fetchMock.mock.calls.length).toBe(callCount);
     expect(secondData).toEqual(firstData);
+  });
+
+  it("paginates when GitHub returns a next link", async () => {
+    let callCount = 0;
+    fetchMock.mockImplementation(async (url: string) => {
+      if (!url.includes("fleet-dashboard")) {
+        return {
+          ok: true,
+          json: async () => [],
+          headers: { get: () => null },
+        };
+      }
+      const stateMatch = url.match(/state=(open|closed)/);
+      const state = stateMatch?.[1] ?? "open";
+      if (state === "closed") {
+        return {
+          ok: true,
+          json: async () => [{ state: "closed", labels: [] }],
+          headers: { get: () => null },
+        };
+      }
+      callCount++;
+      if (callCount === 1) {
+        return {
+          ok: true,
+          json: async () => [
+            { state: "open", labels: [{ name: "agent-local" }] },
+          ],
+          headers: {
+            get: (name: string) =>
+              name === "link"
+                ? '<https://api.github.com/repos/sergi-izquierdo/fleet-dashboard/issues?state=open&per_page=100&page=2>; rel="next"'
+                : null,
+          },
+        };
+      }
+      return {
+        ok: true,
+        json: async () => [
+          { state: "open", labels: [{ name: "agent-working" }] },
+        ],
+        headers: { get: () => null },
+      };
+    });
+
+    const { GET } = await import("@/app/api/issues/route");
+    const response = await GET();
+    const data = await response.json();
+
+    const repo = data.repos.find(
+      (r: { repo: string }) => r.repo === "sergi-izquierdo/fleet-dashboard"
+    );
+    expect(repo).toBeDefined();
+    // 2 open (paginated) + 1 closed = 3 total
+    expect(repo.total).toBe(3);
+    expect(repo.open).toBe(2);
+    expect(repo.closed).toBe(1);
+    expect(repo.labels.queued).toBe(1);
+    expect(repo.labels.inProgress).toBe(1);
   });
 
   it("fetches all repos in parallel", async () => {

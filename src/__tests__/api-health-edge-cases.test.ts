@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock child_process.exec
-const mockExec = vi.fn();
+// Mock child_process.execFile
+const mockExecFile = vi.fn();
 vi.mock("child_process", async (importOriginal) => {
   const actual = await importOriginal<typeof import("child_process")>();
   return {
     ...actual,
     default: {
       ...actual,
-      exec: (...args: unknown[]) => mockExec(...args),
+      execFile: (...args: unknown[]) => mockExecFile(...args),
     },
-    exec: (...args: unknown[]) => mockExec(...args),
+    execFile: (...args: unknown[]) => mockExecFile(...args),
   };
 });
 
@@ -20,14 +20,20 @@ vi.stubGlobal("fetch", mockFetch);
 
 import { GET } from "@/app/api/health/route";
 
-function simulateExec(error: Error | null, stdout = "") {
-  mockExec.mockImplementation(
+function simulateExecFile(results: Record<string, boolean>) {
+  mockExecFile.mockImplementation(
     (
       _cmd: string,
-      callback: (err: Error | null, stdout: string, stderr: string) => void
+      args: string[],
+      callback: (err: Error | null, stdout: string, stderr: string) => void,
     ) => {
-      callback(error, stdout, "");
-    }
+      const sessionName = args[args.indexOf("-t") + 1];
+      if (sessionName && results[sessionName]) {
+        callback(null, "", "");
+      } else {
+        callback(new Error("session not found"), "", "");
+      }
+    },
   );
 }
 
@@ -37,7 +43,7 @@ describe("/api/health edge cases", () => {
   });
 
   it("includes a valid ISO timestamp in the response", async () => {
-    simulateExec(null, "main: 1 windows");
+    simulateExecFile({ dispatcher: true, "telegram-bot": true, supervisor: true });
     mockFetch.mockResolvedValue({ ok: true, status: 200 });
 
     const response = await GET();
@@ -48,47 +54,45 @@ describe("/api/health edge cases", () => {
     expect(timestamp.getTime()).not.toBeNaN();
   });
 
-  it("reports tmux session count in message when up", async () => {
-    simulateExec(
-      null,
-      "agent-1: 1 windows\nagent-2: 2 windows\nagent-3: 1 windows"
-    );
+  it("reports tmux session status for dispatcher", async () => {
+    simulateExecFile({ dispatcher: true, "telegram-bot": true, supervisor: true });
     mockFetch.mockResolvedValue({ ok: true, status: 200 });
 
     const response = await GET();
     const body = await response.json();
 
-    expect(body.services.tmux.status).toBe("up");
-    expect(body.services.tmux.message).toContain("3");
+    expect(body.services.dispatcher.status).toBe("up");
+    expect(body.services.dispatcher.message).toContain("running");
   });
 
-  it("includes error message when tmux is down", async () => {
-    simulateExec(new Error("no server running on /tmp/tmux-1000/default"));
+  it("reports down status when tmux session not found", async () => {
+    simulateExecFile({ dispatcher: false, "telegram-bot": false, supervisor: false });
     mockFetch.mockResolvedValue({ ok: true, status: 200 });
 
     const response = await GET();
     const body = await response.json();
 
-    expect(body.services.tmux.status).toBe("down");
-    expect(body.services.tmux.message).toContain("not running");
+    expect(body.services.dispatcher.status).toBe("down");
+    expect(body.services.dispatcher.message).toContain("not found");
+    expect(body.services.telegramBot.status).toBe("down");
+    expect(body.services.supervisor.status).toBe("down");
   });
 
   it("handles fetch rejection with error message for services", async () => {
-    simulateExec(null, "main: 1 windows");
+    simulateExecFile({ dispatcher: true, "telegram-bot": true, supervisor: true });
     mockFetch.mockRejectedValue(new Error("ECONNREFUSED"));
 
     const response = await GET();
     const body = await response.json();
 
-    expect(body.services.ao.status).toBe("down");
-    expect(body.services.ao.message).toContain("unreachable");
+    expect(body.services.dashboard.status).toBe("down");
+    expect(body.services.dashboard.message).toContain("unreachable");
   });
 
   it("returns correct HTTP status for degraded state", async () => {
-    simulateExec(null, "main: 1 windows");
-    // Only some services fail
+    simulateExecFile({ dispatcher: true, "telegram-bot": true, supervisor: true });
     mockFetch.mockImplementation((url: string) => {
-      if (url.includes("4000")) {
+      if (url.includes("4100")) {
         return Promise.resolve({ ok: true, status: 200 });
       }
       return Promise.reject(new Error("Connection refused"));
@@ -102,28 +106,31 @@ describe("/api/health edge cases", () => {
   });
 
   it("returns 503 HTTP status only when all services are down", async () => {
-    simulateExec(new Error("tmux not found"));
+    simulateExecFile({ dispatcher: false, "telegram-bot": false, supervisor: false });
     mockFetch.mockRejectedValue(new Error("Connection refused"));
 
     const response = await GET();
     expect(response.status).toBe(503);
   });
 
-  it("reports all four services in the response", async () => {
-    simulateExec(null, "main: 1 windows");
+  it("reports all seven services in the response", async () => {
+    simulateExecFile({ dispatcher: true, "telegram-bot": true, supervisor: true });
     mockFetch.mockResolvedValue({ ok: true, status: 200 });
 
     const response = await GET();
     const body = await response.json();
 
-    expect(body.services).toHaveProperty("tmux");
-    expect(body.services).toHaveProperty("ao");
-    expect(body.services).toHaveProperty("observability");
+    expect(body.services).toHaveProperty("dashboard");
+    expect(body.services).toHaveProperty("observabilityServer");
+    expect(body.services).toHaveProperty("observabilityClient");
     expect(body.services).toHaveProperty("langfuse");
+    expect(body.services).toHaveProperty("dispatcher");
+    expect(body.services).toHaveProperty("telegramBot");
+    expect(body.services).toHaveProperty("supervisor");
   });
 
   it("each service has status and message fields", async () => {
-    simulateExec(null, "main: 1 windows");
+    simulateExecFile({ dispatcher: true, "telegram-bot": true, supervisor: true });
     mockFetch.mockResolvedValue({ ok: true, status: 200 });
 
     const response = await GET();

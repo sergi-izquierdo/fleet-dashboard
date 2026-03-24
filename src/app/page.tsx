@@ -16,6 +16,7 @@ import { ToastContainer, showToast } from "@/components/Toast";
 import { BottomNav, type MobileTab } from "@/components/BottomNav";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import ProgressTracker from "@/components/ProgressTracker";
+import HealthPanel from "@/components/HealthPanel";
 import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
 import { Footer } from "@/components/Footer";
 import { LogoutButton } from "@/components/LogoutButton";
@@ -260,6 +261,11 @@ export default function Home() {
 
             {/* Desktop: show all sections */}
             {/* Mobile: show only the active tab's section */}
+
+            {/* System Health */}
+            <section aria-label="System health">
+              <HealthPanel />
+            </section>
 
             {/* Issue Progress Tracker */}
             <section aria-label="Issue progress">

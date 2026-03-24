@@ -5,24 +5,23 @@ import { useState, useEffect, useCallback } from "react";
 interface ServiceStatus {
   status: "up" | "down";
   message: string;
+  port?: number;
 }
 
 interface HealthResponse {
   status: "healthy" | "degraded" | "unhealthy";
-  services: {
-    tmux: ServiceStatus;
-    ao: ServiceStatus;
-    observability: ServiceStatus;
-    langfuse: ServiceStatus;
-  };
+  services: Record<string, ServiceStatus>;
   timestamp: string;
 }
 
 const SERVICE_LABELS: Record<string, string> = {
-  tmux: "tmux Sessions",
-  ao: "Agent Orchestrator",
-  observability: "Observability",
+  dashboard: "Fleet Dashboard",
+  observabilityServer: "Observability Server",
+  observabilityClient: "Observability Client",
   langfuse: "Langfuse",
+  dispatcher: "Dispatcher",
+  telegramBot: "Telegram Bot",
+  supervisor: "Supervisor",
 };
 
 const STATUS_STYLES = {
@@ -47,6 +46,7 @@ export default function HealthPanel() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const fetchHealth = useCallback(async () => {
     try {
@@ -71,11 +71,11 @@ export default function HealthPanel() {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-white/5">
         <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Service Health
+          System Health
         </h2>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-14 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-800" />
+            <div key={i} className="h-10 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-800" />
           ))}
         </div>
       </div>
@@ -86,7 +86,7 @@ export default function HealthPanel() {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-white/5">
         <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Service Health
+          System Health
         </h2>
         <div
           data-testid="health-error"
@@ -103,48 +103,80 @@ export default function HealthPanel() {
   const overallStyle = STATUS_STYLES[health.status];
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-      <div className="mb-3 flex items-center justify-between">
+    <div
+      className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900"
+      data-testid="health-panel"
+    >
+      <button
+        type="button"
+        onClick={() => setIsCollapsed((prev) => !prev)}
+        className="flex w-full items-center justify-between"
+        data-testid="health-toggle"
+        aria-expanded={!isCollapsed}
+      >
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Service Health
+          System Health
         </h2>
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${overallStyle.badge}`}
-          data-testid="health-overall-badge"
-        >
-          <span className={`h-2 w-2 rounded-full ${overallStyle.dot}`} />
-          {overallStyle.label}
-        </span>
-      </div>
-
-      <div className="space-y-2" data-testid="health-services">
-        {Object.entries(health.services).map(([key, service]) => (
-          <div
-            key={key}
-            className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-800/50"
-            data-testid={`health-service-${key}`}
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${overallStyle.badge}`}
+            data-testid="health-overall-badge"
           >
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                {SERVICE_LABELS[key] ?? key}
-              </p>
-              <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
-                {service.message}
-              </p>
-            </div>
-            <span
-              className={`ml-3 inline-flex h-3 w-3 flex-shrink-0 rounded-full ${
-                service.status === "up" ? "bg-green-500" : "bg-red-500"
-              }`}
-              aria-label={service.status === "up" ? "Service up" : "Service down"}
-            />
-          </div>
-        ))}
-      </div>
+            <span className={`h-2 w-2 rounded-full ${overallStyle.dot}`} />
+            {overallStyle.label}
+          </span>
+          <svg
+            className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${
+              isCollapsed ? "" : "rotate-180"
+            }`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </button>
 
-      <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
-        Last checked: {new Date(health.timestamp).toLocaleTimeString()}
-      </p>
+      {!isCollapsed && (
+        <div className="mt-3 space-y-2" data-testid="health-services">
+          {Object.entries(health.services).map(([key, service]) => (
+            <div
+              key={key}
+              className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-800/50"
+              data-testid={`health-service-${key}`}
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {SERVICE_LABELS[key] ?? key}
+                  </p>
+                  {service.port && (
+                    <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-mono text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                      :{service.port}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
+                  {service.status === "up" ? "running" : service.message}
+                </p>
+              </div>
+              <span
+                className={`ml-3 inline-flex h-3 w-3 flex-shrink-0 rounded-full ${
+                  service.status === "up" ? "bg-green-500" : "bg-red-500"
+                }`}
+                aria-label={service.status === "up" ? "Service up" : "Service down"}
+              />
+            </div>
+          ))}
+
+          <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
+            Last checked: {new Date(health.timestamp).toLocaleTimeString()}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

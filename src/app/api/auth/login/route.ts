@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const HARDCODED_EMAIL = "admin@fleet.dev";
-const HARDCODED_PASSWORD = "fleet-admin-2024";
-const AUTH_TOKEN = "fleet-session-token-v1";
+const ADMIN_EMAIL = process.env.FLEET_ADMIN_EMAIL ?? "admin@fleet.dev";
+const ADMIN_PASSWORD = process.env.FLEET_ADMIN_PASSWORD ?? "fleet-admin-2024";
+const AUTH_TOKEN = process.env.FLEET_AUTH_SECRET ?? "fleet-session-token-v1";
 
 export async function POST(request: NextRequest) {
   let body: { email?: string; password?: string };
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (email !== HARDCODED_EMAIL || password !== HARDCODED_PASSWORD) {
+  if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 

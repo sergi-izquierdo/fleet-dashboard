@@ -20,6 +20,7 @@ import { Footer } from "@/components/Footer";
 import { LogoutButton } from "@/components/LogoutButton";
 import FleetActivityTimeline from "@/components/FleetActivityTimeline";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+import { CollapsibleCard, useIsMobile } from "@/components/CollapsibleCard";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
@@ -28,6 +29,7 @@ const themes = ["light", "dark", "system"] as const;
 export default function Home() {
   const { data, isLoading, error, connectionStatus, countdown, refresh } =
     useDashboardData();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<MobileTab>("agents");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteKey, setPaletteKey] = useState(0);
@@ -241,95 +243,127 @@ export default function Home() {
         <PullToRefresh onRefresh={refresh}>
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
             {/* Stats Bar - hidden when fleet is idle */}
-            {data.agents.length > 0 ? (
-              <section
-                id="section-stats"
-                aria-label="Dashboard statistics"
-                className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 stagger-children"
-              >
-                {stats.map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-4 text-center transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 dark:hover:border-white/20"
-                  >
-                    <p className={`text-2xl font-bold ${stat.color}`}>
-                      {stat.value}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-white/50">{stat.label}</p>
-                  </div>
-                ))}
-              </section>
-            ) : (
-              <section
-                id="section-stats"
-                aria-label="Dashboard statistics"
-                className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-6 text-center"
-              >
-                <p className="text-sm font-medium text-gray-500 dark:text-white/50">
+            <CollapsibleCard
+              title="Stats"
+              id="section-stats"
+              ariaLabel="Dashboard statistics"
+              defaultExpanded
+            >
+              {data.agents.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 stagger-children">
+                  {stats.map((stat) => (
+                    <div
+                      key={stat.label}
+                      className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-4 text-center transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 dark:hover:border-white/20"
+                    >
+                      <p className={`text-2xl font-bold ${stat.color}`}>
+                        {stat.value}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-white/50">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm font-medium text-gray-500 dark:text-white/50 text-center py-2">
                   Fleet idle &mdash; no active agents
                 </p>
-              </section>
-            )}
+              )}
+            </CollapsibleCard>
 
             {/* Fleet Activity Timeline */}
-            <section aria-label="Fleet activity timeline">
+            <CollapsibleCard
+              title="Fleet Activity Timeline"
+              ariaLabel="Fleet activity timeline"
+              defaultExpanded={isMobile !== true}
+            >
               <SectionErrorBoundary sectionName="Fleet Activity Timeline">
                 <FleetActivityTimeline
                   activityLog={data.activityLog}
                   prs={data.prs}
                 />
               </SectionErrorBoundary>
-            </section>
+            </CollapsibleCard>
 
             {/* Desktop: show all sections */}
             {/* Mobile: show only the active tab's section */}
 
             {/* Issue Progress Tracker */}
-            <section aria-label="Issue progress">
+            <CollapsibleCard
+              title="Issue Progress"
+              ariaLabel="Issue progress"
+              defaultExpanded={isMobile !== true}
+            >
               <SectionErrorBoundary sectionName="Issue Progress">
                 <ProgressTracker />
               </SectionErrorBoundary>
-            </section>
+            </CollapsibleCard>
 
             {/* Agents Tab */}
             <div className={activeTab !== "agents" ? "hidden md:block" : ""}>
-              <div id="section-sessions">
+              <CollapsibleCard
+                title="Agent Sessions"
+                id="section-sessions"
+                ariaLabel="Agent sessions"
+                defaultExpanded
+              >
                 <SectionErrorBoundary sectionName="Agents">
                   <AgentStatusCards />
                 </SectionErrorBoundary>
-              </div>
+              </CollapsibleCard>
             </div>
 
             {/* PRs Tab */}
             <div className={activeTab !== "prs" ? "hidden md:block" : ""}>
               {/* PR Merge Queue */}
-              <section aria-label="PR merge queue">
+              <CollapsibleCard
+                title="Merge Queue"
+                ariaLabel="PR merge queue"
+                defaultExpanded={isMobile !== true}
+              >
                 <SectionErrorBoundary sectionName="Merge Queue">
                   <MergeQueue />
                 </SectionErrorBoundary>
-              </section>
+              </CollapsibleCard>
 
-              <section id="section-prs" aria-label="Recent PRs" className="mt-6">
-                <SectionErrorBoundary sectionName="Recent PRs">
-                  <RecentPRs />
-                </SectionErrorBoundary>
-              </section>
+              <div className="mt-6">
+                <CollapsibleCard
+                  title="Recent PRs"
+                  id="section-prs"
+                  ariaLabel="Recent PRs"
+                  defaultExpanded={isMobile !== true}
+                >
+                  <SectionErrorBoundary sectionName="Recent PRs">
+                    <RecentPRs />
+                  </SectionErrorBoundary>
+                </CollapsibleCard>
+              </div>
             </div>
 
             {/* Activity Tab */}
             <div className={activeTab !== "activity" ? "hidden md:block" : ""}>
               {/* Cost & Token Usage */}
-              <section aria-label="Cost and token usage">
+              <CollapsibleCard
+                title="Cost & Token Usage"
+                ariaLabel="Cost and token usage"
+                defaultExpanded={isMobile !== true}
+              >
                 <SectionErrorBoundary sectionName="Token Usage">
                   <TokenUsageDashboard />
                 </SectionErrorBoundary>
-              </section>
+              </CollapsibleCard>
 
-              <section id="section-activity" aria-label="Activity log" className="mt-6">
-                <SectionErrorBoundary sectionName="Activity Log">
-                  <ActivityLog events={activityEvents} maxHeight="max-h-[32rem]" />
-                </SectionErrorBoundary>
-              </section>
+              <div className="mt-6">
+                <CollapsibleCard
+                  title="Activity Log"
+                  id="section-activity"
+                  ariaLabel="Activity log"
+                  defaultExpanded={isMobile !== true}
+                >
+                  <SectionErrorBoundary sectionName="Activity Log">
+                    <ActivityLog events={activityEvents} maxHeight="max-h-[32rem]" />
+                  </SectionErrorBoundary>
+                </CollapsibleCard>
+              </div>
             </div>
           </div>
         </PullToRefresh>

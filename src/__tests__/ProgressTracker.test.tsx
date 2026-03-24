@@ -14,20 +14,36 @@ const mockProgress: FleetIssueProgress = {
       labels: { queued: 3, inProgress: 3, cloud: 2, done: 12 },
     },
     {
-      repo: "sergi-izquierdo/cardmarket-wizard",
+      repo: "sergi-izquierdo/pavello-larapita-app",
       total: 15,
       open: 5,
       closed: 10,
       percentComplete: 67,
       labels: { queued: 2, inProgress: 2, cloud: 1, done: 10 },
     },
+    {
+      repo: "sergi-izquierdo/synapse-notes",
+      total: 10,
+      open: 3,
+      closed: 7,
+      percentComplete: 70,
+      labels: { queued: 1, inProgress: 1, cloud: 1, done: 7 },
+    },
+    {
+      repo: "sergi-izquierdo/autotask-engine",
+      total: 8,
+      open: 2,
+      closed: 6,
+      percentComplete: 75,
+      labels: { queued: 1, inProgress: 1, cloud: 0, done: 6 },
+    },
   ],
   overall: {
-    total: 35,
-    open: 13,
-    closed: 22,
-    percentComplete: 63,
-    labels: { queued: 5, inProgress: 5, cloud: 3, done: 22 },
+    total: 53,
+    open: 18,
+    closed: 35,
+    percentComplete: 66,
+    labels: { queued: 7, inProgress: 7, cloud: 4, done: 35 },
   },
 };
 
@@ -69,9 +85,9 @@ describe("ProgressTracker", () => {
     await waitFor(() => {
       expect(screen.getByTestId("overall-progress")).toBeInTheDocument();
     });
-    expect(screen.getByText("63%")).toBeInTheDocument();
+    expect(screen.getByText("66%")).toBeInTheDocument();
     expect(screen.getByText("Overall Fleet Progress")).toBeInTheDocument();
-    expect(screen.getByText("22/35 issues closed")).toBeInTheDocument();
+    expect(screen.getByText("35/53 issues closed")).toBeInTheDocument();
   });
 
   it("renders per-repo progress cards", async () => {
@@ -81,12 +97,16 @@ describe("ProgressTracker", () => {
     });
     render(<ProgressTracker />);
     await waitFor(() => {
-      expect(screen.getAllByTestId("repo-progress")).toHaveLength(2);
+      expect(screen.getAllByTestId("repo-progress")).toHaveLength(4);
     });
     expect(screen.getByText("fleet-dashboard")).toBeInTheDocument();
-    expect(screen.getByText("cardmarket-wizard")).toBeInTheDocument();
+    expect(screen.getByText("pavello-larapita-app")).toBeInTheDocument();
+    expect(screen.getByText("synapse-notes")).toBeInTheDocument();
+    expect(screen.getByText("autotask-engine")).toBeInTheDocument();
     expect(screen.getByText("60%")).toBeInTheDocument();
     expect(screen.getByText("67%")).toBeInTheDocument();
+    expect(screen.getByText("70%")).toBeInTheDocument();
+    expect(screen.getByText("75%")).toBeInTheDocument();
   });
 
   it("renders label legend with correct counts", async () => {
@@ -99,10 +119,10 @@ describe("ProgressTracker", () => {
       expect(screen.getByTestId("overall-progress")).toBeInTheDocument();
     });
     // Overall legend values
-    expect(screen.getByText("Done: 22")).toBeTruthy();
-    expect(screen.getByText("In Progress: 5")).toBeTruthy();
-    expect(screen.getByText("Cloud: 3")).toBeTruthy();
-    expect(screen.getByText("Queued: 5")).toBeTruthy();
+    expect(screen.getByText("Done: 35")).toBeTruthy();
+    expect(screen.getByText("In Progress: 7")).toBeTruthy();
+    expect(screen.getByText("Cloud: 4")).toBeTruthy();
+    expect(screen.getByText("Queued: 7")).toBeTruthy();
   });
 
   it("shows error state when fetch fails", async () => {

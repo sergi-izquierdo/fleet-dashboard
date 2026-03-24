@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { useTokenUsage } from "@/hooks/useTokenUsage";
 import type { TimeRange } from "@/types/tokenUsage";
 import {
@@ -41,8 +42,24 @@ function SkeletonChart() {
   );
 }
 
+const subscribe = () => () => {};
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 export default function TokenUsageDashboard() {
+  const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const { data, isLoading, error, range, setRange, isLangfuseOnline } = useTokenUsage();
+
+  if (!mounted) {
+    return (
+      <div
+        className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4"
+        data-testid="token-usage-dashboard"
+      >
+        <SkeletonChart />
+      </div>
+    );
+  }
 
   return (
     <div

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from "react";
 import { fuzzyMatch } from "@/lib/fuzzyMatch";
 import type { DashboardData } from "@/types/dashboard";
 
@@ -24,8 +24,13 @@ interface CommandPaletteProps {
  * remounts each time via the `instanceKey` prop which the parent
  * should increment on each open.
  */
+const subscribe = () => () => {};
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
-  if (!open) return null;
+  const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  if (!mounted || !open) return null;
   return <CommandPaletteInner onClose={onClose} items={items} />;
 }
 

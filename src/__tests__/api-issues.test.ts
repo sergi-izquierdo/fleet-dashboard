@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
+
+function makeRequest(query = "") {
+  return new NextRequest(`http://localhost/api/issues${query}`);
+}
 
 function mockGitHub(
   responses: Record<string, { issues: Array<{ state: string; labels: Array<{ name: string }>; pull_request?: unknown }> }>
@@ -29,7 +34,7 @@ describe("GET /api/issues", () => {
     fetchMock.mockRejectedValue(new Error("Network error"));
 
     const { GET } = await import("@/app/api/issues/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -45,7 +50,7 @@ describe("GET /api/issues", () => {
     fetchMock.mockResolvedValue({ ok: false, status: 403 });
 
     const { GET } = await import("@/app/api/issues/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -68,7 +73,7 @@ describe("GET /api/issues", () => {
     });
 
     const { GET } = await import("@/app/api/issues/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -106,7 +111,7 @@ describe("GET /api/issues", () => {
     });
 
     const { GET } = await import("@/app/api/issues/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(data.overall.total).toBe(5);
@@ -123,7 +128,7 @@ describe("GET /api/issues", () => {
     });
 
     const { GET } = await import("@/app/api/issues/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -143,13 +148,13 @@ describe("GET /api/issues", () => {
 
     const { GET } = await import("@/app/api/issues/route");
 
-    const first = await GET();
+    const first = await GET(makeRequest());
     const firstData = await first.json();
     expect(firstData.repos.length).toBeGreaterThan(0);
 
     const callCount = fetchMock.mock.calls.length;
 
-    const second = await GET();
+    const second = await GET(makeRequest());
     const secondData = await second.json();
 
     // No additional fetch calls — served from cache
@@ -166,7 +171,7 @@ describe("GET /api/issues", () => {
     });
 
     const { GET } = await import("@/app/api/issues/route");
-    await GET();
+    await GET(makeRequest());
 
     // 4 repos × 2 states (open + closed) = 8 fetch calls
     expect(fetchMock.mock.calls.length).toBe(8);

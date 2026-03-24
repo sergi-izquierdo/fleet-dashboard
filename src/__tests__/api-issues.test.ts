@@ -207,7 +207,7 @@ describe("GET /api/issues", () => {
     });
 
     const { GET } = await import("@/app/api/issues/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     const repo = data.repos.find(

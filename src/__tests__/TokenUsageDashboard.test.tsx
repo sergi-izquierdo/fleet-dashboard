@@ -54,6 +54,7 @@ const mockData: TokenUsageResponse = {
   ],
   totalCost: 6.15,
   totalTokens: 1050000,
+  source: "langfuse",
 };
 
 describe("TokenUsageDashboard", () => {
@@ -150,6 +151,38 @@ describe("TokenUsageDashboard", () => {
     await waitFor(() => {
       expect(screen.getByTestId("token-usage-error")).toBeDefined();
     });
+  });
+
+  it("shows Langfuse offline banner when source is mock", async () => {
+    const mockDataOffline: TokenUsageResponse = { ...mockData, source: "mock" };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockDataOffline,
+      })
+    );
+
+    await act(async () => {
+      render(<TokenUsageDashboard />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("langfuse-offline")).toBeDefined();
+      expect(screen.getByText(/Langfuse offline/)).toBeDefined();
+    });
+  });
+
+  it("does not show offline banner when source is langfuse", async () => {
+    await act(async () => {
+      render(<TokenUsageDashboard />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("token-usage-stats")).toBeDefined();
+    });
+
+    expect(screen.queryByTestId("langfuse-offline")).toBeNull();
   });
 
   it("changes range when buttons are clicked", async () => {

@@ -16,7 +16,7 @@ beforeEach(() => {
 });
 
 describe("GET /api/token-usage", () => {
-  it("returns mock data when Langfuse keys are not configured", async () => {
+  it("returns mock data with source=mock when Langfuse keys are not configured", async () => {
     const res = await GET(makeRequest("daily"));
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -24,6 +24,7 @@ describe("GET /api/token-usage", () => {
     expect(body).toHaveProperty("byProject");
     expect(body).toHaveProperty("totalCost");
     expect(body).toHaveProperty("totalTokens");
+    expect(body.source).toBe("mock");
     expect(Array.isArray(body.timeSeries)).toBe(true);
     expect(Array.isArray(body.byProject)).toBe(true);
     expect(typeof body.totalCost).toBe("number");

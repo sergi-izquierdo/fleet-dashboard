@@ -24,6 +24,7 @@ const mockResponse: TokenUsageResponse = {
   ],
   totalCost: 3.75,
   totalTokens: 650000,
+  source: "langfuse",
 };
 
 describe("useTokenUsage", () => {
@@ -91,6 +92,36 @@ describe("useTokenUsage", () => {
         "/api/token-usage?range=weekly"
       );
     });
+  });
+
+  it("reports isLangfuseOnline true when source is langfuse", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    const { result } = renderHook(() => useTokenUsage());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.isLangfuseOnline).toBe(true);
+  });
+
+  it("reports isLangfuseOnline false when source is mock", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ ...mockResponse, source: "mock" }),
+    });
+
+    const { result } = renderHook(() => useTokenUsage());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.isLangfuseOnline).toBe(false);
   });
 
   it("sets error on fetch failure", async () => {

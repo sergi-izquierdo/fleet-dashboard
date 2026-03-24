@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useTheme } from "next-themes";
-import { AgentCard } from "@/components/AgentCard";
 import ActivityLog from "@/components/ActivityLog";
 import RecentPRs from "@/components/RecentPRs";
 import MergeQueue from "@/components/MergeQueue";
@@ -273,38 +272,6 @@ export default function Home() {
                   <AgentStatusCards />
                 </div>
 
-                {/* Agent Cards Grid */}
-                <section id="section-agents" aria-label="Agent cards" className="animate-fade-in">
-                  <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Agents
-                  </h2>
-                  {data.agents.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 stagger-children">
-                      {data.agents.map((agent) => (
-                        <AgentCard
-                          key={agent.sessionId}
-                          agentName={agent.name}
-                          status={agent.status}
-                          issueTitle={agent.issue.title}
-                          branchName={agent.branch}
-                          timeElapsed={agent.timeElapsed}
-                          prUrl={agent.pr?.url}
-                          healthTimeline={agent.healthTimeline}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-8 text-center">
-                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
-                        <svg className="h-6 w-6 text-gray-400 dark:text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h9a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0015.75 4.5h-9A2.25 2.25 0 004.5 6.75v10.5A2.25 2.25 0 006.75 19.5z" />
-                        </svg>
-                      </div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">No active agents</p>
-                      <p className="mt-1 text-xs text-gray-500 dark:text-white/50">Agent sessions will appear here when tmux sessions are running</p>
-                    </div>
-                  )}
-                </section>
               </div>
             </div>
 

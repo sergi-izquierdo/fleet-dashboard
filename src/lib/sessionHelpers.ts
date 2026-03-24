@@ -48,10 +48,20 @@ export function computeUptime(createdStr: string): string {
 
 /**
  * Determine session status from captured pane output.
+ *
+ * Strategy: look at the last non-empty lines of tmux output.
+ * - Claude prompt visible (e.g. ">" or "claude>" at end) → idle
+ * - Tool output streaming / active commands → working
+ * - Error patterns in recent output → stuck
  */
 export function determineStatus(paneOutput: string): SessionStatus {
   const lines = paneOutput.trim().split("\n").filter(Boolean);
+  // Focus on the last few lines for status detection
+  const recentLines = lines.slice(-10);
+  const recentText = recentLines.join("\n");
+  const lastLine = recentLines[recentLines.length - 1]?.trim() ?? "";
 
+  // Check for stuck patterns in recent output (not entire history)
   const stuckPatterns = [
     /error:/i,
     /ENOENT/,
@@ -65,29 +75,51 @@ export function determineStatus(paneOutput: string): SessionStatus {
   ];
 
   for (const pattern of stuckPatterns) {
-    if (pattern.test(paneOutput)) {
+    if (pattern.test(recentText)) {
       return "stuck";
     }
   }
 
+  // Claude Code prompt patterns — if the prompt is visible, the agent is idle
+  const idlePromptPatterns = [
+    /^>\s*$/,                    // bare ">" prompt
+    /^claude>\s*$/i,             // "claude>" prompt
+    /^\$\s*$/,                   // bare shell prompt with no command
+    /^\S+@\S+[:\$#]\s*$/,       // user@host:$ prompt with nothing after
+    /waiting for input/i,
+    /What would you like/i,
+  ];
+
+  for (const pattern of idlePromptPatterns) {
+    if (pattern.test(lastLine)) {
+      return "idle";
+    }
+  }
+
+  // Working patterns — tool output / active command execution
   const workingPatterns = [
-    /\$\s+\S/,
+    /\$ \S+/,                    // shell command being executed
     /Compiling/i,
     /Building/i,
     /Running/i,
     /Testing/i,
     /Downloading/i,
     /Installing/i,
-    /\bcommit\b/i,
-    /\bgit\b/i,
-    /\bnpm\b/,
+    /\bRead\b.*file/i,          // Claude tool: Read
+    /\bEdit\b.*file/i,          // Claude tool: Edit
+    /\bWrite\b.*file/i,         // Claude tool: Write
+    /\bBash\b/,                  // Claude tool: Bash
+    /\bGrep\b/,                  // Claude tool: Grep
+    /\bGlob\b/,                  // Claude tool: Glob
+    /\bgit\s+(push|pull|commit|add|checkout|merge|rebase)\b/i,
+    /\bnpm\s+(install|run|test|build)\b/i,
     /\bnpx\b/,
     /Task:/i,
-    /claude/i,
+    /⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏/,  // spinner characters
   ];
 
   for (const pattern of workingPatterns) {
-    if (pattern.test(paneOutput)) {
+    if (pattern.test(recentText)) {
       return "working";
     }
   }

@@ -21,4 +21,5 @@ export interface TokenUsageResponse {
   byProject: ProjectTokenUsage[];
   totalCost: number;
   totalTokens: number;
+  connected: boolean;
 }

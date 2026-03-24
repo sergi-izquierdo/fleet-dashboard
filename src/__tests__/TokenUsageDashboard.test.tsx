@@ -54,6 +54,7 @@ const mockData: TokenUsageResponse = {
   ],
   totalCost: 6.15,
   totalTokens: 1050000,
+  connected: true,
 };
 
 describe("TokenUsageDashboard", () => {

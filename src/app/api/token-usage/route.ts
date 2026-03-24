@@ -6,7 +6,7 @@ import type {
   TimeRange,
 } from "@/types/tokenUsage";
 
-const LANGFUSE_URL = process.env.LANGFUSE_URL || "http://localhost:3100";
+const LANGFUSE_URL = process.env.LANGFUSE_URL || "http://localhost:3050";
 const LANGFUSE_PUBLIC_KEY = process.env.LANGFUSE_PUBLIC_KEY || "";
 const LANGFUSE_SECRET_KEY = process.env.LANGFUSE_SECRET_KEY || "";
 const FETCH_TIMEOUT_MS = 10_000;
@@ -180,44 +180,14 @@ function aggregateByProject(traces: LangfuseTrace[]): ProjectTokenUsage[] {
     .sort((a, b) => b.totalTokens - a.totalTokens);
 }
 
-function generateMockData(range: TimeRange): TokenUsageResponse {
-  const agents = ["agent-1", "agent-2", "agent-3", "agent-4", "agent-5"];
-  const { from, to } = getDateRange(range);
-  const timeSeries: TokenUsageEntry[] = [];
-
-  const current = new Date(from);
-  while (current <= to) {
-    const key = formatDateKey(current.toISOString(), range);
-    if (!timeSeries.find((e) => e.date === key)) {
-      const input = Math.floor(Math.random() * 500_000) + 50_000;
-      const output = Math.floor(Math.random() * 150_000) + 10_000;
-      timeSeries.push({
-        date: key,
-        inputTokens: input,
-        outputTokens: output,
-        totalTokens: input + output,
-        cost: estimateCost(input, output),
-      });
-    }
-    current.setDate(current.getDate() + (range === "monthly" ? 30 : range === "weekly" ? 7 : 1));
-  }
-
-  const byProject: ProjectTokenUsage[] = agents.map((name) => {
-    const input = Math.floor(Math.random() * 2_000_000) + 100_000;
-    const output = Math.floor(Math.random() * 600_000) + 50_000;
-    return {
-      name,
-      inputTokens: input,
-      outputTokens: output,
-      totalTokens: input + output,
-      cost: estimateCost(input, output),
-    };
-  });
-
-  const totalTokens = byProject.reduce((s, p) => s + p.totalTokens, 0);
-  const totalCost = byProject.reduce((s, p) => s + p.cost, 0);
-
-  return { timeSeries, byProject, totalCost, totalTokens };
+function getEmptyResponse(): TokenUsageResponse {
+  return {
+    timeSeries: [],
+    byProject: [],
+    totalCost: 0,
+    totalTokens: 0,
+    connected: false,
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -245,7 +215,7 @@ export async function GET(request: NextRequest) {
     const totalCost = byProject.reduce((s, p) => s + p.cost, 0);
 
     return NextResponse.json(
-      { timeSeries, byProject, totalCost, totalTokens } satisfies TokenUsageResponse,
+      { timeSeries, byProject, totalCost, totalTokens, connected: true } satisfies TokenUsageResponse,
       { status: 200 }
     );
   } catch (error) {
@@ -254,6 +224,6 @@ export async function GET(request: NextRequest) {
       error instanceof Error ? error.message : error
     );
 
-    return NextResponse.json(generateMockData(range), { status: 200 });
+    return NextResponse.json(getEmptyResponse(), { status: 200 });
   }
 }

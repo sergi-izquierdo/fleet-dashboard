@@ -15,9 +15,16 @@ const FETCH_TIMEOUT_MS = 5000;
 const TMUX_BIN = "/usr/bin/tmux";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const GITHUB_REPO =
-  process.env.FLEET_REPOS?.split(",")[0]?.trim() ||
-  "sergi-izquierdo/fleet-dashboard";
+const MANAGED_REPOS = [
+  "sergi-izquierdo/fleet-dashboard",
+  "sergi-izquierdo/synapse-notes",
+  "sergi-izquierdo/autotask-engine",
+  "sergi-izquierdo/pavello-larapita-app",
+];
+const GITHUB_REPOS = (process.env.FLEET_REPOS || MANAGED_REPOS.join(","))
+  .split(",")
+  .map((r) => r.trim())
+  .filter((r) => MANAGED_REPOS.includes(r));
 
 function transformAgent(raw: Record<string, unknown>): Agent {
   return {
@@ -160,7 +167,7 @@ async function fetchRealAgents(): Promise<Agent[]> {
   }
 }
 
-/** Fetch real PRs from GitHub and convert to dashboard PR[] */
+/** Fetch real PRs from GitHub across all repos and convert to dashboard PR[] */
 async function fetchRealPRs(): Promise<PR[]> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
@@ -170,81 +177,87 @@ async function fetchRealPRs(): Promise<PR[]> {
     headers.Authorization = `Bearer ${GITHUB_TOKEN}`;
   }
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const allPRs: PR[] = [];
 
-    const url = `https://api.github.com/repos/${GITHUB_REPO}/pulls?state=all&sort=created&direction=desc&per_page=10`;
-    const response = await fetch(url, {
-      headers,
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
+  for (const repo of GITHUB_REPOS) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-    if (!response.ok) {
-      return [];
-    }
-
-    const pulls = await response.json();
-    const prs: PR[] = [];
-
-    for (const pr of pulls) {
-      let ciStatus: PR["ciStatus"] = "pending";
-
-      if (pr.head?.sha) {
-        try {
-          const checksController = new AbortController();
-          const checksTimeout = setTimeout(
-            () => checksController.abort(),
-            3000,
-          );
-          const checksUrl = `https://api.github.com/repos/${GITHUB_REPO}/commits/${pr.head.sha}/check-runs?per_page=1`;
-          const checksResp = await fetch(checksUrl, {
-            headers,
-            signal: checksController.signal,
-          });
-          clearTimeout(checksTimeout);
-
-          if (checksResp.ok) {
-            const checksData = await checksResp.json();
-            if (checksData.total_count > 0) {
-              const run = checksData.check_runs[0];
-              if (run.conclusion === "success") ciStatus = "passing";
-              else if (run.conclusion === "failure") ciStatus = "failing";
-              else if (
-                run.status === "in_progress" ||
-                run.status === "queued"
-              )
-                ciStatus = "pending";
-            }
-          }
-        } catch {
-          // CI status stays pending
-        }
-      }
-
-      const mergeState: PR["mergeState"] = pr.merged_at
-        ? "merged"
-        : pr.state === "closed"
-          ? "closed"
-          : "open";
-
-      prs.push({
-        number: pr.number,
-        url: pr.html_url,
-        title: pr.title,
-        ciStatus,
-        reviewStatus: "pending",
-        mergeState,
-        author: pr.user?.login ?? "unknown",
-        branch: pr.head?.ref ?? "unknown",
+      const url = `https://api.github.com/repos/${repo}/pulls?state=all&sort=created&direction=desc&per_page=10`;
+      const response = await fetch(url, {
+        headers,
+        signal: controller.signal,
       });
-    }
+      clearTimeout(timeoutId);
 
-    return prs;
-  } catch {
-    return [];
+      if (!response.ok) continue;
+
+      const pulls = await response.json();
+
+      for (const pr of pulls) {
+        let ciStatus: PR["ciStatus"] = "pending";
+
+        if (pr.head?.sha) {
+          try {
+            const checksController = new AbortController();
+            const checksTimeout = setTimeout(
+              () => checksController.abort(),
+              3000,
+            );
+            const checksUrl = `https://api.github.com/repos/${repo}/commits/${pr.head.sha}/check-runs?per_page=1`;
+            const checksResp = await fetch(checksUrl, {
+              headers,
+              signal: checksController.signal,
+            });
+            clearTimeout(checksTimeout);
+
+            if (checksResp.ok) {
+              const checksData = await checksResp.json();
+              if (checksData.total_count > 0) {
+                const run = checksData.check_runs[0];
+                if (run.conclusion === "success") ciStatus = "passing";
+                else if (run.conclusion === "failure") ciStatus = "failing";
+                else if (
+                  run.status === "in_progress" ||
+                  run.status === "queued"
+                )
+                  ciStatus = "pending";
+              }
+            }
+          } catch {
+            // CI status stays pending
+          }
+        }
+
+        const mergeState: PR["mergeState"] = pr.merged_at
+          ? "merged"
+          : pr.state === "closed"
+            ? "closed"
+            : "open";
+
+        allPRs.push({
+          number: pr.number,
+          url: pr.html_url,
+          title: pr.title,
+          ciStatus,
+          reviewStatus: "pending",
+          mergeState,
+          author: pr.user?.login ?? "unknown",
+          branch: pr.head?.ref ?? "unknown",
+        });
+      }
+    } catch {
+      // If one repo fails, continue with others
+    }
   }
+
+  // Sort by most recent first
+  allPRs.sort(
+    (a, b) => b.number - a.number,
+  );
+
+  return allPRs;
 }
 
 export async function GET() {

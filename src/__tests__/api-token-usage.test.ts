@@ -16,7 +16,7 @@ beforeEach(() => {
 });
 
 describe("GET /api/token-usage", () => {
-  it("returns mock data when Langfuse keys are not configured", async () => {
+  it("returns empty data when Langfuse keys are not configured", async () => {
     const res = await GET(makeRequest("daily"));
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -24,32 +24,37 @@ describe("GET /api/token-usage", () => {
     expect(body).toHaveProperty("byProject");
     expect(body).toHaveProperty("totalCost");
     expect(body).toHaveProperty("totalTokens");
+    expect(body).toHaveProperty("connected");
+    expect(body.connected).toBe(false);
     expect(Array.isArray(body.timeSeries)).toBe(true);
     expect(Array.isArray(body.byProject)).toBe(true);
-    expect(typeof body.totalCost).toBe("number");
-    expect(typeof body.totalTokens).toBe("number");
+    expect(body.totalCost).toBe(0);
+    expect(body.totalTokens).toBe(0);
   });
 
-  it("returns mock data for weekly range", async () => {
+  it("returns empty data with connected false for weekly range", async () => {
     const res = await GET(makeRequest("weekly"));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.timeSeries.length).toBeGreaterThan(0);
-    expect(body.byProject.length).toBeGreaterThan(0);
+    expect(body.connected).toBe(false);
+    expect(body.timeSeries).toHaveLength(0);
+    expect(body.byProject).toHaveLength(0);
   });
 
-  it("returns mock data for monthly range", async () => {
+  it("returns empty data with connected false for monthly range", async () => {
     const res = await GET(makeRequest("monthly"));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.timeSeries.length).toBeGreaterThan(0);
+    expect(body.connected).toBe(false);
+    expect(body.timeSeries).toHaveLength(0);
   });
 
   it("defaults to daily when no range specified", async () => {
     const res = await GET(makeRequest());
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.timeSeries.length).toBeGreaterThan(0);
+    expect(body.connected).toBe(false);
+    expect(body.timeSeries).toHaveLength(0);
   });
 
   it("returns 400 for invalid range", async () => {
@@ -59,29 +64,10 @@ describe("GET /api/token-usage", () => {
     expect(body.error).toContain("Invalid range");
   });
 
-  it("each time series entry has required fields", async () => {
+  it("returns empty arrays when Langfuse not configured", async () => {
     const res = await GET(makeRequest("daily"));
     const body = await res.json();
-    for (const entry of body.timeSeries) {
-      expect(entry).toHaveProperty("date");
-      expect(entry).toHaveProperty("inputTokens");
-      expect(entry).toHaveProperty("outputTokens");
-      expect(entry).toHaveProperty("totalTokens");
-      expect(entry).toHaveProperty("cost");
-      expect(entry.totalTokens).toBe(entry.inputTokens + entry.outputTokens);
-    }
-  });
-
-  it("each project entry has required fields", async () => {
-    const res = await GET(makeRequest("daily"));
-    const body = await res.json();
-    for (const project of body.byProject) {
-      expect(project).toHaveProperty("name");
-      expect(project).toHaveProperty("inputTokens");
-      expect(project).toHaveProperty("outputTokens");
-      expect(project).toHaveProperty("totalTokens");
-      expect(project).toHaveProperty("cost");
-      expect(typeof project.name).toBe("string");
-    }
+    expect(body.timeSeries).toHaveLength(0);
+    expect(body.byProject).toHaveLength(0);
   });
 });

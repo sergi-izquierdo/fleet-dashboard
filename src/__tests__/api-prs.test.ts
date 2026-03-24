@@ -10,7 +10,7 @@ describe("GET /api/prs", () => {
     fetchMock.mockReset();
   });
 
-  it("returns mock data when GitHub API fails", async () => {
+  it("returns empty array when GitHub API fails", async () => {
     fetchMock.mockRejectedValue(new Error("Network error"));
 
     const { GET } = await import("@/app/api/prs/route");
@@ -19,19 +19,10 @@ describe("GET /api/prs", () => {
 
     expect(response.status).toBe(200);
     expect(Array.isArray(data)).toBe(true);
-    expect(data.length).toBe(13);
-    // Each PR should have the expected shape
-    expect(data[0]).toHaveProperty("title");
-    expect(data[0]).toHaveProperty("repo");
-    expect(data[0]).toHaveProperty("status");
-    expect(data[0]).toHaveProperty("ciStatus");
-    expect(data[0]).toHaveProperty("createdAt");
-    expect(data[0]).toHaveProperty("url");
-    expect(data[0]).toHaveProperty("number");
-    expect(data[0]).toHaveProperty("author");
+    expect(data.length).toBe(0);
   });
 
-  it("returns mock data when GitHub API returns empty results", async () => {
+  it("returns empty array when GitHub API returns empty results", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => [],
@@ -42,10 +33,10 @@ describe("GET /api/prs", () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.length).toBe(13);
+    expect(data.length).toBe(0);
   });
 
-  it("returns mock data when GitHub API returns non-OK status", async () => {
+  it("returns empty array when GitHub API returns non-OK status", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
       status: 403,
@@ -57,7 +48,7 @@ describe("GET /api/prs", () => {
 
     expect(response.status).toBe(200);
     expect(Array.isArray(data)).toBe(true);
-    expect(data.length).toBe(13);
+    expect(data.length).toBe(0);
   });
 
   it("returns GitHub data when API succeeds", async () => {

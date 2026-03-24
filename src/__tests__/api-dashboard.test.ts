@@ -1,6 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET } from "@/app/api/dashboard/route";
-import { mockDashboardData } from "@/data/mockData";
+
+// Mock execFileAsync so tmux calls don't hit the real system
+vi.mock("@/lib/execFileAsync", () => ({
+  execFileAsync: vi.fn().mockRejectedValue(new Error("no server running")),
+}));
+
+// Mock fs.accessSync so tmux existence check fails in tests
+vi.mock("fs", async () => {
+  const actual = await vi.importActual<typeof import("fs")>("fs");
+  return {
+    ...actual,
+    accessSync: vi.fn(() => {
+      throw new Error("ENOENT");
+    }),
+  };
+});
 
 // Mock the global fetch
 const mockFetch = vi.fn();
@@ -67,42 +82,48 @@ describe("GET /api/dashboard", () => {
     expect(data.activityLog[0].id).toBe("evt-001");
   });
 
-  it("falls back to mock data when fetch fails", async () => {
+  it("returns empty data when AO fails and no real sources available", async () => {
+    // AO call fails
+    mockFetch.mockRejectedValueOnce(new Error("Network error"));
+    // GitHub PR fetch also fails
     mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
     const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.agents).toHaveLength(mockDashboardData.agents.length);
-    expect(data.prs).toHaveLength(mockDashboardData.prs.length);
-    expect(data.activityLog).toHaveLength(
-      mockDashboardData.activityLog.length
-    );
+    expect(data.agents).toHaveLength(0);
+    expect(data.prs).toHaveLength(0);
+    expect(data.activityLog).toHaveLength(0);
   });
 
-  it("falls back to mock data when AO returns non-OK status", async () => {
+  it("returns empty data when AO returns non-OK status", async () => {
+    // AO returns 500
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
     });
+    // GitHub PR fetch also fails
+    mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
     const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.agents.length).toBeGreaterThan(0);
-    expect(data.agents[0].name).toBe(mockDashboardData.agents[0].name);
+    expect(data.agents).toHaveLength(0);
+    expect(data.prs).toHaveLength(0);
+    expect(data.activityLog).toHaveLength(0);
   });
 
-  it("falls back to mock data on timeout (abort)", async () => {
+  it("returns empty data on timeout (abort)", async () => {
     mockFetch.mockRejectedValueOnce(new DOMException("Aborted", "AbortError"));
+    mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
     const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.agents).toHaveLength(mockDashboardData.agents.length);
+    expect(data.agents).toHaveLength(0);
   });
 });
 

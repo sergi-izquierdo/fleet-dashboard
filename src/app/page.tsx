@@ -19,8 +19,10 @@ import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
 import { Footer } from "@/components/Footer";
 import { LogoutButton } from "@/components/LogoutButton";
 import FleetActivityTimeline from "@/components/FleetActivityTimeline";
+import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useCollapsedSections } from "@/hooks/useCollapsedSections";
 
 const themes = ["light", "dark", "system"] as const;
 
@@ -31,6 +33,7 @@ export default function Home() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteKey, setPaletteKey] = useState(0);
   const { theme, setTheme } = useTheme();
+  const { isExpanded, toggle: toggleSection } = useCollapsedSections();
 
   const prevAgentsRef = useRef<Map<string, string>>(new Map());
 
@@ -239,83 +242,109 @@ export default function Home() {
       ) : data ? (
         <PullToRefresh onRefresh={refresh}>
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
-            {/* Stats Bar - hidden when fleet is idle */}
-            {data.agents.length > 0 ? (
-              <section
-                id="section-stats"
-                aria-label="Dashboard statistics"
-                className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 stagger-children"
-              >
-                {stats.map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-4 text-center transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 dark:hover:border-white/20"
-                  >
-                    <p className={`text-2xl font-bold ${stat.color}`}>
-                      {stat.value}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-white/50">{stat.label}</p>
-                  </div>
-                ))}
-              </section>
-            ) : (
-              <section
-                id="section-stats"
-                aria-label="Dashboard statistics"
-                className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-6 text-center"
-              >
-                <p className="text-sm font-medium text-gray-500 dark:text-white/50">
-                  Fleet idle &mdash; no active agents
-                </p>
-              </section>
-            )}
+            {/* Stats Bar */}
+            <CollapsibleSection
+              id="stats"
+              title="Stats"
+              expanded={isExpanded("stats")}
+              onToggle={() => toggleSection("stats")}
+            >
+              {data.agents.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 stagger-children">
+                  {stats.map((stat) => (
+                    <div
+                      key={stat.label}
+                      className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-4 text-center transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 dark:hover:border-white/20"
+                    >
+                      <p className={`text-2xl font-bold ${stat.color}`}>
+                        {stat.value}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-white/50">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-2">
+                  <p className="text-sm font-medium text-gray-500 dark:text-white/50">
+                    Fleet idle &mdash; no active agents
+                  </p>
+                </div>
+              )}
+            </CollapsibleSection>
 
             {/* Fleet Activity Timeline */}
-            <section aria-label="Fleet activity timeline">
+            <CollapsibleSection
+              id="activity-timeline"
+              title="Fleet Activity Timeline"
+              expanded={isExpanded("activity-timeline")}
+              onToggle={() => toggleSection("activity-timeline")}
+            >
               <FleetActivityTimeline
                 activityLog={data.activityLog}
                 prs={data.prs}
               />
-            </section>
-
-            {/* Desktop: show all sections */}
-            {/* Mobile: show only the active tab's section */}
+            </CollapsibleSection>
 
             {/* Issue Progress Tracker */}
-            <section aria-label="Issue progress">
+            <CollapsibleSection
+              id="issue-progress"
+              title="Issue Progress"
+              expanded={isExpanded("issue-progress")}
+              onToggle={() => toggleSection("issue-progress")}
+            >
               <ProgressTracker />
-            </section>
+            </CollapsibleSection>
 
-            {/* Agents Tab */}
-            <div className={activeTab !== "agents" ? "hidden md:block" : ""}>
-              <div id="section-sessions">
+            {/* Agent Sessions */}
+            <CollapsibleSection
+              id="agent-sessions"
+              title="Agent Sessions"
+              expanded={isExpanded("agent-sessions")}
+              onToggle={() => toggleSection("agent-sessions")}
+            >
+              <div className={activeTab !== "agents" ? "hidden md:block" : ""}>
                 <AgentStatusCards />
               </div>
-            </div>
+            </CollapsibleSection>
 
-            {/* PRs Tab */}
-            <div className={activeTab !== "prs" ? "hidden md:block" : ""}>
-              {/* PR Merge Queue */}
-              <section aria-label="PR merge queue">
+            {/* PRs */}
+            <CollapsibleSection
+              id="prs"
+              title="Pull Requests"
+              expanded={isExpanded("prs")}
+              onToggle={() => toggleSection("prs")}
+            >
+              <div className={activeTab !== "prs" ? "hidden md:block" : ""}>
                 <MergeQueue />
-              </section>
+                <div className="mt-6">
+                  <RecentPRs />
+                </div>
+              </div>
+            </CollapsibleSection>
 
-              <section id="section-prs" aria-label="Recent PRs" className="mt-6">
-                <RecentPRs />
-              </section>
-            </div>
-
-            {/* Activity Tab */}
-            <div className={activeTab !== "activity" ? "hidden md:block" : ""}>
-              {/* Cost & Token Usage */}
-              <section aria-label="Cost and token usage">
-                <TokenUsageDashboard />
-              </section>
-
-              <section id="section-activity" aria-label="Activity log" className="mt-6">
+            {/* Activity Log */}
+            <CollapsibleSection
+              id="activity"
+              title="Activity"
+              expanded={isExpanded("activity")}
+              onToggle={() => toggleSection("activity")}
+            >
+              <div className={activeTab !== "activity" ? "hidden md:block" : ""}>
                 <ActivityLog events={activityEvents} maxHeight="max-h-[32rem]" />
-              </section>
-            </div>
+              </div>
+            </CollapsibleSection>
+
+            {/* Token Usage */}
+            <CollapsibleSection
+              id="token-usage"
+              title="Token Usage"
+              expanded={isExpanded("token-usage")}
+              onToggle={() => toggleSection("token-usage")}
+            >
+              <div className={activeTab !== "activity" ? "hidden md:block" : ""}>
+                <TokenUsageDashboard />
+              </div>
+            </CollapsibleSection>
           </div>
         </PullToRefresh>
       ) : null}

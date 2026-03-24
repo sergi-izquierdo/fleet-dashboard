@@ -2,9 +2,15 @@ import { NextResponse } from "next/server";
 import type { RecentPR } from "@/types/prs";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const REPOS = (
-  process.env.FLEET_REPOS || "sergi-izquierdo/fleet-dashboard"
-).split(",").map((r) => r.trim());
+const DEFAULT_REPOS = [
+  "sergi-izquierdo/fleet-dashboard",
+  "sergi-izquierdo/pavello-larapita-app",
+  "sergi-izquierdo/synapse-notes",
+  "sergi-izquierdo/autotask-engine",
+];
+const REPOS = (process.env.FLEET_REPOS || DEFAULT_REPOS.join(","))
+  .split(",")
+  .map((r) => r.trim());
 
 const FETCH_TIMEOUT_MS = 8000;
 

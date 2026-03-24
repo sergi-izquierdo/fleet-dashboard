@@ -21,14 +21,16 @@ import { LogoutButton } from "@/components/LogoutButton";
 import FleetActivityTimeline from "@/components/FleetActivityTimeline";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { CollapsibleCard, useIsMobile } from "@/components/CollapsibleCard";
+import ProjectFilter from "@/components/ProjectFilter";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 const themes = ["light", "dark", "system"] as const;
 
 export default function Home() {
+  const [selectedRepo, setSelectedRepo] = useState("");
   const { data, isLoading, error, connectionStatus, countdown, refresh } =
-    useDashboardData();
+    useDashboardData(selectedRepo || undefined);
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<MobileTab>("agents");
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -175,6 +177,7 @@ export default function Home() {
             <h1 className="text-xl font-bold tracking-tight">
               Fleet Dashboard
             </h1>
+            <ProjectFilter value={selectedRepo} onChange={setSelectedRepo} />
           </div>
           <div className="flex items-center gap-3 sm:gap-4">
             <button

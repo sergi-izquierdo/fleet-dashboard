@@ -186,6 +186,58 @@ describe("GET /api/dashboard transformation", () => {
     expect(result.activityLog[0].id).toBe("e1");
   });
 
+  it("passes repo param to AO API when provided", async () => {
+    const aoResponse = {
+      agents: [],
+      prs: [],
+      activityLog: [],
+    };
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => aoResponse,
+    });
+
+    await GET(makeRequest("?repo=sergi-izquierdo/fleet-dashboard"));
+
+    const aoCallUrl = mockFetch.mock.calls[0][0];
+    expect(aoCallUrl).toContain("repo=sergi-izquierdo%2Ffleet-dashboard");
+  });
+
+  it("uses separate cache keys for different repos", async () => {
+    const aoResponse = {
+      agents: [
+        {
+          name: "a",
+          sessionId: "s",
+          status: "working",
+          issue: { title: "t", number: 1, url: "u" },
+          branch: "b",
+          timeElapsed: "1m",
+        },
+      ],
+      prs: [],
+      activityLog: [],
+    };
+
+    // First request with repo param — populates cache
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => aoResponse,
+    });
+    await GET(makeRequest("?repo=sergi-izquierdo/fleet-dashboard"));
+
+    // Second request without repo param should NOT use the cached repo-specific data
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ agents: [], prs: [], activityLog: [] }),
+    });
+    const response = await GET(makeRequest());
+    const data = await response.json();
+
+    expect(data.agents).toHaveLength(0);
+  });
+
   it("includes optional pr field on agent when present", async () => {
     const aoResponse = {
       agents: [

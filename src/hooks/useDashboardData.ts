@@ -16,7 +16,7 @@ export interface UseDashboardDataReturn {
   refresh: () => void;
 }
 
-export function useDashboardData(): UseDashboardDataReturn {
+export function useDashboardData(repo?: string): UseDashboardDataReturn {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +29,10 @@ export function useDashboardData(): UseDashboardDataReturn {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/dashboard");
+      const url = repo
+        ? `/api/dashboard?repo=${encodeURIComponent(repo)}`
+        : "/api/dashboard";
+      const res = await fetch(url);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
@@ -45,7 +48,7 @@ export function useDashboardData(): UseDashboardDataReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [repo]);
 
   const startCountdown = useCallback(() => {
     setCountdown(REFRESH_INTERVAL);

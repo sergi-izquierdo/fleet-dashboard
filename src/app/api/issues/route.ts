@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { FleetIssueProgress, RepoIssueProgress } from "@/types/issues";
+import { getCached, setCache } from "./cache";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const MANAGED_REPOS = [
@@ -115,15 +116,20 @@ function getEmptyProgress(): FleetIssueProgress {
 }
 
 export async function GET() {
-  try {
-    const repoResults: RepoIssueProgress[] = [];
+  const cached = getCached();
+  if (cached) {
+    return NextResponse.json(cached, { status: 200 });
+  }
 
-    for (const repo of REPOS) {
-      try {
-        const progress = await fetchIssuesForRepo(repo);
-        repoResults.push(progress);
-      } catch {
-        console.error(`Failed to fetch issues for ${repo}`);
+  try {
+    const settled = await Promise.allSettled(
+      REPOS.map((repo) => fetchIssuesForRepo(repo))
+    );
+
+    const repoResults: RepoIssueProgress[] = [];
+    for (const result of settled) {
+      if (result.status === "fulfilled") {
+        repoResults.push(result.value);
       }
     }
 
@@ -158,10 +164,12 @@ export async function GET() {
         : 0;
 
     const result: FleetIssueProgress = { repos: repoResults, overall };
+    setCache(result);
+
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
     console.error(
-      "Failed to fetch issues, falling back to mock data:",
+      "Failed to fetch issues:",
       error instanceof Error ? error.message : error
     );
     return NextResponse.json(getEmptyProgress(), { status: 200 });

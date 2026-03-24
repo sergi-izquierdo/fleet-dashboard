@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import type { RecentPR } from "@/types/prs";
+import { getCachedOrFetch } from "@/lib/apiCache";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const DEFAULT_REPOS = [
@@ -101,10 +102,25 @@ async function fetchPRsFromGitHub(): Promise<RecentPR[]> {
 }
 
 
-export async function GET() {
+const CACHE_TTL_SECONDS = 30;
+
+export async function GET(request: NextRequest) {
   try {
-    const prs = await fetchPRsFromGitHub();
-    return NextResponse.json(prs, { status: 200 });
+    const fresh = request.nextUrl.searchParams.get("fresh") === "true";
+    const { data, fromCache } = await getCachedOrFetch(
+      "api:prs",
+      CACHE_TTL_SECONDS,
+      fetchPRsFromGitHub,
+      fresh,
+    );
+
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        "Cache-Control": `s-maxage=${CACHE_TTL_SECONDS}, stale-while-revalidate`,
+        "X-Cache": fromCache ? "HIT" : "MISS",
+      },
+    });
   } catch (error) {
     console.error(
       "Failed to fetch PRs from GitHub:",

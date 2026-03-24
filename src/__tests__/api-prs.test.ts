@@ -1,20 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
 // Mock fetch globally before importing the route
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
 
+function makeRequest(fresh = false): NextRequest {
+  const url = fresh
+    ? "http://localhost/api/prs?fresh=true"
+    : "http://localhost/api/prs";
+  return new NextRequest(url);
+}
+
 describe("GET /api/prs", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetModules();
     fetchMock.mockReset();
+    const { clearCache } = await import("@/lib/apiCache");
+    clearCache();
   });
 
   it("returns empty array when GitHub API fails", async () => {
     fetchMock.mockRejectedValue(new Error("Network error"));
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -29,7 +39,7 @@ describe("GET /api/prs", () => {
     });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -43,7 +53,7 @@ describe("GET /api/prs", () => {
     });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -80,7 +90,7 @@ describe("GET /api/prs", () => {
       });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -117,7 +127,7 @@ describe("GET /api/prs", () => {
       });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(data[0].status).toBe("merged");

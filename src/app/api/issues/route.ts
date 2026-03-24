@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import type { FleetIssueProgress, RepoIssueProgress } from "@/types/issues";
+import { getCachedOrFetch } from "@/lib/apiCache";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const MANAGED_REPOS = [
@@ -114,54 +115,73 @@ function getEmptyProgress(): FleetIssueProgress {
   };
 }
 
-export async function GET() {
+const CACHE_TTL_SECONDS = 60;
+
+async function fetchAllIssues(): Promise<FleetIssueProgress> {
+  const repoResults: RepoIssueProgress[] = [];
+
+  for (const repo of REPOS) {
+    try {
+      const progress = await fetchIssuesForRepo(repo);
+      repoResults.push(progress);
+    } catch {
+      console.error(`Failed to fetch issues for ${repo}`);
+    }
+  }
+
+  if (repoResults.length === 0) {
+    return getEmptyProgress();
+  }
+
+  const overall = repoResults.reduce(
+    (acc, r) => ({
+      total: acc.total + r.total,
+      open: acc.open + r.open,
+      closed: acc.closed + r.closed,
+      percentComplete: 0,
+      labels: {
+        queued: acc.labels.queued + r.labels.queued,
+        inProgress: acc.labels.inProgress + r.labels.inProgress,
+        cloud: acc.labels.cloud + r.labels.cloud,
+        done: acc.labels.done + r.labels.done,
+      },
+    }),
+    {
+      total: 0,
+      open: 0,
+      closed: 0,
+      percentComplete: 0,
+      labels: { queued: 0, inProgress: 0, cloud: 0, done: 0 },
+    }
+  );
+  overall.percentComplete =
+    overall.total > 0
+      ? Math.round((overall.closed / overall.total) * 100)
+      : 0;
+
+  return { repos: repoResults, overall };
+}
+
+export async function GET(request: NextRequest) {
   try {
-    const repoResults: RepoIssueProgress[] = [];
-
-    for (const repo of REPOS) {
-      try {
-        const progress = await fetchIssuesForRepo(repo);
-        repoResults.push(progress);
-      } catch {
-        console.error(`Failed to fetch issues for ${repo}`);
-      }
-    }
-
-    if (repoResults.length === 0) {
-      return NextResponse.json(getEmptyProgress(), { status: 200 });
-    }
-
-    const overall = repoResults.reduce(
-      (acc, r) => ({
-        total: acc.total + r.total,
-        open: acc.open + r.open,
-        closed: acc.closed + r.closed,
-        percentComplete: 0,
-        labels: {
-          queued: acc.labels.queued + r.labels.queued,
-          inProgress: acc.labels.inProgress + r.labels.inProgress,
-          cloud: acc.labels.cloud + r.labels.cloud,
-          done: acc.labels.done + r.labels.done,
-        },
-      }),
-      {
-        total: 0,
-        open: 0,
-        closed: 0,
-        percentComplete: 0,
-        labels: { queued: 0, inProgress: 0, cloud: 0, done: 0 },
-      }
+    const fresh = request.nextUrl.searchParams.get("fresh") === "true";
+    const { data, fromCache } = await getCachedOrFetch(
+      "api:issues",
+      CACHE_TTL_SECONDS,
+      fetchAllIssues,
+      fresh,
     );
-    overall.percentComplete =
-      overall.total > 0
-        ? Math.round((overall.closed / overall.total) * 100)
-        : 0;
 
-    const result: FleetIssueProgress = { repos: repoResults, overall };
-    return NextResponse.json(result, { status: 200 });
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        "Cache-Control": `s-maxage=${CACHE_TTL_SECONDS}, stale-while-revalidate`,
+        "X-Cache": fromCache ? "HIT" : "MISS",
+      },
+    });
   } catch (error) {
     console.error(
-      "Failed to fetch issues, falling back to mock data:",
+      "Failed to fetch issues, falling back to empty data:",
       error instanceof Error ? error.message : error
     );
     return NextResponse.json(getEmptyProgress(), { status: 200 });

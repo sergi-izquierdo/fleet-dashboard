@@ -1,12 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
 
+function makeRequest(fresh = false): NextRequest {
+  const url = fresh
+    ? "http://localhost/api/prs?fresh=true"
+    : "http://localhost/api/prs";
+  return new NextRequest(url);
+}
+
 describe("GET /api/prs edge cases", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetModules();
     fetchMock.mockReset();
+    const { clearCache } = await import("@/lib/apiCache");
+    clearCache();
   });
 
   it("correctly identifies closed (not merged) PRs", async () => {
@@ -37,7 +47,7 @@ describe("GET /api/prs edge cases", () => {
       });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(data[0].status).toBe("closed");
@@ -71,7 +81,7 @@ describe("GET /api/prs edge cases", () => {
       });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(data[0].ciStatus).toBe("unknown");
@@ -105,7 +115,7 @@ describe("GET /api/prs edge cases", () => {
       });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(data[0].ciStatus).toBe("failing");
@@ -139,7 +149,7 @@ describe("GET /api/prs edge cases", () => {
       });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(data[0].ciStatus).toBe("pending");
@@ -173,7 +183,7 @@ describe("GET /api/prs edge cases", () => {
       });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(data[0].ciStatus).toBe("pending");
@@ -201,7 +211,7 @@ describe("GET /api/prs edge cases", () => {
       .mockRejectedValueOnce(new Error("Checks API timeout"));
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(data[0].ciStatus).toBe("unknown");
@@ -232,7 +242,7 @@ describe("GET /api/prs edge cases", () => {
       });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(data[0].author).toBe("unknown");
@@ -274,7 +284,7 @@ describe("GET /api/prs edge cases", () => {
       });
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(data[0].title).toBe("newer PR");
@@ -285,7 +295,7 @@ describe("GET /api/prs edge cases", () => {
     fetchMock.mockRejectedValue(new Error("Network error"));
 
     const { GET } = await import("@/app/api/prs/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     for (const pr of data) {

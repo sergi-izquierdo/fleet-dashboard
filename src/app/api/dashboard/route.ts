@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { DashboardData, Agent, PR, ActivityEvent } from "@/types/dashboard";
+import { getCachedOrFetch } from "@/lib/apiCache";
 import { accessSync, constants } from "fs";
 import { execFileAsync } from "@/lib/execFileAsync";
 import {
@@ -247,7 +248,9 @@ async function fetchRealPRs(): Promise<PR[]> {
   }
 }
 
-export async function GET() {
+const CACHE_TTL_SECONDS = 30;
+
+async function fetchDashboardData(): Promise<DashboardData> {
   // First try the AO (Agent Orchestrator) API
   try {
     const controller = new AbortController();
@@ -265,9 +268,7 @@ export async function GET() {
     }
 
     const raw = await response.json();
-    const data = transformAOResponse(raw);
-
-    return NextResponse.json(data, { status: 200 });
+    return transformAOResponse(raw);
   } catch {
     // AO API unavailable — build dashboard from real sources
     const [agents, prs] = await Promise.all([
@@ -275,12 +276,24 @@ export async function GET() {
       fetchRealPRs(),
     ]);
 
-    const data: DashboardData = {
-      agents,
-      prs,
-      activityLog: [],
-    };
-
-    return NextResponse.json(data, { status: 200 });
+    return { agents, prs, activityLog: [] };
   }
+}
+
+export async function GET(request: NextRequest) {
+  const fresh = request.nextUrl.searchParams.get("fresh") === "true";
+  const { data, fromCache } = await getCachedOrFetch(
+    "api:dashboard",
+    CACHE_TTL_SECONDS,
+    fetchDashboardData,
+    fresh,
+  );
+
+  return NextResponse.json(data, {
+    status: 200,
+    headers: {
+      "Cache-Control": `s-maxage=${CACHE_TTL_SECONDS}, stale-while-revalidate`,
+      "X-Cache": fromCache ? "HIT" : "MISS",
+    },
+  });
 }

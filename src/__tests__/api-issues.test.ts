@@ -1,19 +1,34 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
 
+vi.mock("@/lib/apiCache", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/apiCache")>("@/lib/apiCache");
+  return { ...actual, clearCache: actual.clearCache };
+});
+
+function makeRequest(fresh = false): NextRequest {
+  const url = fresh
+    ? "http://localhost/api/issues?fresh=true"
+    : "http://localhost/api/issues";
+  return new NextRequest(url);
+}
+
 describe("GET /api/issues", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetModules();
     fetchMock.mockReset();
+    const { clearCache } = await import("@/lib/apiCache");
+    clearCache();
   });
 
   it("returns empty data when GitHub API fails", async () => {
     fetchMock.mockRejectedValue(new Error("Network error"));
 
     const { GET } = await import("@/app/api/issues/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -32,7 +47,7 @@ describe("GET /api/issues", () => {
     });
 
     const { GET } = await import("@/app/api/issues/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -77,7 +92,7 @@ describe("GET /api/issues", () => {
       });
 
     const { GET } = await import("@/app/api/issues/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -109,7 +124,7 @@ describe("GET /api/issues", () => {
       .mockResolvedValueOnce({ ok: true, json: async () => closedIssues });
 
     const { GET } = await import("@/app/api/issues/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(data.overall.total).toBe(3);
@@ -123,7 +138,7 @@ describe("GET /api/issues", () => {
       .mockResolvedValueOnce({ ok: true, json: async () => [] });
 
     const { GET } = await import("@/app/api/issues/route");
-    const response = await GET();
+    const response = await GET(makeRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);

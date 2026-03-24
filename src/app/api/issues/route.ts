@@ -49,7 +49,7 @@ function categorizeByLabel(
   return labels;
 }
 
-async function fetchIssuesForRepo(repo: string): Promise<RepoIssueProgress> {
+function getHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
@@ -57,16 +57,32 @@ async function fetchIssuesForRepo(repo: string): Promise<RepoIssueProgress> {
   if (GITHUB_TOKEN) {
     headers.Authorization = `Bearer ${GITHUB_TOKEN}`;
   }
+  return headers;
+}
 
-  const allIssues: GitHubIssue[] = [];
+function parseLinkHeader(header: string | null): string | null {
+  if (!header) return null;
+  const match = header.match(/<([^>]+)>;\s*rel="next"/);
+  return match ? match[1] : null;
+}
 
-  // Fetch open and closed issues (exclude PRs)
-  for (const state of ["open", "closed"] as const) {
+const MAX_PAGES = 10;
+
+async function fetchAllIssues(
+  repo: string,
+  state: "open" | "closed"
+): Promise<GitHubIssue[]> {
+  const headers = getHeaders();
+  const issues: GitHubIssue[] = [];
+  let url: string | null =
+    `https://api.github.com/repos/${repo}/issues?state=${state}&per_page=100`;
+  let page = 0;
+
+  while (url && page < MAX_PAGES) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
     try {
-      const url = `https://api.github.com/repos/${repo}/issues?state=${state}&per_page=100`;
       const response = await fetch(url, {
         headers,
         signal: controller.signal,
@@ -77,14 +93,27 @@ async function fetchIssuesForRepo(repo: string): Promise<RepoIssueProgress> {
         throw new Error(`GitHub API responded with ${response.status}`);
       }
 
-      const issues: GitHubIssue[] = await response.json();
-      // Filter out pull requests (GitHub includes them in the issues endpoint)
-      const realIssues = issues.filter((i) => !i.pull_request);
-      allIssues.push(...realIssues);
+      const batch: GitHubIssue[] = await response.json();
+      const realIssues = batch.filter((i) => !i.pull_request);
+      issues.push(...realIssues);
+
+      url = parseLinkHeader(response.headers.get("link"));
+      page++;
     } catch {
       clearTimeout(timeoutId);
       throw new Error(`Failed to fetch ${state} issues for ${repo}`);
     }
+  }
+
+  return issues;
+}
+
+async function fetchIssuesForRepo(repo: string): Promise<RepoIssueProgress> {
+  const allIssues: GitHubIssue[] = [];
+
+  for (const state of ["open", "closed"] as const) {
+    const issues = await fetchAllIssues(repo, state);
+    allIssues.push(...issues);
   }
 
   const total = allIssues.length;

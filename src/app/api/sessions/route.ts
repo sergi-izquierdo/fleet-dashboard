@@ -57,14 +57,22 @@ export async function GET() {
     const message =
       error instanceof Error ? error.message : "Unknown error";
 
-    const isNoServer =
+    const isNoSessions =
       message.includes("no server running") ||
+      message.includes("no sessions");
+
+    if (isNoSessions) {
+      const response: SessionsResponse = { sessions: [] };
+      return NextResponse.json(response, { status: 200 });
+    }
+
+    const isMissing =
       message.includes("command not found") ||
       message.includes("No such file");
 
     const response: SessionsResponse = {
       sessions: [],
-      error: isNoServer
+      error: isMissing
         ? "tmux is not running"
         : `Failed to read tmux sessions: ${message}`,
     };

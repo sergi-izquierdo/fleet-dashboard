@@ -5,9 +5,9 @@ import type { SessionsResponse } from "@/types/sessions";
 
 const mockSessions: SessionsResponse = {
   sessions: [
-    { name: "agent-1", status: "working", branch: "feat/login", uptime: "2h 15m" },
-    { name: "agent-2", status: "idle", branch: "main", uptime: "45m" },
-    { name: "agent-3", status: "stuck", branch: "fix/crash", uptime: "1d 3h" },
+    { name: "agent-1", status: "working", branch: "feat/login", uptime: "2h 15m", taskName: "add login page" },
+    { name: "agent-2", status: "idle", branch: "main", uptime: "45m", taskName: "unknown" },
+    { name: "agent-3", status: "stuck", branch: "fix/crash", uptime: "1d 3h", taskName: "fix crash on startup" },
   ],
 };
 
@@ -83,6 +83,19 @@ describe("AgentStatusCards", () => {
     expect(screen.getByText("1d 3h")).toBeInTheDocument();
   });
 
+  it("renders task names when available", async () => {
+    mockFetchSuccess(mockSessions);
+    render(<AgentStatusCards />);
+
+    await waitFor(() => {
+      expect(screen.getByText("add login page")).toBeInTheDocument();
+    });
+    expect(screen.getByText("fix crash on startup")).toBeInTheDocument();
+    // "unknown" task names should not be rendered
+    const taskNames = screen.getAllByTestId("session-task-name");
+    expect(taskNames).toHaveLength(2);
+  });
+
   it("shows error state when fetch fails", async () => {
     mockFetchError("Network error");
     render(<AgentStatusCards />);
@@ -129,7 +142,7 @@ describe("AgentStatusCards", () => {
   it("shows warning banner when error exists but sessions are present", async () => {
     mockFetchSuccess({
       sessions: [
-        { name: "agent-1", status: "working", branch: "main", uptime: "1h" },
+        { name: "agent-1", status: "working", branch: "main", uptime: "1h", taskName: "unknown" },
       ],
       error: "partial error",
     });

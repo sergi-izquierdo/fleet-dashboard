@@ -9,27 +9,56 @@ vi.mock("@/lib/execFileAsync", () => ({
 import { GET } from "@/app/api/sessions/route";
 import { parseTmuxList, determineStatus, extractBranch, computeUptime } from "@/lib/sessionHelpers";
 
+function setupMocks(options: {
+  tmuxLs?: { stdout: string; stderr: string } | Error;
+  panes?: Record<string, string>;
+  branches?: Record<string, string>;
+}) {
+  mockExecFileAsync.mockImplementation(
+    (bin: string, args: string[]) => {
+      // tmux ls
+      if (args[0] === "ls") {
+        if (options.tmuxLs instanceof Error) return Promise.reject(options.tmuxLs);
+        return Promise.resolve(options.tmuxLs ?? { stdout: "", stderr: "" });
+      }
+      // tmux capture-pane
+      if (args[0] === "capture-pane") {
+        const session = args[2]; // -t <session>
+        const output = options.panes?.[session] ?? "";
+        return Promise.resolve({ stdout: output, stderr: "" });
+      }
+      // git -C <path> branch --show-current
+      if (args[0] === "-C" && args[2] === "branch") {
+        const worktreePath = args[1] as string;
+        const sessionName = worktreePath.split("/").pop() ?? "";
+        const branch = options.branches?.[sessionName];
+        if (branch) return Promise.resolve({ stdout: branch + "\n", stderr: "" });
+        return Promise.reject(new Error("not a git repo"));
+      }
+      return Promise.reject(new Error("unexpected call"));
+    }
+  );
+}
+
 beforeEach(() => {
   mockExecFileAsync.mockReset();
 });
 
 describe("GET /api/sessions", () => {
   it("returns sessions with parsed data on success", async () => {
-    // tmux ls
-    mockExecFileAsync.mockResolvedValueOnce({
-      stdout:
-        "agent-1: 2 windows (created Mon Mar 23 10:00:00 2026)\nagent-2: 1 windows (created Mon Mar 23 09:00:00 2026)\n",
-      stderr: "",
-    });
-    // capture-pane for agent-1
-    mockExecFileAsync.mockResolvedValueOnce({
-      stdout: "$ npm run build\nCompiling...\ngit:(feat/new-feature)\n",
-      stderr: "",
-    });
-    // capture-pane for agent-2
-    mockExecFileAsync.mockResolvedValueOnce({
-      stdout: "$ \n",
-      stderr: "",
+    setupMocks({
+      tmuxLs: {
+        stdout:
+          "agent-1: 2 windows (created Mon Mar 23 10:00:00 2026)\nagent-2: 1 windows (created Mon Mar 23 09:00:00 2026)\n",
+        stderr: "",
+      },
+      panes: {
+        "agent-1": "$ npm run build\nCompiling...\ngit:(feat/new-feature)\n",
+        "agent-2": "$ \n",
+      },
+      branches: {
+        "agent-1": "feat/new-feature",
+      },
     });
 
     const response = await GET();
@@ -43,20 +72,21 @@ describe("GET /api/sessions", () => {
     expect(data.sessions[0].status).toBe("working");
     expect(data.sessions[0].branch).toBe("feat/new-feature");
     expect(data.sessions[0].uptime).toBeTruthy();
+    expect(data.sessions[0].taskName).toBeDefined();
 
     expect(data.sessions[1].name).toBe("agent-2");
     expect(data.sessions[1].status).toBe("idle");
   });
 
   it("returns stuck status when pane output contains errors", async () => {
-    mockExecFileAsync.mockResolvedValueOnce({
-      stdout: "worker: 1 windows (created Mon Mar 23 08:00:00 2026)\n",
-      stderr: "",
-    });
-    mockExecFileAsync.mockResolvedValueOnce({
-      stdout:
-        "error: ENOENT: no such file or directory\nfatal: unable to continue\n",
-      stderr: "",
+    setupMocks({
+      tmuxLs: {
+        stdout: "worker: 1 windows (created Mon Mar 23 08:00:00 2026)\n",
+        stderr: "",
+      },
+      panes: {
+        worker: "error: ENOENT: no such file or directory\nfatal: unable to continue\n",
+      },
     });
 
     const response = await GET();
@@ -67,9 +97,7 @@ describe("GET /api/sessions", () => {
   });
 
   it("returns empty sessions without error when tmux has no sessions", async () => {
-    mockExecFileAsync.mockRejectedValueOnce(
-      new Error("no server running on /tmp/tmux-1000/default")
-    );
+    setupMocks({ tmuxLs: new Error("no server running on /tmp/tmux-1000/default") });
 
     const response = await GET();
     const data = await response.json();
@@ -80,9 +108,7 @@ describe("GET /api/sessions", () => {
   });
 
   it("returns empty array with error when tmux is not installed", async () => {
-    mockExecFileAsync.mockRejectedValueOnce(
-      new Error("command not found: tmux")
-    );
+    setupMocks({ tmuxLs: new Error("command not found: tmux") });
 
     const response = await GET();
     const data = await response.json();
@@ -93,7 +119,7 @@ describe("GET /api/sessions", () => {
   });
 
   it("returns error message for unexpected exec failures", async () => {
-    mockExecFileAsync.mockRejectedValueOnce(new Error("unexpected failure"));
+    setupMocks({ tmuxLs: new Error("unexpected failure") });
 
     const response = await GET();
     const data = await response.json();
@@ -106,13 +132,18 @@ describe("GET /api/sessions", () => {
   });
 
   it("handles capture-pane failure gracefully for individual sessions", async () => {
-    mockExecFileAsync.mockResolvedValueOnce({
-      stdout:
-        "agent-1: 1 windows (created Mon Mar 23 10:00:00 2026)\n",
-      stderr: "",
-    });
-    // capture-pane fails
-    mockExecFileAsync.mockRejectedValueOnce(new Error("pane not found"));
+    mockExecFileAsync.mockImplementation(
+      (bin: string, args: string[]) => {
+        if (args[0] === "ls") {
+          return Promise.resolve({
+            stdout: "agent-1: 1 windows (created Mon Mar 23 10:00:00 2026)\n",
+            stderr: "",
+          });
+        }
+        // All other calls (capture-pane, git) fail
+        return Promise.reject(new Error("not found"));
+      }
+    );
 
     const response = await GET();
     const data = await response.json();
@@ -123,14 +154,18 @@ describe("GET /api/sessions", () => {
     expect(data.sessions[0].branch).toBe("unknown");
   });
 
-  it("extracts branch from various prompt formats", async () => {
-    mockExecFileAsync.mockResolvedValueOnce({
-      stdout: "dev: 1 windows (created Mon Mar 23 10:00:00 2026)\n",
-      stderr: "",
-    });
-    mockExecFileAsync.mockResolvedValueOnce({
-      stdout: "user@host ~/project (main) $\nRunning tests...\n",
-      stderr: "",
+  it("extracts branch from git command", async () => {
+    setupMocks({
+      tmuxLs: {
+        stdout: "dev: 1 windows (created Mon Mar 23 10:00:00 2026)\n",
+        stderr: "",
+      },
+      panes: {
+        dev: "user@host ~/project (main) $\nRunning tests...\n",
+      },
+      branches: {
+        dev: "main",
+      },
     });
 
     const response = await GET();

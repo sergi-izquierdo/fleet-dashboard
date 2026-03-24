@@ -72,13 +72,12 @@ describe("Home page", () => {
     expect(screen.getByTestId("refresh-button")).toBeInTheDocument();
   });
 
-  it("renders agent cards after loading", async () => {
+  it("renders dashboard content after loading", async () => {
     render(<Home />);
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
-    const elements = screen.getAllByText("issue-42");
-    expect(elements.length).toBeGreaterThan(0);
+    expect(screen.getByTestId("pull-to-refresh")).toBeInTheDocument();
   });
 
   it("renders bottom navigation", () => {

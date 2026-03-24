@@ -108,7 +108,7 @@ describe("MergeQueue", () => {
     mockFetchSuccess();
     render(<MergeQueue />);
     await waitFor(() => {
-      expect(screen.getAllByTestId("queue-ci-badge")).toHaveLength(4);
+      expect(screen.getAllByTestId("queue-ci-badge")).toHaveLength(3);
     });
     const ciBadges = screen.getAllByTestId("queue-ci-badge");
     const labels = ciBadges.map((b) => b.textContent);
@@ -159,13 +159,26 @@ describe("MergeQueue", () => {
     expect(screen.getByTestId("filter-author")).toBeInTheDocument();
   });
 
+  it("defaults to showing only open PRs", async () => {
+    mockFetchSuccess();
+    render(<MergeQueue />);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId("merge-queue-item")).toHaveLength(3);
+    });
+
+    // Verify filter is set to "open"
+    const statusFilter = screen.getByTestId("filter-status") as HTMLSelectElement;
+    expect(statusFilter.value).toBe("open");
+  });
+
   it("filters by repository", async () => {
     mockFetchSuccess();
     const user = userEvent.setup();
     render(<MergeQueue />);
 
     await waitFor(() => {
-      expect(screen.getAllByTestId("merge-queue-item")).toHaveLength(4);
+      expect(screen.getAllByTestId("merge-queue-item")).toHaveLength(3);
     });
 
     await user.selectOptions(
@@ -179,19 +192,19 @@ describe("MergeQueue", () => {
     expect(screen.getByText(/feat: user analytics/)).toBeInTheDocument();
   });
 
-  it("filters by status", async () => {
+  it("filters by status to show all", async () => {
     mockFetchSuccess();
     const user = userEvent.setup();
     render(<MergeQueue />);
 
     await waitFor(() => {
-      expect(screen.getAllByTestId("merge-queue-item")).toHaveLength(4);
+      expect(screen.getAllByTestId("merge-queue-item")).toHaveLength(3);
     });
 
-    await user.selectOptions(screen.getByTestId("filter-status"), "open");
+    await user.selectOptions(screen.getByTestId("filter-status"), "all");
 
     await waitFor(() => {
-      expect(screen.getAllByTestId("merge-queue-item")).toHaveLength(3);
+      expect(screen.getAllByTestId("merge-queue-item")).toHaveLength(4);
     });
   });
 
@@ -201,7 +214,7 @@ describe("MergeQueue", () => {
     render(<MergeQueue />);
 
     await waitFor(() => {
-      expect(screen.getAllByTestId("merge-queue-item")).toHaveLength(4);
+      expect(screen.getAllByTestId("merge-queue-item")).toHaveLength(3);
     });
 
     await user.selectOptions(
@@ -210,7 +223,7 @@ describe("MergeQueue", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getAllByTestId("merge-queue-item")).toHaveLength(2);
+      expect(screen.getAllByTestId("merge-queue-item")).toHaveLength(1);
     });
   });
 
@@ -258,7 +271,7 @@ describe("MergeQueue", () => {
     render(<MergeQueue />);
     await waitFor(() => {
       const links = screen.getAllByRole("link");
-      expect(links.length).toBeGreaterThanOrEqual(4);
+      expect(links.length).toBeGreaterThanOrEqual(3);
     });
     const link = screen.getByText(/feat: add CSV export/).closest("a");
     expect(link).toHaveAttribute(
@@ -310,7 +323,7 @@ describe("MergeQueue", () => {
     render(<MergeQueue />);
     await waitFor(() => {
       const dots = screen.getAllByTestId("ci-dot");
-      expect(dots).toHaveLength(4);
+      expect(dots).toHaveLength(3);
     });
     const dots = screen.getAllByTestId("ci-dot");
     const allClasses = dots.map((d) => d.className).join(" ");
@@ -319,13 +332,13 @@ describe("MergeQueue", () => {
     expect(allClasses).toContain("bg-yellow-400");
   });
 
-  it("shows author for each PR", async () => {
+  it("shows author for each open PR", async () => {
     mockFetchSuccess();
     render(<MergeQueue />);
     await waitFor(() => {
       expect(screen.getByText("by agent-delta")).toBeInTheDocument();
     });
-    expect(screen.getAllByText("by agent-gamma")).toHaveLength(2);
+    expect(screen.getByText("by agent-gamma")).toBeInTheDocument();
     expect(screen.getByText("by agent-beta")).toBeInTheDocument();
   });
 

@@ -66,7 +66,7 @@ describe("GET /api/sessions", () => {
     expect(data.sessions[0].status).toBe("stuck");
   });
 
-  it("returns empty array with error when tmux is not running", async () => {
+  it("returns empty sessions without error when tmux has no sessions", async () => {
     mockExecFileAsync.mockRejectedValueOnce(
       new Error("no server running on /tmp/tmux-1000/default")
     );
@@ -76,7 +76,7 @@ describe("GET /api/sessions", () => {
 
     expect(response.status).toBe(200);
     expect(data.sessions).toEqual([]);
-    expect(data.error).toBe("tmux is not running");
+    expect(data.error).toBeUndefined();
   });
 
   it("returns empty array with error when tmux is not installed", async () => {

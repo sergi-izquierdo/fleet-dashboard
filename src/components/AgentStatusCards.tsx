@@ -134,7 +134,7 @@ export default function AgentStatusCards() {
           data-testid="sessions-empty"
           className="rounded-xl border border-gray-200 bg-white px-4 py-6 text-center text-sm text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-white/50"
         >
-          No active tmux sessions found.
+          No active agents
         </div>
       </section>
     );

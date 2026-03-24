@@ -219,7 +219,7 @@ export function NotificationCenter() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative rounded-md border border-gray-300 dark:border-white/20 p-1.5 text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white transition-colors"
-        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
+        aria-label={isLoaded && unreadCount > 0 ? `Notifications (${unreadCount} unread)` : "Notifications"}
         aria-expanded={isOpen}
         aria-haspopup="true"
         data-testid="notification-bell"

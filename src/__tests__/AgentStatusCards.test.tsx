@@ -101,7 +101,7 @@ describe("AgentStatusCards", () => {
       expect(screen.getByTestId("sessions-empty")).toBeInTheDocument();
     });
     expect(
-      screen.getByText("No active tmux sessions found.")
+      screen.getByText("No active agents")
     ).toBeInTheDocument();
   });
 

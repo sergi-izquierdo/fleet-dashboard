@@ -19,6 +19,7 @@ import ProgressTracker from "@/components/ProgressTracker";
 import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
 import { Footer } from "@/components/Footer";
 import { LogoutButton } from "@/components/LogoutButton";
+import FleetActivityTimeline from "@/components/FleetActivityTimeline";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
@@ -256,6 +257,14 @@ export default function Home() {
                   <p className="mt-1 text-xs text-gray-500 dark:text-white/50">{stat.label}</p>
                 </div>
               ))}
+            </section>
+
+            {/* Fleet Activity Timeline */}
+            <section aria-label="Fleet activity timeline">
+              <FleetActivityTimeline
+                activityLog={data.activityLog}
+                prs={data.prs}
+              />
             </section>
 
             {/* Desktop: show all sections */}

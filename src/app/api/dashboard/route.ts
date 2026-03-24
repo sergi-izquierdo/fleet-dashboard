@@ -16,9 +16,16 @@ const FETCH_TIMEOUT_MS = 5000;
 const TMUX_BIN = "/usr/bin/tmux";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const GITHUB_REPO =
+const DEFAULT_REPO =
   process.env.FLEET_REPOS?.split(",")[0]?.trim() ||
   "sergi-izquierdo/fleet-dashboard";
+
+const ALL_REPOS = (
+  process.env.FLEET_REPOS || "sergi-izquierdo/fleet-dashboard"
+)
+  .split(",")
+  .map((r) => r.trim())
+  .filter(Boolean);
 
 function transformAgent(raw: Record<string, unknown>): Agent {
   return {
@@ -163,7 +170,7 @@ async function fetchRealAgents(): Promise<Agent[]> {
 }
 
 /** Fetch real PRs from GitHub and convert to dashboard PR[] */
-async function fetchRealPRs(): Promise<PR[]> {
+async function fetchRealPRs(repo: string): Promise<PR[]> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
@@ -176,7 +183,7 @@ async function fetchRealPRs(): Promise<PR[]> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-    const url = `https://api.github.com/repos/${GITHUB_REPO}/pulls?state=all&sort=created&direction=desc&per_page=10`;
+    const url = `https://api.github.com/repos/${repo}/pulls?state=all&sort=created&direction=desc&per_page=10`;
     const response = await fetch(url, {
       headers,
       signal: controller.signal,
@@ -200,7 +207,7 @@ async function fetchRealPRs(): Promise<PR[]> {
             () => checksController.abort(),
             3000,
           );
-          const checksUrl = `https://api.github.com/repos/${GITHUB_REPO}/commits/${pr.head.sha}/check-runs?per_page=1`;
+          const checksUrl = `https://api.github.com/repos/${repo}/commits/${pr.head.sha}/check-runs?per_page=1`;
           const checksResp = await fetch(checksUrl, {
             headers,
             signal: checksController.signal,
@@ -249,14 +256,19 @@ async function fetchRealPRs(): Promise<PR[]> {
   }
 }
 
-const CACHE_KEY = "api:dashboard";
+const CACHE_KEY_PREFIX = "api:dashboard";
 const CACHE_TTL_MS = 30_000;
 
 export async function GET(request: NextRequest) {
   const fresh = request.nextUrl.searchParams.get("fresh") === "true";
+  const repoParam = request.nextUrl.searchParams.get("repo")?.trim() || "";
+  const targetRepo = repoParam && ALL_REPOS.includes(repoParam) ? repoParam : "";
+  const cacheKey = targetRepo
+    ? `${CACHE_KEY_PREFIX}:${targetRepo}`
+    : CACHE_KEY_PREFIX;
 
   if (!fresh) {
-    const cached = apiCache.get<DashboardData>(CACHE_KEY);
+    const cached = apiCache.get<DashboardData>(cacheKey);
     if (cached) {
       return NextResponse.json(cached, {
         status: 200,
@@ -270,7 +282,10 @@ export async function GET(request: NextRequest) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-    const response = await fetch(`${AO_API_URL}/api/ao/dashboard`, {
+    const aoUrl = targetRepo
+      ? `${AO_API_URL}/api/ao/dashboard?repo=${encodeURIComponent(targetRepo)}`
+      : `${AO_API_URL}/api/ao/dashboard`;
+    const response = await fetch(aoUrl, {
       signal: controller.signal,
       headers: { Accept: "application/json" },
     });
@@ -284,16 +299,17 @@ export async function GET(request: NextRequest) {
     const raw = await response.json();
     const data = transformAOResponse(raw);
 
-    apiCache.set(CACHE_KEY, data, CACHE_TTL_MS);
+    apiCache.set(cacheKey, data, CACHE_TTL_MS);
     return NextResponse.json(data, {
       status: 200,
       headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=15" },
     });
   } catch {
     // AO API unavailable — build dashboard from real sources
+    const prRepo = targetRepo || DEFAULT_REPO;
     const [agents, prs] = await Promise.all([
       fetchRealAgents(),
-      fetchRealPRs(),
+      fetchRealPRs(prRepo),
     ]);
 
     const data: DashboardData = {
@@ -302,7 +318,7 @@ export async function GET(request: NextRequest) {
       activityLog: [],
     };
 
-    apiCache.set(CACHE_KEY, data, CACHE_TTL_MS);
+    apiCache.set(cacheKey, data, CACHE_TTL_MS);
     return NextResponse.json(data, {
       status: 200,
       headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=15" },

@@ -4,6 +4,10 @@ import { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import type { Notification } from "@/types/notifications";
 import { severityConfig, eventTypeLabels } from "@/types/notifications";
 import { useNotifications } from "@/hooks/useNotifications";
+import type { ActivityEvent } from "@/types/dashboard";
+import { NotificationHistoryPanel } from "@/components/NotificationHistoryPanel";
+
+type PanelTab = "notifications" | "history";
 
 function formatTimestamp(isoString: string): string {
   const date = new Date(isoString);
@@ -129,7 +133,11 @@ const subscribe = () => () => {};
 const getSnapshot = () => true;
 const getServerSnapshot = () => false;
 
-export function NotificationCenter() {
+interface NotificationCenterProps {
+  activityLog?: ActivityEvent[];
+}
+
+export function NotificationCenter({ activityLog = [] }: NotificationCenterProps) {
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const {
     notifications,
@@ -142,6 +150,7 @@ export function NotificationCenter() {
     clearAll,
   } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<PanelTab>("notifications");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Seed demo notifications on first visit
@@ -287,66 +296,106 @@ export function NotificationCenter() {
           data-testid="notification-dropdown"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/10 px-4 py-3">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              Notifications
-            </h3>
-            <div className="flex items-center gap-2">
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllAsRead}
-                  className="text-xs text-blue-500 hover:text-blue-400 transition-colors"
-                  data-testid="mark-all-read"
-                >
-                  Mark all read
-                </button>
-              )}
-              {notifications.length > 0 && (
-                <button
-                  onClick={clearAll}
-                  className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                  data-testid="clear-all"
-                >
-                  Clear all
-                </button>
-              )}
+          <div className="border-b border-gray-200 dark:border-white/10 px-4 pt-3">
+            <div className="flex items-center justify-between pb-2">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                {activeTab === "notifications" ? "Notifications" : "History"}
+              </h3>
+              <div className="flex items-center gap-2">
+                {activeTab === "notifications" && unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="text-xs text-blue-500 hover:text-blue-400 transition-colors"
+                    data-testid="mark-all-read"
+                  >
+                    Mark all read
+                  </button>
+                )}
+                {activeTab === "notifications" && notifications.length > 0 && (
+                  <button
+                    onClick={clearAll}
+                    className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    data-testid="clear-all"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Tabs */}
+            <div className="flex gap-1 -mb-px" role="tablist">
+              <button
+                role="tab"
+                aria-selected={activeTab === "notifications"}
+                onClick={() => setActiveTab("notifications")}
+                className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+                  activeTab === "notifications"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                }`}
+                data-testid="tab-notifications"
+              >
+                Alerts
+                {isLoaded && unreadCount > 0 && (
+                  <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </button>
+              <button
+                role="tab"
+                aria-selected={activeTab === "history"}
+                onClick={() => setActiveTab("history")}
+                className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+                  activeTab === "history"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                }`}
+                data-testid="tab-history"
+              >
+                History
+              </button>
             </div>
           </div>
 
           {/* Notification List */}
-          <div
-            className="max-h-96 overflow-y-auto divide-y divide-gray-100 dark:divide-white/5"
-            data-testid="notification-list"
-          >
-            {notifications.length === 0 ? (
-              <div className="py-8 text-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="mx-auto h-8 w-8 text-gray-300 dark:text-gray-600"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.25 9a6.75 6.75 0 0113.5 0v.75c0 2.123.8 4.057 2.118 5.52a.75.75 0 01-.297 1.206c-1.544.57-3.16.99-4.831 1.243a3.75 3.75 0 11-7.48 0 24.585 24.585 0 01-4.831-1.244.75.75 0 01-.298-1.205A8.217 8.217 0 005.25 9.75V9zm4.502 8.9a2.25 2.25 0 004.496 0 25.057 25.057 0 01-4.496 0z"
-                    clipRule="evenodd"
+          {activeTab === "notifications" ? (
+            <div
+              className="max-h-96 overflow-y-auto divide-y divide-gray-100 dark:divide-white/5"
+              data-testid="notification-list"
+            >
+              {notifications.length === 0 ? (
+                <div className="py-8 text-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="mx-auto h-8 w-8 text-gray-300 dark:text-gray-600"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.25 9a6.75 6.75 0 0113.5 0v.75c0 2.123.8 4.057 2.118 5.52a.75.75 0 01-.297 1.206c-1.544.57-3.16.99-4.831 1.243a3.75 3.75 0 11-7.48 0 24.585 24.585 0 01-4.831-1.244.75.75 0 01-.298-1.205A8.217 8.217 0 005.25 9.75V9zm4.502 8.9a2.25 2.25 0 004.496 0 25.057 25.057 0 01-4.496 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    No notifications
+                  </p>
+                </div>
+              ) : (
+                notifications.map((notification) => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    onMarkAsRead={markAsRead}
+                    onDismiss={dismiss}
                   />
-                </svg>
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  No notifications
-                </p>
-              </div>
-            ) : (
-              notifications.map((notification) => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
-                  onMarkAsRead={markAsRead}
-                  onDismiss={dismiss}
-                />
-              ))
-            )}
-          </div>
+                ))
+              )}
+            </div>
+          ) : (
+            <NotificationHistoryPanel activityLog={activityLog} />
+          )}
         </div>
       )}
     </div>

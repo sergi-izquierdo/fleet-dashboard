@@ -195,7 +195,7 @@ export default function Home() {
             </button>
             <ThemeToggle />
             <LogoutButton />
-            <NotificationCenter />
+            <NotificationCenter activityLog={data?.activityLog ?? []} />
             <ConnectionIndicator status={connectionStatus} />
             <div className="hidden items-center gap-2 text-xs text-gray-500 dark:text-white/50 sm:flex">
               <span data-testid="countdown">

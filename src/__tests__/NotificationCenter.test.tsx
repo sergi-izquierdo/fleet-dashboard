@@ -168,4 +168,61 @@ describe("NotificationCenter", () => {
       );
     });
   });
+
+  it("shows Alerts and History tabs in dropdown", async () => {
+    render(<NotificationCenter />);
+    vi.advanceTimersByTime(100);
+
+    fireEvent.click(screen.getByTestId("notification-bell"));
+
+    await vi.waitFor(() => {
+      expect(screen.getByTestId("tab-notifications")).toBeInTheDocument();
+      expect(screen.getByTestId("tab-history")).toBeInTheDocument();
+    });
+  });
+
+  it("shows history panel when History tab is clicked", async () => {
+    const activityLog = [
+      {
+        id: "evt-1",
+        timestamp: new Date().toISOString(),
+        agentName: "agent-alpha",
+        eventType: "commit" as const,
+        description: "feat: test commit",
+      },
+    ];
+    render(<NotificationCenter activityLog={activityLog} />);
+    vi.advanceTimersByTime(100);
+
+    fireEvent.click(screen.getByTestId("notification-bell"));
+
+    await vi.waitFor(() => {
+      expect(screen.getByTestId("tab-history")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("tab-history"));
+
+    await vi.waitFor(() => {
+      expect(screen.getByTestId("history-event-list")).toBeInTheDocument();
+    });
+  });
+
+  it("shows notification list when Alerts tab is active", async () => {
+    render(<NotificationCenter />);
+    vi.advanceTimersByTime(100);
+
+    fireEvent.click(screen.getByTestId("notification-bell"));
+
+    await vi.waitFor(() => {
+      expect(screen.getByTestId("notification-list")).toBeInTheDocument();
+    });
+
+    // Switch to history and back
+    fireEvent.click(screen.getByTestId("tab-history"));
+    fireEvent.click(screen.getByTestId("tab-notifications"));
+
+    await vi.waitFor(() => {
+      expect(screen.getByTestId("notification-list")).toBeInTheDocument();
+    });
+  });
 });

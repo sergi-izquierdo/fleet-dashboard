@@ -2,6 +2,13 @@ import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import ServiceHealth from "@/components/ServiceHealth";
 import type { ServicesResponse } from "@/app/api/services/route";
+import type { FleetDataContextValue } from "@/providers/FleetDataProvider";
+
+vi.mock("@/providers/FleetDataProvider", () => ({
+  useFleetData: vi.fn(),
+}));
+
+import { useFleetData } from "@/providers/FleetDataProvider";
 
 const mockServicesData: ServicesResponse = {
   services: [
@@ -15,11 +22,21 @@ const mockServicesData: ServicesResponse = {
   timestamp: new Date().toISOString(),
 };
 
+const defaultContext: FleetDataContextValue = {
+  dashboardData: null, dashboardLoading: false, dashboardError: null,
+  fleetState: null, fleetStateLoading: false, fleetStateError: null,
+  dispatcherStatus: null, dispatcherLoading: false, dispatcherError: null,
+  servicesData: null, servicesLoading: false, servicesError: null,
+  prs: [], prsLoading: false, prsError: null,
+  sessions: [], sessionsLoading: false, sessionsError: null,
+  issueProgress: null, issueProgressLoading: false, issueProgressError: null,
+};
+
 describe("ServiceHealth", () => {
   beforeEach(() => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockServicesData,
+    vi.mocked(useFleetData).mockReturnValue({
+      ...defaultContext,
+      servicesData: mockServicesData,
     });
   });
 
@@ -29,6 +46,7 @@ describe("ServiceHealth", () => {
   });
 
   it("shows loading skeletons initially", () => {
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, servicesLoading: true });
     render(<ServiceHealth />);
     expect(screen.getByTestId("service-health-loading")).toBeInTheDocument();
   });
@@ -80,18 +98,11 @@ describe("ServiceHealth", () => {
     expect(indicator.className).toContain("bg-red-500");
   });
 
-  it("shows error when fetch fails", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Network error"));
-    render(<ServiceHealth />);
-    await waitFor(() => {
-      expect(screen.getByTestId("service-health-error")).toBeInTheDocument();
-    });
-  });
-
-  it("shows error when fetch returns non-ok response", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
-      ok: false,
-      status: 500,
+  it("shows error when context has error", async () => {
+    vi.mocked(useFleetData).mockReturnValue({
+      ...defaultContext,
+      servicesData: null,
+      servicesError: "Network error",
     });
     render(<ServiceHealth />);
     await waitFor(() => {

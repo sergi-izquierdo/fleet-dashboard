@@ -1,7 +1,14 @@
-import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import ProgressTracker from "@/components/ProgressTracker";
 import type { FleetIssueProgress } from "@/types/issues";
+import type { FleetDataContextValue } from "@/providers/FleetDataProvider";
+
+vi.mock("@/providers/FleetDataProvider", () => ({
+  useFleetData: vi.fn(),
+}));
+
+import { useFleetData } from "@/providers/FleetDataProvider";
 
 const mockProgress: FleetIssueProgress = {
   repos: [
@@ -47,9 +54,22 @@ const mockProgress: FleetIssueProgress = {
   },
 };
 
+const defaultContext: FleetDataContextValue = {
+  dashboardData: null, dashboardLoading: false, dashboardError: null,
+  fleetState: null, fleetStateLoading: false, fleetStateError: null,
+  dispatcherStatus: null, dispatcherLoading: false, dispatcherError: null,
+  servicesData: null, servicesLoading: false, servicesError: null,
+  prs: [], prsLoading: false, prsError: null,
+  sessions: [], sessionsLoading: false, sessionsError: null,
+  issueProgress: null, issueProgressLoading: false, issueProgressError: null,
+};
+
 describe("ProgressTracker", () => {
   beforeEach(() => {
-    global.fetch = vi.fn();
+    vi.mocked(useFleetData).mockReturnValue({
+      ...defaultContext,
+      issueProgress: mockProgress,
+    });
   });
 
   afterEach(() => {
@@ -58,29 +78,19 @@ describe("ProgressTracker", () => {
   });
 
   it("shows loading state initially", () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockReturnValue(
-      new Promise(() => {})
-    );
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, issueProgressLoading: true });
     render(<ProgressTracker />);
     expect(screen.getByTestId("progress-loading")).toBeInTheDocument();
   });
 
   it("renders the heading", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockProgress,
-    });
     render(<ProgressTracker />);
     await waitFor(() => {
       expect(screen.getByText("Issue Progress")).toBeInTheDocument();
     });
   });
 
-  it("renders overall progress after fetch", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockProgress,
-    });
+  it("renders overall progress after data loads", async () => {
     render(<ProgressTracker />);
     await waitFor(() => {
       expect(screen.getByTestId("overall-progress")).toBeInTheDocument();
@@ -91,10 +101,6 @@ describe("ProgressTracker", () => {
   });
 
   it("renders per-repo progress cards", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockProgress,
-    });
     render(<ProgressTracker />);
     await waitFor(() => {
       expect(screen.getAllByTestId("repo-progress")).toHaveLength(4);
@@ -110,10 +116,6 @@ describe("ProgressTracker", () => {
   });
 
   it("renders label legend with correct counts", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockProgress,
-    });
     render(<ProgressTracker />);
     await waitFor(() => {
       expect(screen.getByTestId("overall-progress")).toBeInTheDocument();
@@ -125,10 +127,11 @@ describe("ProgressTracker", () => {
     expect(screen.getByText("Queued: 7")).toBeTruthy();
   });
 
-  it("shows error state when fetch fails", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: false,
-      status: 500,
+  it("shows error state when context has error", async () => {
+    vi.mocked(useFleetData).mockReturnValue({
+      ...defaultContext,
+      issueProgress: null,
+      issueProgressError: "Failed to fetch issues: 500",
     });
     render(<ProgressTracker />);
     await waitFor(() => {
@@ -137,10 +140,6 @@ describe("ProgressTracker", () => {
   });
 
   it("renders progress bar segments", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockProgress,
-    });
     render(<ProgressTracker />);
     await waitFor(() => {
       expect(screen.getByTestId("overall-progress")).toBeInTheDocument();
@@ -150,30 +149,5 @@ describe("ProgressTracker", () => {
     expect(doneSegments.length).toBeGreaterThan(0);
     const inProgressSegments = screen.getAllByTestId("bar-in-progress");
     expect(inProgressSegments.length).toBeGreaterThan(0);
-  });
-
-  it("auto-refreshes on interval", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockProgress,
-    });
-    global.fetch = fetchMock;
-
-    render(<ProgressTracker />);
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(1);
-    });
-
-    // Advance 30s
-    await act(async () => {
-      vi.advanceTimersByTime(30_000);
-    });
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-    });
-
-    vi.useRealTimers();
   });
 });

@@ -3,13 +3,19 @@ import {
   screen,
   cleanup,
   waitFor,
-  act,
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import MergeQueue from "@/components/MergeQueue";
 import type { RecentPR } from "@/types/prs";
+import type { FleetDataContextValue } from "@/providers/FleetDataProvider";
+
+vi.mock("@/providers/FleetDataProvider", () => ({
+  useFleetData: vi.fn(),
+}));
+
+import { useFleetData } from "@/providers/FleetDataProvider";
 
 const mockPRs: RecentPR[] = [
   {
@@ -58,16 +64,19 @@ const mockPRs: RecentPR[] = [
   },
 ];
 
-function mockFetchSuccess(data: RecentPR[] = mockPRs) {
-  (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-    ok: true,
-    json: async () => data,
-  });
-}
+const defaultContext: FleetDataContextValue = {
+  dashboardData: null, dashboardLoading: false, dashboardError: null,
+  fleetState: null, fleetStateLoading: false, fleetStateError: null,
+  dispatcherStatus: null, dispatcherLoading: false, dispatcherError: null,
+  servicesData: null, servicesLoading: false, servicesError: null,
+  prs: [], prsLoading: false, prsError: null,
+  sessions: [], sessionsLoading: false, sessionsError: null,
+  issueProgress: null, issueProgressLoading: false, issueProgressError: null,
+};
 
 describe("MergeQueue", () => {
   beforeEach(() => {
-    global.fetch = vi.fn();
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, prs: mockPRs });
   });
 
   afterEach(() => {
@@ -76,15 +85,12 @@ describe("MergeQueue", () => {
   });
 
   it("shows loading state initially", () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockReturnValue(
-      new Promise(() => {})
-    );
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, prsLoading: true });
     render(<MergeQueue />);
     expect(screen.getByTestId("merge-queue-loading")).toBeInTheDocument();
   });
 
   it("renders the heading", async () => {
-    mockFetchSuccess();
     render(<MergeQueue />);
     await waitFor(() => {
       expect(screen.getByText("PR Merge Queue")).toBeInTheDocument();
@@ -92,7 +98,6 @@ describe("MergeQueue", () => {
   });
 
   it("groups PRs by repository", async () => {
-    mockFetchSuccess();
     render(<MergeQueue />);
     await waitFor(() => {
       const groups = screen.getAllByTestId("repo-group");
@@ -105,7 +110,6 @@ describe("MergeQueue", () => {
   });
 
   it("shows CI status badges on each PR", async () => {
-    mockFetchSuccess();
     render(<MergeQueue />);
     await waitFor(() => {
       expect(screen.getAllByTestId("queue-ci-badge")).toHaveLength(3);
@@ -118,7 +122,6 @@ describe("MergeQueue", () => {
   });
 
   it("shows conflict warning badges on conflicting PRs", async () => {
-    mockFetchSuccess();
     render(<MergeQueue />);
     await waitFor(() => {
       const conflictBadges = screen.getAllByTestId("conflict-badge");
@@ -128,7 +131,6 @@ describe("MergeQueue", () => {
   });
 
   it("shows total conflict count in header", async () => {
-    mockFetchSuccess();
     render(<MergeQueue />);
     await waitFor(() => {
       expect(screen.getByTestId("conflict-count")).toHaveTextContent(
@@ -138,7 +140,6 @@ describe("MergeQueue", () => {
   });
 
   it("highlights conflicting PR rows with orange border", async () => {
-    mockFetchSuccess();
     render(<MergeQueue />);
     await waitFor(() => {
       const items = screen.getAllByTestId("merge-queue-item");
@@ -150,7 +151,6 @@ describe("MergeQueue", () => {
   });
 
   it("renders filter dropdowns", async () => {
-    mockFetchSuccess();
     render(<MergeQueue />);
     await waitFor(() => {
       expect(screen.getByTestId("filter-repo")).toBeInTheDocument();
@@ -160,7 +160,6 @@ describe("MergeQueue", () => {
   });
 
   it("defaults to showing only open PRs", async () => {
-    mockFetchSuccess();
     render(<MergeQueue />);
 
     await waitFor(() => {
@@ -173,7 +172,6 @@ describe("MergeQueue", () => {
   });
 
   it("filters by repository", async () => {
-    mockFetchSuccess();
     const user = userEvent.setup();
     render(<MergeQueue />);
 
@@ -193,7 +191,6 @@ describe("MergeQueue", () => {
   });
 
   it("filters by status to show all", async () => {
-    mockFetchSuccess();
     const user = userEvent.setup();
     render(<MergeQueue />);
 
@@ -209,7 +206,6 @@ describe("MergeQueue", () => {
   });
 
   it("filters by author", async () => {
-    mockFetchSuccess();
     const user = userEvent.setup();
     render(<MergeQueue />);
 
@@ -228,19 +224,22 @@ describe("MergeQueue", () => {
   });
 
   it("shows empty state when filters match nothing", async () => {
-    mockFetchSuccess([
-      {
-        title: "feat: something",
-        repo: "sergi-izquierdo/fleet-dashboard",
-        status: "open",
-        ciStatus: "passing",
-        createdAt: "2026-03-23T09:00:00Z",
-        url: "https://github.com/sergi-izquierdo/fleet-dashboard/pull/99",
-        number: 99,
-        author: "agent-alpha",
-        hasConflicts: false,
-      },
-    ]);
+    vi.mocked(useFleetData).mockReturnValue({
+      ...defaultContext,
+      prs: [
+        {
+          title: "feat: something",
+          repo: "sergi-izquierdo/fleet-dashboard",
+          status: "open",
+          ciStatus: "passing",
+          createdAt: "2026-03-23T09:00:00Z",
+          url: "https://github.com/sergi-izquierdo/fleet-dashboard/pull/99",
+          number: 99,
+          author: "agent-alpha",
+          hasConflicts: false,
+        },
+      ],
+    });
     const user = userEvent.setup();
     render(<MergeQueue />);
 
@@ -255,10 +254,12 @@ describe("MergeQueue", () => {
     );
   });
 
-  it("shows error state when fetch fails", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-      new Error("Network error")
-    );
+  it("shows error state when context has error", async () => {
+    vi.mocked(useFleetData).mockReturnValue({
+      ...defaultContext,
+      prs: [],
+      prsError: "Network error",
+    });
     render(<MergeQueue />);
     await waitFor(() => {
       expect(screen.getByTestId("merge-queue-error")).toBeInTheDocument();
@@ -267,7 +268,6 @@ describe("MergeQueue", () => {
   });
 
   it("renders PR links with correct URLs", async () => {
-    mockFetchSuccess();
     render(<MergeQueue />);
     await waitFor(() => {
       const links = screen.getAllByRole("link");
@@ -282,7 +282,6 @@ describe("MergeQueue", () => {
   });
 
   it("shows open count per repo group", async () => {
-    mockFetchSuccess();
     render(<MergeQueue />);
     await waitFor(() => {
       const groups = screen.getAllByTestId("repo-group");
@@ -293,33 +292,7 @@ describe("MergeQueue", () => {
     expect(screen.getByText("1 open")).toBeInTheDocument();
   });
 
-  it("auto-refreshes every 30 seconds", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockPRs,
-    });
-    global.fetch = fetchMock;
-
-    render(<MergeQueue />);
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(1);
-    });
-
-    await act(async () => {
-      vi.advanceTimersByTime(30_000);
-    });
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-    });
-
-    vi.useRealTimers();
-  });
-
   it("shows CI status dots with correct colors", async () => {
-    mockFetchSuccess();
     render(<MergeQueue />);
     await waitFor(() => {
       const dots = screen.getAllByTestId("ci-dot");
@@ -333,7 +306,6 @@ describe("MergeQueue", () => {
   });
 
   it("shows author for each open PR", async () => {
-    mockFetchSuccess();
     render(<MergeQueue />);
     await waitFor(() => {
       expect(screen.getByText("by agent-delta")).toBeInTheDocument();
@@ -343,19 +315,22 @@ describe("MergeQueue", () => {
   });
 
   it("does not show conflict count when there are no conflicts", async () => {
-    mockFetchSuccess([
-      {
-        title: "feat: something",
-        repo: "sergi-izquierdo/fleet-dashboard",
-        status: "open",
-        ciStatus: "passing",
-        createdAt: "2026-03-23T09:00:00Z",
-        url: "https://github.com/sergi-izquierdo/fleet-dashboard/pull/99",
-        number: 99,
-        author: "agent-alpha",
-        hasConflicts: false,
-      },
-    ]);
+    vi.mocked(useFleetData).mockReturnValue({
+      ...defaultContext,
+      prs: [
+        {
+          title: "feat: something",
+          repo: "sergi-izquierdo/fleet-dashboard",
+          status: "open",
+          ciStatus: "passing",
+          createdAt: "2026-03-23T09:00:00Z",
+          url: "https://github.com/sergi-izquierdo/fleet-dashboard/pull/99",
+          number: 99,
+          author: "agent-alpha",
+          hasConflicts: false,
+        },
+      ],
+    });
     render(<MergeQueue />);
     await waitFor(() => {
       expect(screen.getAllByTestId("merge-queue-item")).toHaveLength(1);

@@ -9,6 +9,13 @@ import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import ProgressTracker from "@/components/ProgressTracker";
 import type { FleetIssueProgress } from "@/types/issues";
 import type { RepoDetailData } from "@/types/issues";
+import type { FleetDataContextValue } from "@/providers/FleetDataProvider";
+
+vi.mock("@/providers/FleetDataProvider", () => ({
+  useFleetData: vi.fn(),
+}));
+
+import { useFleetData } from "@/providers/FleetDataProvider";
 
 const mockProgress: FleetIssueProgress = {
   repos: [
@@ -44,8 +51,22 @@ const mockDetailData: RepoDetailData = {
   recentMergedPRs: [],
 };
 
+const defaultContext: FleetDataContextValue = {
+  dashboardData: null, dashboardLoading: false, dashboardError: null,
+  fleetState: null, fleetStateLoading: false, fleetStateError: null,
+  dispatcherStatus: null, dispatcherLoading: false, dispatcherError: null,
+  servicesData: null, servicesLoading: false, servicesError: null,
+  prs: [], prsLoading: false, prsError: null,
+  sessions: [], sessionsLoading: false, sessionsError: null,
+  issueProgress: null, issueProgressLoading: false, issueProgressError: null,
+};
+
 describe("ProgressTracker repo detail integration", () => {
   beforeEach(() => {
+    vi.mocked(useFleetData).mockReturnValue({
+      ...defaultContext,
+      issueProgress: mockProgress,
+    });
     global.fetch = vi.fn();
   });
 
@@ -56,10 +77,6 @@ describe("ProgressTracker repo detail integration", () => {
 
   it("opens RepoDetailModal when a repo card is clicked", async () => {
     const fetchMock = vi.fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockProgress,
-      })
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockDetailData,
@@ -81,10 +98,6 @@ describe("ProgressTracker repo detail integration", () => {
 
   it("closes RepoDetailModal when close button is clicked", async () => {
     const fetchMock = vi.fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockProgress,
-      })
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockDetailData,
@@ -113,10 +126,6 @@ describe("ProgressTracker repo detail integration", () => {
   });
 
   it("repo cards have aria-label for accessibility", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockProgress,
-    });
 
     render(<ProgressTracker />);
 

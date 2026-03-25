@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { FleetDataProvider } from "@/providers/FleetDataProvider";
 
 export const metadata: Metadata = {
   title: "Fleet Dashboard",
@@ -34,7 +35,9 @@ export default function RootLayout({
       <head />
       <body className="antialiased">
         <ThemeProvider>
-          <DashboardLayout>{children}</DashboardLayout>
+          <FleetDataProvider>
+            <DashboardLayout>{children}</DashboardLayout>
+          </FleetDataProvider>
         </ThemeProvider>
         <ServiceWorkerRegistrar />
       </body>

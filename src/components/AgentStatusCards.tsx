@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import type { TmuxSession, SessionsResponse } from "@/types/sessions";
+import { useState } from "react";
+import type { TmuxSession } from "@/types/sessions";
 import TerminalViewer from "@/components/TerminalViewer";
 import { AgentDetailModal } from "@/components/AgentDetailModal";
 import EmptyState from "@/components/EmptyState";
+import { useFleetData } from "@/providers/FleetDataProvider";
 
 const STATUS_CONFIG = {
   working: {
@@ -62,38 +63,9 @@ function SkeletonCard() {
 }
 
 export default function AgentStatusCards() {
-  const [sessions, setSessions] = useState<TmuxSession[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { sessions, sessionsLoading: isLoading, sessionsError: error } = useFleetData();
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [detailSession, setDetailSession] = useState<string | null>(null);
-
-  const fetchSessions = useCallback(async () => {
-    try {
-      const res = await fetch("/api/sessions");
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-      const data: SessionsResponse = await res.json();
-      if (data.error) {
-        setError(data.error);
-        setSessions(data.sessions ?? []);
-      } else {
-        setError(null);
-        setSessions(data.sessions ?? []);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch sessions");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSessions();
-    const interval = setInterval(fetchSessions, 10000);
-    return () => clearInterval(interval);
-  }, [fetchSessions]);
 
   if (isLoading) {
     return (

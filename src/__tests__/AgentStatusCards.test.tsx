@@ -1,41 +1,49 @@
-import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import AgentStatusCards from "@/components/AgentStatusCards";
-import type { SessionsResponse } from "@/types/sessions";
+import type { TmuxSession } from "@/types/sessions";
+import type { FleetDataContextValue } from "@/providers/FleetDataProvider";
 
-const mockSessions: SessionsResponse = {
-  sessions: [
-    { name: "agent-1", status: "working", branch: "feat/login", uptime: "2h 15m", taskName: "add login page" },
-    { name: "agent-2", status: "idle", branch: "main", uptime: "45m", taskName: "unknown" },
-    { name: "agent-3", status: "stuck", branch: "fix/crash", uptime: "1d 3h", taskName: "fix crash on startup" },
-  ],
+vi.mock("@/providers/FleetDataProvider", () => ({
+  useFleetData: vi.fn(),
+}));
+
+import { useFleetData } from "@/providers/FleetDataProvider";
+
+const mockSessions: TmuxSession[] = [
+  { name: "agent-1", status: "working", branch: "feat/login", uptime: "2h 15m", taskName: "add login page" },
+  { name: "agent-2", status: "idle", branch: "main", uptime: "45m", taskName: "unknown" },
+  { name: "agent-3", status: "stuck", branch: "fix/crash", uptime: "1d 3h", taskName: "fix crash on startup" },
+];
+
+const defaultContext: FleetDataContextValue = {
+  dashboardData: null, dashboardLoading: false, dashboardError: null,
+  fleetState: null, fleetStateLoading: false, fleetStateError: null,
+  dispatcherStatus: null, dispatcherLoading: false, dispatcherError: null,
+  servicesData: null, servicesLoading: false, servicesError: null,
+  prs: [], prsLoading: false, prsError: null,
+  sessions: [], sessionsLoading: false, sessionsError: null,
+  issueProgress: null, issueProgressLoading: false, issueProgressError: null,
 };
 
-function mockFetchSuccess(data: SessionsResponse) {
-  global.fetch = vi.fn().mockResolvedValue({
-    ok: true,
-    json: () => Promise.resolve(data),
-  });
-}
-
-function mockFetchError(message = "Network error") {
-  global.fetch = vi.fn().mockRejectedValue(new Error(message));
-}
-
 describe("AgentStatusCards", () => {
+  beforeEach(() => {
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext });
+  });
+
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
   });
 
   it("shows loading skeletons initially", () => {
-    global.fetch = vi.fn().mockReturnValue(new Promise(() => {}));
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, sessionsLoading: true });
     render(<AgentStatusCards />);
     expect(screen.getAllByTestId("skeleton-card")).toHaveLength(3);
   });
 
-  it("renders session cards after successful fetch", async () => {
-    mockFetchSuccess(mockSessions);
+  it("renders session cards after data loads", async () => {
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, sessions: mockSessions });
     render(<AgentStatusCards />);
 
     await waitFor(() => {
@@ -48,7 +56,7 @@ describe("AgentStatusCards", () => {
   });
 
   it("renders correct status badges", async () => {
-    mockFetchSuccess(mockSessions);
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, sessions: mockSessions });
     render(<AgentStatusCards />);
 
     await waitFor(() => {
@@ -62,7 +70,7 @@ describe("AgentStatusCards", () => {
   });
 
   it("renders branch names", async () => {
-    mockFetchSuccess(mockSessions);
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, sessions: mockSessions });
     render(<AgentStatusCards />);
 
     await waitFor(() => {
@@ -73,7 +81,7 @@ describe("AgentStatusCards", () => {
   });
 
   it("renders uptime values", async () => {
-    mockFetchSuccess(mockSessions);
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, sessions: mockSessions });
     render(<AgentStatusCards />);
 
     await waitFor(() => {
@@ -84,7 +92,7 @@ describe("AgentStatusCards", () => {
   });
 
   it("renders task names when available", async () => {
-    mockFetchSuccess(mockSessions);
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, sessions: mockSessions });
     render(<AgentStatusCards />);
 
     await waitFor(() => {
@@ -96,8 +104,12 @@ describe("AgentStatusCards", () => {
     expect(taskNames).toHaveLength(2);
   });
 
-  it("shows error state when fetch fails", async () => {
-    mockFetchError("Network error");
+  it("shows error state when context has error", async () => {
+    vi.mocked(useFleetData).mockReturnValue({
+      ...defaultContext,
+      sessions: [],
+      sessionsError: "Network error",
+    });
     render(<AgentStatusCards />);
 
     await waitFor(() => {
@@ -107,22 +119,22 @@ describe("AgentStatusCards", () => {
   });
 
   it("shows empty state when no sessions", async () => {
-    mockFetchSuccess({ sessions: [] });
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, sessions: [] });
     render(<AgentStatusCards />);
 
     await waitFor(() => {
       expect(screen.getByTestId("sessions-empty")).toBeInTheDocument();
     });
-    expect(
-      screen.getByText("No active agents")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/agent-local/)
-    ).toBeInTheDocument();
+    expect(screen.getByText("No active agents")).toBeInTheDocument();
+    expect(screen.getByText(/agent-local/)).toBeInTheDocument();
   });
 
   it("shows API error with empty sessions", async () => {
-    mockFetchSuccess({ sessions: [], error: "tmux is not running" });
+    vi.mocked(useFleetData).mockReturnValue({
+      ...defaultContext,
+      sessions: [],
+      sessionsError: "tmux is not running",
+    });
     render(<AgentStatusCards />);
 
     await waitFor(() => {
@@ -131,20 +143,13 @@ describe("AgentStatusCards", () => {
     expect(screen.getByText("tmux is not running")).toBeInTheDocument();
   });
 
-  it("sets up auto-refresh interval", () => {
-    const setIntervalSpy = vi.spyOn(global, "setInterval");
-    global.fetch = vi.fn().mockReturnValue(new Promise(() => {}));
-    render(<AgentStatusCards />);
-
-    expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 10000);
-  });
-
   it("shows warning banner when error exists but sessions are present", async () => {
-    mockFetchSuccess({
+    vi.mocked(useFleetData).mockReturnValue({
+      ...defaultContext,
       sessions: [
         { name: "agent-1", status: "working", branch: "main", uptime: "1h", taskName: "unknown" },
       ],
-      error: "partial error",
+      sessionsError: "partial error",
     });
     render(<AgentStatusCards />);
 
@@ -153,19 +158,5 @@ describe("AgentStatusCards", () => {
     });
     expect(screen.getByTestId("sessions-warning")).toBeInTheDocument();
     expect(screen.getByText("partial error")).toBeInTheDocument();
-  });
-
-  it("handles non-ok HTTP responses", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-      json: () => Promise.resolve({}),
-    });
-    render(<AgentStatusCards />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("sessions-error")).toBeInTheDocument();
-    });
-    expect(screen.getByText("HTTP 500")).toBeInTheDocument();
   });
 });

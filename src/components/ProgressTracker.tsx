@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import type { FleetIssueProgress, RepoIssueProgress } from "@/types/issues";
 import { RepoDetailModal } from "./RepoDetailModal";
-
-const REFRESH_INTERVAL_MS = 30_000;
+import { useFleetData } from "@/providers/FleetDataProvider";
 
 function ProgressBar({
   labels,
@@ -127,34 +126,8 @@ function RepoProgressCard({
 }
 
 export default function ProgressTracker() {
-  const [progress, setProgress] = useState<FleetIssueProgress | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { issueProgress: progress, issueProgressLoading: isLoading, issueProgressError: error } = useFleetData();
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
-
-  const fetchProgress = useCallback(async () => {
-    try {
-      const response = await fetch("/api/issues");
-      if (!response.ok) {
-        throw new Error(`Failed to fetch issues: ${response.status}`);
-      }
-      const data: FleetIssueProgress = await response.json();
-      setProgress(data);
-      setError(null);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load progress"
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchProgress();
-    const interval = setInterval(fetchProgress, REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fetchProgress]);
 
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
@@ -163,7 +136,7 @@ export default function ProgressTracker() {
           Issue Progress
         </h2>
         <span className="text-xs text-gray-500">
-          Auto-refreshes every 30s
+          Updates every 30s
         </span>
       </div>
 

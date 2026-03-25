@@ -1,7 +1,14 @@
-import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import RecentPRs, { timeAgo } from "@/components/RecentPRs";
 import type { RecentPR } from "@/types/prs";
+import type { FleetDataContextValue } from "@/providers/FleetDataProvider";
+
+vi.mock("@/providers/FleetDataProvider", () => ({
+  useFleetData: vi.fn(),
+}));
+
+import { useFleetData } from "@/providers/FleetDataProvider";
 
 const mockPRs: RecentPR[] = [
   {
@@ -36,9 +43,19 @@ const mockPRs: RecentPR[] = [
   },
 ];
 
+const defaultContext: FleetDataContextValue = {
+  dashboardData: null, dashboardLoading: false, dashboardError: null,
+  fleetState: null, fleetStateLoading: false, fleetStateError: null,
+  dispatcherStatus: null, dispatcherLoading: false, dispatcherError: null,
+  servicesData: null, servicesLoading: false, servicesError: null,
+  prs: [], prsLoading: false, prsError: null,
+  sessions: [], sessionsLoading: false, sessionsError: null,
+  issueProgress: null, issueProgressLoading: false, issueProgressError: null,
+};
+
 describe("RecentPRs", () => {
   beforeEach(() => {
-    global.fetch = vi.fn();
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, prs: mockPRs });
   });
 
   afterEach(() => {
@@ -47,29 +64,19 @@ describe("RecentPRs", () => {
   });
 
   it("shows loading state initially", () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockReturnValue(
-      new Promise(() => {})
-    );
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, prsLoading: true });
     render(<RecentPRs />);
     expect(screen.getByTestId("prs-loading")).toBeInTheDocument();
   });
 
   it("renders the heading", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockPRs,
-    });
     render(<RecentPRs />);
     await waitFor(() => {
       expect(screen.getByText("Recent PRs")).toBeInTheDocument();
     });
   });
 
-  it("renders PR items after fetch", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockPRs,
-    });
+  it("renders PR items after data loads", async () => {
     render(<RecentPRs />);
     await waitFor(() => {
       expect(screen.getAllByTestId("pr-item")).toHaveLength(3);
@@ -80,10 +87,6 @@ describe("RecentPRs", () => {
   });
 
   it("displays status badges with correct labels", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockPRs,
-    });
     render(<RecentPRs />);
     await waitFor(() => {
       expect(screen.getByText("Merged")).toBeInTheDocument();
@@ -93,10 +96,6 @@ describe("RecentPRs", () => {
   });
 
   it("displays CI status badges", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockPRs,
-    });
     render(<RecentPRs />);
     await waitFor(() => {
       expect(screen.getByText("CI Passing")).toBeInTheDocument();
@@ -106,10 +105,6 @@ describe("RecentPRs", () => {
   });
 
   it("shows repo name for each PR", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockPRs,
-    });
     render(<RecentPRs />);
     await waitFor(() => {
       const repos = screen.getAllByTestId("pr-repo");
@@ -119,10 +114,12 @@ describe("RecentPRs", () => {
     expect(screen.getByText("other-repo")).toBeInTheDocument();
   });
 
-  it("shows error state when fetch fails", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-      new Error("Network error")
-    );
+  it("shows error state when context has error", async () => {
+    vi.mocked(useFleetData).mockReturnValue({
+      ...defaultContext,
+      prs: [],
+      prsError: "Network error",
+    });
     render(<RecentPRs />);
     await waitFor(() => {
       expect(screen.getByTestId("prs-error")).toBeInTheDocument();
@@ -131,10 +128,7 @@ describe("RecentPRs", () => {
   });
 
   it("shows empty state when no PRs returned", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => [],
-    });
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, prs: [] });
     render(<RecentPRs />);
     await waitFor(() => {
       expect(screen.getByTestId("prs-empty")).toBeInTheDocument();
@@ -142,47 +136,8 @@ describe("RecentPRs", () => {
     expect(screen.getByText("No recent PRs found.")).toBeInTheDocument();
   });
 
-  it("auto-refreshes every 30 seconds", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockPRs,
-    });
-    global.fetch = fetchMock;
-
-    render(<RecentPRs />);
-
-    // Wait for initial fetch
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(1);
-    });
-
-    // Advance 30s
-    await act(async () => {
-      vi.advanceTimersByTime(30_000);
-    });
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-    });
-
-    // Advance another 30s
-    await act(async () => {
-      vi.advanceTimersByTime(30_000);
-    });
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(3);
-    });
-
-    vi.useRealTimers();
-  });
-
   it("renders PR links with correct URLs", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => [mockPRs[0]],
-    });
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, prs: [mockPRs[0]] });
     render(<RecentPRs />);
     await waitFor(() => {
       const link = screen.getByRole("link");
@@ -195,10 +150,7 @@ describe("RecentPRs", () => {
   });
 
   it("applies correct color for merged status badge (purple)", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => [mockPRs[0]],
-    });
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, prs: [mockPRs[0]] });
     render(<RecentPRs />);
     await waitFor(() => {
       const badge = screen.getByTestId("pr-status-badge");
@@ -207,10 +159,7 @@ describe("RecentPRs", () => {
   });
 
   it("applies correct color for open status badge (green)", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => [mockPRs[1]],
-    });
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, prs: [mockPRs[1]] });
     render(<RecentPRs />);
     await waitFor(() => {
       const badge = screen.getByTestId("pr-status-badge");
@@ -219,10 +168,7 @@ describe("RecentPRs", () => {
   });
 
   it("applies correct color for closed status badge (red)", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => [mockPRs[2]],
-    });
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, prs: [mockPRs[2]] });
     render(<RecentPRs />);
     await waitFor(() => {
       const badge = screen.getByTestId("pr-status-badge");
@@ -231,10 +177,7 @@ describe("RecentPRs", () => {
   });
 
   it("shows author for each PR", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => [mockPRs[0]],
-    });
+    vi.mocked(useFleetData).mockReturnValue({ ...defaultContext, prs: [mockPRs[0]] });
     render(<RecentPRs />);
     await waitFor(() => {
       expect(screen.getByText("by agent-delta")).toBeInTheDocument();

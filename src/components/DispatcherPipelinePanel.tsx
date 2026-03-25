@@ -1,9 +1,9 @@
 "use client";
 
-import { useDispatcherStatus } from "@/hooks/useDispatcherStatus";
+import { useFleetData } from "@/providers/FleetDataProvider";
 
 export default function DispatcherPipelinePanel() {
-  const { data, isLoading, error } = useDispatcherStatus();
+  const { dispatcherStatus: data, dispatcherLoading: isLoading, dispatcherError: error } = useFleetData();
 
   if (isLoading && !data) {
     return (

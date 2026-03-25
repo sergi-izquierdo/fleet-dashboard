@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
 import type { RecentPR } from "@/types/prs";
 import { timeAgo } from "@/components/RecentPRs";
-
-const REFRESH_INTERVAL_MS = 30_000;
+import { useFleetData } from "@/providers/FleetDataProvider";
 
 const ciStatusConfig: Record<
   RecentPR["ciStatus"],
@@ -53,35 +52,11 @@ const statusConfig: Record<
 type FilterStatus = "all" | "open" | "merged" | "closed";
 
 export default function MergeQueue() {
-  const [prs, setPrs] = useState<RecentPR[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { prs, prsLoading: isLoading, prsError: error } = useFleetData();
 
   const [filterRepo, setFilterRepo] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("open");
   const [filterAuthor, setFilterAuthor] = useState<string>("all");
-
-  const fetchPRs = useCallback(async () => {
-    try {
-      const response = await fetch("/api/prs");
-      if (!response.ok) {
-        throw new Error(`Failed to fetch PRs: ${response.status}`);
-      }
-      const data = await response.json();
-      setPrs(Array.isArray(data) ? data : []);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load PRs");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchPRs();
-    const interval = setInterval(fetchPRs, REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fetchPRs]);
 
   const repos = useMemo(
     () => [...new Set(prs.map((pr) => pr.repo))].sort(),
@@ -157,7 +132,7 @@ export default function MergeQueue() {
           )}
         </div>
         <span className="text-xs text-gray-500">
-          Auto-refreshes every 30s
+          Updates every 30s
         </span>
       </div>
 

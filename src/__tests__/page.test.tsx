@@ -3,6 +3,19 @@ import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import Home from "@/app/page";
 import type { DashboardData } from "@/types/dashboard";
 
+vi.mock("@/providers/FleetDataProvider", () => ({
+  useFleetData: vi.fn().mockReturnValue({
+    dashboardData: null, dashboardLoading: false, dashboardError: null,
+    fleetState: null, fleetStateLoading: false, fleetStateError: null,
+    dispatcherStatus: null, dispatcherLoading: false, dispatcherError: null,
+    servicesData: null, servicesLoading: false, servicesError: null,
+    prs: [], prsLoading: false, prsError: null,
+    sessions: [], sessionsLoading: false, sessionsError: null,
+    issueProgress: null, issueProgressLoading: false, issueProgressError: null,
+  }),
+  FleetDataProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 const testDashboardData: DashboardData = {
   agents: [
     {

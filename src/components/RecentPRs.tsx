@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import type { RecentPR } from "@/types/prs";
-
-const REFRESH_INTERVAL_MS = 30_000;
+import { useFleetData } from "@/providers/FleetDataProvider";
 
 const statusConfig: Record<
   RecentPR["status"],
@@ -61,37 +59,13 @@ export function timeAgo(dateString: string): string {
 }
 
 export default function RecentPRs() {
-  const [prs, setPrs] = useState<RecentPR[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchPRs = useCallback(async () => {
-    try {
-      const response = await fetch("/api/prs");
-      if (!response.ok) {
-        throw new Error(`Failed to fetch PRs: ${response.status}`);
-      }
-      const data = await response.json();
-      setPrs(Array.isArray(data) ? data : []);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load PRs");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchPRs();
-    const interval = setInterval(fetchPRs, REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fetchPRs]);
+  const { prs, prsLoading: isLoading, prsError: error } = useFleetData();
 
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 animate-fade-in">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent PRs</h2>
-        <span className="text-xs text-gray-400 dark:text-gray-500">Auto-refreshes every 30s</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500">Updates every 30s</span>
       </div>
 
       {isLoading && prs.length === 0 ? (

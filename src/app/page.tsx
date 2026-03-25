@@ -20,6 +20,7 @@ import { Footer } from "@/components/Footer";
 import { LogoutButton } from "@/components/LogoutButton";
 import FleetActivityTimeline from "@/components/FleetActivityTimeline";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+import ServiceHealth from "@/components/ServiceHealth";
 import { CollapsibleCard, useIsMobile } from "@/components/CollapsibleCard";
 import ProjectFilter from "@/components/ProjectFilter";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -271,6 +272,18 @@ export default function Home() {
                   Fleet idle &mdash; no active agents
                 </p>
               )}
+            </CollapsibleCard>
+
+            {/* Service Health */}
+            <CollapsibleCard
+              title="Service Health"
+              id="section-service-health"
+              ariaLabel="Service health"
+              defaultExpanded={isMobile !== true}
+            >
+              <SectionErrorBoundary sectionName="Service Health">
+                <ServiceHealth />
+              </SectionErrorBoundary>
             </CollapsibleCard>
 
             {/* Fleet Activity Timeline */}

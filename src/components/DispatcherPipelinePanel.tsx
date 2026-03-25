@@ -38,6 +38,10 @@ export default function DispatcherPipelinePanel() {
     unknown: "text-gray-500 dark:text-gray-400",
   };
 
+  const activeAgents = Array.isArray(data.activeAgents) ? data.activeAgents : [];
+  const prPipeline = Array.isArray(data.prPipeline) ? data.prPipeline : [];
+  const cycleErrors = Array.isArray(data.cycle?.errors) ? data.cycle.errors : [];
+
   return (
     <div className="space-y-4 text-sm">
       {/* Rate Limit */}
@@ -51,13 +55,13 @@ export default function DispatcherPipelinePanel() {
       {/* Active agents */}
       <div>
         <p className="mb-1 text-gray-600 dark:text-gray-400">
-          Active Agents ({data.activeAgents.length})
+          Active Agents ({activeAgents.length})
         </p>
-        {data.activeAgents.length === 0 ? (
+        {activeAgents.length === 0 ? (
           <p className="text-gray-400 dark:text-gray-500">None</p>
         ) : (
           <ul className="space-y-1">
-            {data.activeAgents.map((agent) => (
+            {activeAgents.map((agent) => (
               <li
                 key={agent}
                 className="rounded bg-blue-50 px-2 py-1 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
@@ -70,13 +74,13 @@ export default function DispatcherPipelinePanel() {
       </div>
 
       {/* PR Pipeline */}
-      {data.prPipeline.length > 0 && (
+      {prPipeline.length > 0 && (
         <div>
           <p className="mb-1 text-gray-600 dark:text-gray-400">
-            PR Pipeline ({data.prPipeline.length})
+            PR Pipeline ({prPipeline.length})
           </p>
           <ul className="space-y-1">
-            {data.prPipeline.map((entry) => (
+            {prPipeline.map((entry) => (
               <li
                 key={`${entry.repo}-${entry.pr}`}
                 className="flex items-center justify-between rounded bg-gray-50 px-2 py-1 dark:bg-gray-800"
@@ -92,12 +96,12 @@ export default function DispatcherPipelinePanel() {
       )}
 
       {/* Cycle errors */}
-      {data.cycle.consecutiveErrors > 0 && (
+      {data.cycle?.consecutiveErrors > 0 && (
         <div className="rounded border border-red-300 bg-red-50 px-3 py-2 dark:border-red-700 dark:bg-red-900/20">
           <p className="font-medium text-red-700 dark:text-red-400">
             {data.cycle.consecutiveErrors} consecutive error(s)
           </p>
-          {data.cycle.errors.slice(0, 3).map((err, i) => (
+          {cycleErrors.slice(0, 3).map((err, i) => (
             <p key={i} className="mt-0.5 text-xs text-red-600 dark:text-red-400">
               {err}
             </p>

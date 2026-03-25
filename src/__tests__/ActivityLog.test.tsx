@@ -1,5 +1,5 @@
-import { render, screen, cleanup } from "@testing-library/react";
-import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, cleanup, act, waitFor } from "@testing-library/react";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import ActivityLog, { type AgentEvent } from "@/components/ActivityLog";
 
 const sampleEvents: AgentEvent[] = [
@@ -40,20 +40,35 @@ const sampleEvents: AgentEvent[] = [
   },
 ];
 
-describe("ActivityLog", () => {
-  afterEach(() => {
-    cleanup();
-  });
+// Default fetch mock: returns empty array and succeeds
+beforeEach(() => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({ ok: true, json: async () => [] }),
+  );
+});
 
-  it("renders the heading", () => {
-    render(<ActivityLog events={[]} />);
+afterEach(() => {
+  vi.unstubAllGlobals();
+  cleanup();
+});
+
+describe("ActivityLog", () => {
+  it("renders the heading", async () => {
+    await act(async () => {
+      render(<ActivityLog events={[]} />);
+    });
     expect(screen.getByText("Activity Log")).toBeInTheDocument();
   });
 
-  it("shows empty state when no events", () => {
-    render(<ActivityLog events={[]} />);
+  it("shows empty state when no events", async () => {
+    await act(async () => {
+      render(<ActivityLog events={[]} />);
+    });
     expect(screen.getByText("No recent activity")).toBeInTheDocument();
-    expect(screen.getByText("Events from your agents will appear here as they work.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Events from your agents will appear here as they work."),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("empty-state")).toBeInTheDocument();
   });
 
@@ -153,7 +168,17 @@ describe("ActivityLog", () => {
     expect(sampleEvents).toEqual(original);
   });
 
+  it("renders skeleton rows while initial fetch is pending", () => {
+    // fetch mock never resolves during synchronous render
+    vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
+    render(<ActivityLog events={[]} />);
+    const list = screen.getByRole("list", { name: "Loading activity" });
+    expect(list).toBeInTheDocument();
+    expect(list.querySelectorAll("li")).toHaveLength(5);
+  });
+
   it("renders skeleton rows when isLoading is true and events is empty", () => {
+    vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
     render(<ActivityLog events={[]} isLoading={true} />);
     expect(screen.queryByText("No recent activity")).not.toBeInTheDocument();
     const list = screen.getByRole("list", { name: "Loading activity" });
@@ -167,9 +192,111 @@ describe("ActivityLog", () => {
     expect(screen.getByText("Pushed 3 commits to main")).toBeInTheDocument();
   });
 
-  it("shows empty state when isLoading is false and events is empty", () => {
-    render(<ActivityLog events={[]} isLoading={false} />);
+  it("shows empty state when isLoading is false and events is empty", async () => {
+    await act(async () => {
+      render(<ActivityLog events={[]} isLoading={false} />);
+    });
     expect(screen.getByText("No recent activity")).toBeInTheDocument();
     expect(screen.queryByRole("list", { name: "Loading activity" })).not.toBeInTheDocument();
+  });
+
+  it("displays fetched events when props are empty", async () => {
+    const fetched: AgentEvent[] = [
+      {
+        id: "f1",
+        timestamp: "2026-03-24T10:00:00Z",
+        agentName: "Fetched Agent",
+        eventType: "pr_created",
+        description: "PR created from API",
+      },
+    ];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => fetched }),
+    );
+    await act(async () => {
+      render(<ActivityLog events={[]} />);
+    });
+    expect(screen.getByText("Fetched Agent")).toBeInTheDocument();
+    expect(screen.getByText("PR created from API")).toBeInTheDocument();
+  });
+
+  it("falls back to prop events when fetch fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network error")));
+    await act(async () => {
+      render(<ActivityLog events={sampleEvents} />);
+    });
+    expect(screen.getByText("Pushed 3 commits to main")).toBeInTheDocument();
+  });
+
+  it("merges fetched events with prop events, deduplicating by id", async () => {
+    const fetched: AgentEvent[] = [
+      // Duplicate of sampleEvents[0] — should not appear twice
+      {
+        id: "1",
+        timestamp: "2026-03-20T10:00:00Z",
+        agentName: "Agent Alpha",
+        eventType: "commit",
+        description: "Pushed 3 commits to main",
+      },
+      // New event not in props
+      {
+        id: "new1",
+        timestamp: "2026-03-24T12:00:00Z",
+        agentName: "New Agent",
+        eventType: "ci_passed",
+        description: "CI passed on new branch",
+      },
+    ];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => fetched }),
+    );
+    await act(async () => {
+      render(<ActivityLog events={[sampleEvents[0]]} />);
+    });
+    // Original event present once
+    expect(screen.getAllByText("Pushed 3 commits to main")).toHaveLength(1);
+    // New fetched event present
+    expect(screen.getByText("CI passed on new branch")).toBeInTheDocument();
+  });
+
+  it("polls /api/fleet-events every 15 seconds", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => [] });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await act(async () => {
+      render(<ActivityLog events={[]} />);
+    });
+    const callsAfterMount = fetchMock.mock.calls.length;
+    expect(callsAfterMount).toBe(1);
+
+    await act(async () => {
+      vi.advanceTimersByTime(15_000);
+    });
+    expect(fetchMock.mock.calls.length).toBe(2);
+
+    await act(async () => {
+      vi.advanceTimersByTime(15_000);
+    });
+    expect(fetchMock.mock.calls.length).toBe(3);
+
+    vi.useRealTimers();
+  });
+
+  it("fetches from /api/fleet-events endpoint", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => [] });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await act(async () => {
+      render(<ActivityLog events={[]} />);
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/fleet-events");
   });
 });

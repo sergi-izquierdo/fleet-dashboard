@@ -1,17 +1,14 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import EmptyState from "@/components/EmptyState";
 import { useRelativeTime } from "@/hooks/useRelativeTime";
+import type { ActivityEvent } from "@/types/dashboard";
 
 export type EventType = "commit" | "pr_created" | "ci_failed" | "ci_passed" | "review" | "deploy" | "error";
 
-export interface AgentEvent {
-  id: string;
-  timestamp: string;
-  agentName: string;
-  eventType: EventType;
-  description: string;
-}
+// AgentEvent is an alias of ActivityEvent — kept for backward compatibility
+export type AgentEvent = ActivityEvent;
 
 const eventTypeConfig: Record<EventType, { label: string; color: string; dot: string }> = {
   commit: {
@@ -71,15 +68,54 @@ interface ActivityLogProps {
 }
 
 export default function ActivityLog({ events, maxHeight = "max-h-96", isLoading = false }: ActivityLogProps) {
-  const sorted = [...events].sort(
+  const [localEvents, setLocalEvents] = useState<AgentEvent[]>(events);
+  const [isFetching, setIsFetching] = useState(true);
+
+  // Keep local state in sync when parent updates (but don't override fetched data if we have it)
+  useEffect(() => {
+    setLocalEvents((prev) => {
+      if (prev.length === 0) return events;
+      return prev;
+    });
+  }, [events]);
+
+  // Fetch from /api/fleet-events on mount and poll every 15s
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const res = await fetch("/api/fleet-events");
+        if (res.ok) {
+          const fetched: AgentEvent[] = await res.json();
+          setLocalEvents((prev) => {
+            const existingIds = new Set(prev.map((e) => e.id));
+            const newEvents = fetched.filter((e) => !existingIds.has(e.id));
+            if (fetched.length > 0 && prev.length === 0) return fetched;
+            return newEvents.length > 0 ? [...prev, ...newEvents] : prev;
+          });
+        }
+      } catch {
+        // Silently fall back to prop events on failure
+      } finally {
+        setIsFetching(false);
+      }
+    }
+
+    fetchEvents();
+    const id = setInterval(fetchEvents, 15_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const sorted = [...localEvents].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
+
+  const showLoading = (isLoading || isFetching) && sorted.length === 0;
 
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 animate-fade-in">
       <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Activity Log</h2>
       <div className={`${maxHeight} overflow-y-auto pr-1`} data-testid="activity-log-scroll">
-        {isLoading && sorted.length === 0 ? (
+        {showLoading ? (
           <ul className="space-y-2" role="list" aria-label="Loading activity">
             {Array.from({ length: 5 }).map((_, i) => (
               <li

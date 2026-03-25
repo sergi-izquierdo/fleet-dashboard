@@ -39,6 +39,20 @@ const dotConfig: Record<
   },
 };
 
+const TIME_RANGE_OPTIONS = [
+  { label: "1m", ms: 60 * 1000 },
+  { label: "3m", ms: 3 * 60 * 1000 },
+  { label: "5m", ms: 5 * 60 * 1000 },
+  { label: "10m", ms: 10 * 60 * 1000 },
+  { label: "30m", ms: 30 * 60 * 1000 },
+  { label: "1h", ms: 60 * 60 * 1000 },
+  { label: "6h", ms: 6 * 60 * 60 * 1000 },
+  { label: "12h", ms: 12 * 60 * 60 * 1000 },
+  { label: "24h", ms: 24 * 60 * 60 * 1000 },
+] as const;
+
+type TimeRangeLabel = (typeof TIME_RANGE_OPTIONS)[number]["label"];
+
 function classifyEvent(event: ActivityEvent): TimelineDotType {
   switch (event.eventType) {
     case "ci_failed":
@@ -59,15 +73,15 @@ function classifyEvent(event: ActivityEvent): TimelineDotType {
 function buildTimelineDots(
   activityLog: ActivityEvent[],
   prs: PR[],
+  now: Date,
+  rangeMs: number,
 ): TimelineDot[] {
   const dots: TimelineDot[] = [];
-  const now = new Date();
-  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const rangeStart = new Date(now.getTime() - rangeMs);
 
-  // Add dots from activity log
   for (const event of activityLog) {
     const ts = new Date(event.timestamp);
-    if (ts >= twentyFourHoursAgo && ts <= now) {
+    if (ts >= rangeStart && ts <= now) {
       dots.push({
         id: event.id,
         timestamp: ts,
@@ -78,12 +92,11 @@ function buildTimelineDots(
     }
   }
 
-  // Add dots for merged PRs (use a synthetic timestamp based on current time spread)
   for (const pr of prs) {
     if (pr.mergeState === "merged") {
       dots.push({
         id: `pr-${pr.number}`,
-        timestamp: now, // PRs don't have a timestamp in the type, place at current time
+        timestamp: now,
         type: "merged",
         label: `PR #${pr.number}`,
         description: pr.title,
@@ -92,6 +105,93 @@ function buildTimelineDots(
   }
 
   return dots.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+}
+
+function getMarkerConfig(rangeMs: number): {
+  stepMs: number;
+  formatFn: (d: Date) => string;
+} {
+  if (rangeMs <= 2 * 60 * 1000) {
+    // ≤2m: 30s steps, show HH:MM:SS
+    return {
+      stepMs: 30 * 1000,
+      formatFn: (d) =>
+        d.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        }),
+    };
+  } else if (rangeMs <= 10 * 60 * 1000) {
+    // ≤10m: 1m steps, show HH:MM:SS
+    return {
+      stepMs: 60 * 1000,
+      formatFn: (d) =>
+        d.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        }),
+    };
+  } else if (rangeMs <= 60 * 60 * 1000) {
+    // ≤1h: 5m steps, show HH:MM
+    return {
+      stepMs: 5 * 60 * 1000,
+      formatFn: (d) =>
+        d.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }),
+    };
+  } else if (rangeMs <= 6 * 60 * 60 * 1000) {
+    // ≤6h: 1h steps, show HH:MM
+    return {
+      stepMs: 60 * 60 * 1000,
+      formatFn: (d) =>
+        d.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }),
+    };
+  } else {
+    // >6h: 4h steps, show HH:MM
+    return {
+      stepMs: 4 * 60 * 60 * 1000,
+      formatFn: (d) =>
+        d.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }),
+    };
+  }
+}
+
+function generateMarkers(
+  start: Date,
+  end: Date,
+  rangeMs: number,
+): { label: string; position: number }[] {
+  const { stepMs, formatFn } = getMarkerConfig(rangeMs);
+  const markers: { label: string; position: number }[] = [];
+  const startMs = start.getTime();
+  const endMs = end.getTime();
+  const duration = endMs - startMs;
+
+  // Snap to next step boundary after start
+  let current = Math.ceil(startMs / stepMs) * stepMs;
+
+  while (current <= endMs) {
+    const position = ((current - startMs) / duration) * 100;
+    markers.push({ label: formatFn(new Date(current)), position });
+    current += stepMs;
+  }
+
+  return markers;
 }
 
 function formatHour(date: Date): string {
@@ -112,40 +212,26 @@ export default function FleetActivityTimeline({
   prs,
 }: FleetActivityTimelineProps) {
   const [hoveredDot, setHoveredDot] = useState<string | null>(null);
+  const [selectedRange, setSelectedRange] = useState<TimeRangeLabel>("1m");
+
+  const selectedRangeMs =
+    TIME_RANGE_OPTIONS.find((o) => o.label === selectedRange)!.ms;
 
   const now = useMemo(() => new Date(), []);
   const timelineStart = useMemo(
-    () => new Date(now.getTime() - 24 * 60 * 60 * 1000),
-    [now],
+    () => new Date(now.getTime() - selectedRangeMs),
+    [now, selectedRangeMs],
   );
-  const timeRange = 24 * 60 * 60 * 1000;
 
   const dots = useMemo(
-    () => buildTimelineDots(activityLog, prs),
-    [activityLog, prs],
+    () => buildTimelineDots(activityLog, prs, now, selectedRangeMs),
+    [activityLog, prs, now, selectedRangeMs],
   );
 
-  // Generate hour markers (every 4 hours)
-  const hourMarkers = useMemo(() => {
-    const markers: { label: string; position: number }[] = [];
-    const startHour = new Date(timelineStart);
-    startHour.setMinutes(0, 0, 0);
-    // Move to next full hour
-    startHour.setHours(startHour.getHours() + 1);
-
-    while (startHour <= now) {
-      const position =
-        ((startHour.getTime() - timelineStart.getTime()) / timeRange) * 100;
-      if (startHour.getHours() % 4 === 0) {
-        markers.push({
-          label: formatHour(startHour),
-          position,
-        });
-      }
-      startHour.setHours(startHour.getHours() + 1);
-    }
-    return markers;
-  }, [timelineStart, now, timeRange]);
+  const markers = useMemo(
+    () => generateMarkers(timelineStart, now, selectedRangeMs),
+    [timelineStart, now, selectedRangeMs],
+  );
 
   const typeCounts = useMemo(() => {
     const counts: Record<TimelineDotType, number> = {
@@ -170,9 +256,28 @@ export default function FleetActivityTimeline({
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Fleet Activity
         </h2>
-        <span className="text-xs text-gray-500 dark:text-white/50">
-          Last 24 hours
-        </span>
+        {/* Time range selector */}
+        <div
+          className="flex items-center rounded-lg border border-gray-200 dark:border-white/10 p-0.5 gap-0.5"
+          data-testid="time-range-selector"
+        >
+          {TIME_RANGE_OPTIONS.map((opt) => (
+            <button
+              key={opt.label}
+              type="button"
+              onClick={() => setSelectedRange(opt.label)}
+              className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                selectedRange === opt.label
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
+              }`}
+              data-testid={`range-btn-${opt.label}`}
+              aria-pressed={selectedRange === opt.label}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Legend */}
@@ -204,10 +309,10 @@ export default function FleetActivityTimeline({
       <div className="relative" data-testid="timeline-track">
         {/* Background track */}
         <div className="h-10 rounded-lg bg-gray-100 dark:bg-white/5 relative overflow-visible">
-          {/* Hour markers */}
-          {hourMarkers.map((marker) => (
+          {/* Markers */}
+          {markers.map((marker) => (
             <div
-              key={marker.label}
+              key={marker.position}
               className="absolute top-0 h-full flex flex-col items-center"
               style={{ left: `${marker.position}%` }}
             >
@@ -219,7 +324,7 @@ export default function FleetActivityTimeline({
           {dots.map((dot) => {
             const position =
               ((dot.timestamp.getTime() - timelineStart.getTime()) /
-                timeRange) *
+                selectedRangeMs) *
               100;
             const clampedPosition = Math.max(1, Math.min(99, position));
             const config = dotConfig[dot.type];
@@ -269,11 +374,11 @@ export default function FleetActivityTimeline({
           })}
         </div>
 
-        {/* Hour labels below the track */}
+        {/* Marker labels below the track */}
         <div className="relative h-5 mt-1">
-          {hourMarkers.map((marker) => (
+          {markers.map((marker) => (
             <span
-              key={marker.label}
+              key={marker.position}
               className="absolute text-[10px] text-gray-400 dark:text-gray-500 -translate-x-1/2"
               style={{ left: `${marker.position}%` }}
             >
@@ -289,7 +394,7 @@ export default function FleetActivityTimeline({
           className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2"
           data-testid="timeline-empty"
         >
-          No fleet activity in the last 24 hours.
+          No fleet activity in the last {selectedRange}.
         </p>
       )}
     </div>

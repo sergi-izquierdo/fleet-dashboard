@@ -26,6 +26,7 @@ import { CollapsibleCard, useIsMobile } from "@/components/CollapsibleCard";
 import ProjectFilter from "@/components/ProjectFilter";
 import StatsPanel from "@/components/StatsPanel";
 import PRTrendChart from "@/components/PRTrendChart";
+import DispatcherPipelinePanel from "@/components/DispatcherPipelinePanel";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useFleetState } from "@/hooks/useFleetState";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -350,8 +351,18 @@ export default function Home() {
         </PullToRefresh>
       ) : null}
 
-      {/* Dispatcher Config */}
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      {/* Dispatcher Pipeline & Config */}
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+        <CollapsibleCard
+          title="Dispatcher Pipeline"
+          ariaLabel="Dispatcher pipeline"
+          defaultExpanded={isMobile !== true}
+        >
+          <SectionErrorBoundary sectionName="Dispatcher Pipeline">
+            <DispatcherPipelinePanel />
+          </SectionErrorBoundary>
+        </CollapsibleCard>
+
         <CollapsibleCard
           title="Dispatcher Config"
           ariaLabel="Dispatcher configuration"

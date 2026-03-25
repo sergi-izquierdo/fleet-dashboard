@@ -51,7 +51,10 @@ export interface ActivityEvent {
     | "ci_passed"
     | "review"
     | "deploy"
-    | "error";
+    | "error"
+    | "tool_use"
+    | "agent_start"
+    | "agent_stop";
   description: string;
 }
 

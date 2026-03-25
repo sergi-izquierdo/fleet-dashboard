@@ -50,6 +50,24 @@ const eventTypeConfig: Record<
     badgeColor:
       "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/40",
   },
+  tool_use: {
+    emoji: "🔧",
+    label: "Tool Use",
+    badgeColor:
+      "bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/40",
+  },
+  agent_start: {
+    emoji: "🚀",
+    label: "Agent Start",
+    badgeColor:
+      "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/40",
+  },
+  agent_stop: {
+    emoji: "🏁",
+    label: "Agent Stop",
+    badgeColor:
+      "bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/40",
+  },
 };
 
 function HistoryEventItem({

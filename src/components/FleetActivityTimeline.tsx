@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ActivityEvent, PR } from "@/types/dashboard";
 
-type TimelineDotType = "merged" | "agent_spawn" | "error" | "stale_recovery";
+type TimelineDotType = "merged" | "agent_spawn" | "tool_use" | "error" | "stale_recovery" | "agent_stop";
 
 interface TimelineDot {
   id: string;
@@ -27,6 +27,11 @@ const dotConfig: Record<
     bgColor: "bg-blue-500/20",
     legendLabel: "Agent Spawn",
   },
+  tool_use: {
+    color: "bg-purple-500",
+    bgColor: "bg-purple-500/20",
+    legendLabel: "Tool Use",
+  },
   error: {
     color: "bg-red-500",
     bgColor: "bg-red-500/20",
@@ -36,6 +41,11 @@ const dotConfig: Record<
     color: "bg-yellow-500",
     bgColor: "bg-yellow-500/20",
     legendLabel: "Stale Recovery",
+  },
+  agent_stop: {
+    color: "bg-gray-400",
+    bgColor: "bg-gray-400/20",
+    legendLabel: "Agent Stop",
   },
 };
 
@@ -59,11 +69,18 @@ function classifyEvent(event: ActivityEvent): TimelineDotType {
     case "error":
       return "error";
     case "deploy":
+      return "merged";
+    case "tool_use":
+      return "tool_use";
+    case "agent_start":
+      return "agent_spawn";
+    case "agent_stop":
+      return "agent_stop";
+    case "review":
       return "stale_recovery";
     case "commit":
     case "pr_created":
     case "ci_passed":
-    case "review":
       return "agent_spawn";
     default:
       return "agent_spawn";
@@ -223,28 +240,28 @@ export default function FleetActivityTimeline({
     setLocalEvents(activityLog);
   }, [activityLog]);
 
-  // Poll /api/fleet-events every 15s for fresh data, deduplicated by id
+  // Poll /api/fleet-events every 5s for fresh data (includes live obs events)
   useEffect(() => {
-    const id = setInterval(async () => {
+    let mounted = true;
+    const poll = async () => {
       try {
         const res = await fetch("/api/fleet-events");
-        if (res.ok) {
+        if (res.ok && mounted) {
           const events: ActivityEvent[] = await res.json();
-          setLocalEvents((prev) => {
-            const existingIds = new Set(prev.map((e) => e.id));
-            const newEvents = events.filter((e) => !existingIds.has(e.id));
-            return newEvents.length > 0 ? [...prev, ...newEvents] : prev;
-          });
+          setLocalEvents(events); // Full replace — API returns sorted, deduplicated events
         }
       } catch {}
-    }, 15_000);
-    return () => clearInterval(id);
+    };
+    // Fetch immediately on mount
+    poll();
+    const id = setInterval(poll, 5_000);
+    return () => { mounted = false; clearInterval(id); };
   }, []);
 
-  // Tick `now` every 10s so the timeline window stays current
+  // Tick `now` every 5s so the timeline window stays current
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 10_000);
+    const id = setInterval(() => setNow(new Date()), 5_000);
     return () => clearInterval(id);
   }, []);
 
@@ -267,8 +284,10 @@ export default function FleetActivityTimeline({
     const counts: Record<TimelineDotType, number> = {
       merged: 0,
       agent_spawn: 0,
+      tool_use: 0,
       error: 0,
       stale_recovery: 0,
+      agent_stop: 0,
     };
     for (const dot of dots) {
       counts[dot.type]++;

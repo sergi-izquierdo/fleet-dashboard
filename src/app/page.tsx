@@ -25,7 +25,6 @@ import ServiceHealth from "@/components/ServiceHealth";
 import DispatcherPipelinePanel from "@/components/DispatcherPipelinePanel";
 import { CollapsibleCard, useIsMobile } from "@/components/CollapsibleCard";
 import ProjectFilter from "@/components/ProjectFilter";
-import StatsPanel from "@/components/StatsPanel";
 import PRTrendChart from "@/components/PRTrendChart";
 import FleetStatusBanner from "@/components/FleetStatusBanner";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -222,113 +221,128 @@ export default function Home() {
         <LoadingSkeleton />
       ) : data ? (
         <PullToRefresh onRefresh={refresh}>
-          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
-            {/* Stats Bar */}
-            <CollapsibleCard
-              title="Stats"
-              id="section-stats"
-              ariaLabel="Dashboard statistics"
-              defaultExpanded
-            >
-              <StatsPanel agents={data.agents} prs={data.prs} />
-            </CollapsibleCard>
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Main content */}
+              <div className="lg:col-span-8 space-y-6">
+                {/* Agent Sessions */}
+                <div className={activeTab !== "agents" ? "hidden md:block" : ""}>
+                  <CollapsibleCard
+                    title="Agent Sessions"
+                    id="section-sessions"
+                    ariaLabel="Agent sessions"
+                    defaultExpanded
+                  >
+                    <SectionErrorBoundary sectionName="Agents">
+                      <AgentStatusCards />
+                    </SectionErrorBoundary>
+                  </CollapsibleCard>
+                </div>
 
-            {/* Service Health */}
-            <CollapsibleCard
-              title="Service Health"
-              id="section-service-health"
-              ariaLabel="Service health"
-              defaultExpanded={isMobile !== true}
-            >
-              <SectionErrorBoundary sectionName="Service Health">
-                <ServiceHealth />
-              </SectionErrorBoundary>
-            </CollapsibleCard>
-
-            {/* Fleet Activity Timeline */}
-            <CollapsibleCard
-              title="Fleet Activity Timeline"
-              ariaLabel="Fleet activity timeline"
-              defaultExpanded={isMobile !== true}
-            >
-              <SectionErrorBoundary sectionName="Fleet Activity Timeline">
-                <FleetActivityTimeline
-                  activityLog={data.activityLog}
-                  prs={data.prs}
-                />
-              </SectionErrorBoundary>
-            </CollapsibleCard>
-
-            {/* Desktop: show all sections */}
-            {/* Mobile: show only the active tab's section */}
-
-            {/* Issue Progress Tracker */}
-            <CollapsibleCard
-              title="Issue Progress"
-              ariaLabel="Issue progress"
-              defaultExpanded={isMobile !== true}
-            >
-              <SectionErrorBoundary sectionName="Issue Progress">
-                <ProgressTracker />
-              </SectionErrorBoundary>
-            </CollapsibleCard>
-
-            {/* Agents Tab */}
-            <div className={activeTab !== "agents" ? "hidden md:block" : ""}>
-              <CollapsibleCard
-                title="Agent Sessions"
-                id="section-sessions"
-                ariaLabel="Agent sessions"
-                defaultExpanded
-              >
-                <SectionErrorBoundary sectionName="Agents">
-                  <AgentStatusCards />
-                </SectionErrorBoundary>
-              </CollapsibleCard>
-            </div>
-
-            {/* PRs Tab */}
-            <div className={activeTab !== "prs" ? "hidden md:block" : ""}>
-              {/* PR Merge Queue */}
-              <CollapsibleCard
-                title="Merge Queue"
-                ariaLabel="PR merge queue"
-                defaultExpanded={isMobile !== true}
-              >
-                <SectionErrorBoundary sectionName="Merge Queue">
-                  <MergeQueue />
-                </SectionErrorBoundary>
-              </CollapsibleCard>
-
-              <div className="mt-6">
+                {/* Fleet Activity Timeline */}
                 <CollapsibleCard
-                  title="PR Merge Trends"
-                  id="section-pr-trends"
-                  ariaLabel="PR merge trends"
+                  title="Fleet Activity Timeline"
+                  ariaLabel="Fleet activity timeline"
                   defaultExpanded={isMobile !== true}
                 >
-                  <SectionErrorBoundary sectionName="PR Merge Trends">
-                    <PRTrendChart />
+                  <SectionErrorBoundary sectionName="Fleet Activity Timeline">
+                    <FleetActivityTimeline
+                      activityLog={data.activityLog}
+                      prs={data.prs}
+                    />
                   </SectionErrorBoundary>
                 </CollapsibleCard>
+
+                {/* PRs Tab */}
+                <div className={activeTab !== "prs" ? "hidden md:block" : ""}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <CollapsibleCard
+                      title="Merge Queue"
+                      ariaLabel="PR merge queue"
+                      defaultExpanded={isMobile !== true}
+                    >
+                      <SectionErrorBoundary sectionName="Merge Queue">
+                        <MergeQueue />
+                      </SectionErrorBoundary>
+                    </CollapsibleCard>
+                    <CollapsibleCard
+                      title="Recent PRs"
+                      id="section-prs"
+                      ariaLabel="Recent PRs"
+                      defaultExpanded={isMobile !== true}
+                    >
+                      <SectionErrorBoundary sectionName="Recent PRs">
+                        <RecentPRs />
+                      </SectionErrorBoundary>
+                    </CollapsibleCard>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <CollapsibleCard
+                      title="PR Merge Trends"
+                      id="section-pr-trends"
+                      ariaLabel="PR merge trends"
+                      defaultExpanded={isMobile !== true}
+                    >
+                      <SectionErrorBoundary sectionName="PR Merge Trends">
+                        <PRTrendChart />
+                      </SectionErrorBoundary>
+                    </CollapsibleCard>
+                    <CollapsibleCard
+                      title="Cost & Token Usage"
+                      ariaLabel="Cost and token usage"
+                      defaultExpanded={isMobile !== true}
+                    >
+                      <SectionErrorBoundary sectionName="Token Usage">
+                        <TokenUsageDashboard />
+                      </SectionErrorBoundary>
+                    </CollapsibleCard>
+                  </div>
+                </div>
+
+                {/* Activity Tab - Activity Log */}
+                <div className={activeTab !== "activity" ? "hidden md:block" : ""}>
+                  <CollapsibleCard
+                    title="Activity Log"
+                    id="section-activity"
+                    ariaLabel="Activity log"
+                    defaultExpanded={isMobile !== true}
+                  >
+                    <SectionErrorBoundary sectionName="Activity Log">
+                      <ActivityLog events={activityEvents} maxHeight="max-h-[32rem]" />
+                    </SectionErrorBoundary>
+                  </CollapsibleCard>
+                </div>
               </div>
 
-              <div className="mt-6">
+              {/* Sidebar */}
+              <div className="hidden lg:block lg:col-span-4 grid-sidebar space-y-6">
+                <SectionErrorBoundary sectionName="Dispatcher Pipeline">
+                  <DispatcherPipelinePanel />
+                </SectionErrorBoundary>
                 <CollapsibleCard
-                  title="Recent PRs"
-                  id="section-prs"
-                  ariaLabel="Recent PRs"
-                  defaultExpanded={isMobile !== true}
+                  title="Service Health"
+                  id="section-service-health"
+                  ariaLabel="Service health"
+                  defaultExpanded
                 >
-                  <SectionErrorBoundary sectionName="Recent PRs">
-                    <RecentPRs />
+                  <SectionErrorBoundary sectionName="Service Health">
+                    <ServiceHealth />
+                  </SectionErrorBoundary>
+                </CollapsibleCard>
+                <CollapsibleCard
+                  title="Issue Progress"
+                  ariaLabel="Issue progress"
+                  defaultExpanded
+                >
+                  <SectionErrorBoundary sectionName="Issue Progress">
+                    <ProgressTracker />
                   </SectionErrorBoundary>
                 </CollapsibleCard>
               </div>
             </div>
 
             {/* Health tab content - mobile only */}
-            <div className={activeTab !== "health" ? "hidden" : "lg:hidden space-y-6"}>
+            <div className={activeTab !== "health" ? "hidden" : "lg:hidden space-y-6 mt-6"}>
               <CollapsibleCard title="Dispatcher Pipeline" ariaLabel="Dispatcher pipeline" defaultExpanded>
                 <SectionErrorBoundary sectionName="Dispatcher Pipeline">
                   <DispatcherPipelinePanel />
@@ -344,33 +358,6 @@ export default function Home() {
                   <ProgressTracker />
                 </SectionErrorBoundary>
               </CollapsibleCard>
-            </div>
-
-            {/* Activity Tab */}
-            <div className={activeTab !== "activity" ? "hidden md:block" : ""}>
-              {/* Cost & Token Usage */}
-              <CollapsibleCard
-                title="Cost & Token Usage"
-                ariaLabel="Cost and token usage"
-                defaultExpanded={isMobile !== true}
-              >
-                <SectionErrorBoundary sectionName="Token Usage">
-                  <TokenUsageDashboard />
-                </SectionErrorBoundary>
-              </CollapsibleCard>
-
-              <div className="mt-6">
-                <CollapsibleCard
-                  title="Activity Log"
-                  id="section-activity"
-                  ariaLabel="Activity log"
-                  defaultExpanded={isMobile !== true}
-                >
-                  <SectionErrorBoundary sectionName="Activity Log">
-                    <ActivityLog events={activityEvents} maxHeight="max-h-[32rem]" />
-                  </SectionErrorBoundary>
-                </CollapsibleCard>
-              </div>
             </div>
           </div>
         </PullToRefresh>

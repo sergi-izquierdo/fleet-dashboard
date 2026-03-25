@@ -31,7 +31,7 @@ export interface ServicesResponse {
 async function checkService(name: ServiceName): Promise<ServiceStatus> {
   try {
     const { stdout } = await Promise.race([
-      execFileAsync("systemctl", ["is-active", name]),
+      execFileAsync("systemctl", ["--user", "is-active", name]),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("timeout")), CHECK_TIMEOUT_MS)
       ),

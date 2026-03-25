@@ -1,0 +1,186 @@
+"use client";
+
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
+import type { PRTrendDay } from "@/app/api/pr-trends/route";
+
+const REFRESH_INTERVAL_MS = 60_000;
+
+function formatDateLabel(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+const subscribe = () => () => {};
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
+
+export default function PRTrendChart() {
+  const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const [trends, setTrends] = useState<PRTrendDay[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchTrends = useCallback(async () => {
+    try {
+      const response = await fetch("/api/pr-trends");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch PR trends: ${response.status}`);
+      }
+      const data = await response.json();
+      setTrends(Array.isArray(data) ? data : []);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load PR trends");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTrends();
+    const interval = setInterval(fetchTrends, REFRESH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [fetchTrends]);
+
+  const chartData = trends.map((d) => ({
+    ...d,
+    label: formatDateLabel(d.date),
+  }));
+
+  const totalMerges = trends.reduce((sum, d) => sum + d.count, 0);
+  const maxDay = trends.reduce(
+    (best, d) => (d.count > best.count ? d : best),
+    { date: "", count: 0 }
+  );
+
+  if (!mounted) {
+    return (
+      <div
+        className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4"
+        data-testid="pr-trend-chart"
+      >
+        <div className="animate-pulse space-y-3">
+          <div className="h-5 w-40 rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="h-48 rounded-lg bg-gray-200 dark:bg-gray-800" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4"
+      data-testid="pr-trend-chart"
+    >
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            PR Merge Trends
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Merged PRs per day — last 14 days
+          </p>
+        </div>
+        {!isLoading && !error && (
+          <div className="flex gap-4 text-right">
+            <div>
+              <div
+                className="text-xl font-bold text-purple-600 dark:text-purple-400"
+                data-testid="pr-trend-total"
+              >
+                {totalMerges}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                total
+              </div>
+            </div>
+            {maxDay.count > 0 && (
+              <div>
+                <div
+                  className="text-xl font-bold text-gray-900 dark:text-gray-100"
+                  data-testid="pr-trend-peak"
+                >
+                  {maxDay.count}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  peak/day
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {isLoading && trends.length === 0 ? (
+        <div
+          data-testid="pr-trend-loading"
+          className="h-48 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800 animate-shimmer"
+        />
+      ) : error ? (
+        <div
+          data-testid="pr-trend-error"
+          className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-500 dark:text-red-400"
+        >
+          {error}
+        </div>
+      ) : (
+        <div data-testid="pr-trend-chart-container" className="h-48 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="currentColor"
+                className="text-gray-200 dark:text-gray-700"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 10, fill: "currentColor" }}
+                className="text-gray-500 dark:text-gray-400"
+                tickLine={false}
+                axisLine={false}
+                interval={2}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: "currentColor" }}
+                className="text-gray-500 dark:text-gray-400"
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--tooltip-bg, #1f2937)",
+                  borderColor: "var(--tooltip-border, #374151)",
+                  borderRadius: "0.5rem",
+                  fontSize: "0.75rem",
+                }}
+                labelStyle={{ color: "#d1d5db" }}
+                itemStyle={{ color: "#a78bfa" }}
+              />
+              <Bar
+                dataKey="count"
+                fill="#9333ea"
+                radius={[3, 3, 0, 0]}
+                maxBarSize={40}
+                name="Merges"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { GET } from "@/app/api/token-usage/route";
 import { NextRequest } from "next/server";
+import { promises as fsPromises } from "fs";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -12,7 +13,13 @@ function makeRequest(range?: string): NextRequest {
 }
 
 beforeEach(() => {
+  // Prevent readDispatcherState() from reading real state.json — falls through to mock data
+  vi.spyOn(fsPromises, "readFile").mockRejectedValue(new Error("ENOENT"));
   mockFetch.mockReset();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe("GET /api/token-usage", () => {

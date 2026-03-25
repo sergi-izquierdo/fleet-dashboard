@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { GET } from "@/app/api/dashboard/route";
 import * as apiCache from "@/lib/apiCache";
@@ -16,6 +16,17 @@ vi.mock("fs", async () => {
     accessSync: vi.fn(() => {
       throw new Error("ENOENT");
     }),
+  };
+});
+
+// Mock fs/promises so fetchActivityLog doesn't read the real state.json on disk
+vi.mock("fs/promises", () => {
+  const readFileMock = vi.fn().mockRejectedValue(
+    Object.assign(new Error("ENOENT: no such file or directory"), { code: "ENOENT" })
+  );
+  return {
+    readFile: readFileMock,
+    default: { readFile: readFileMock },
   };
 });
 

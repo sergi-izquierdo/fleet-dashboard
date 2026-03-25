@@ -1,4 +1,4 @@
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import Home from "@/app/page";
 import type { DashboardData } from "@/types/dashboard";
@@ -29,6 +29,44 @@ const testDashboardData: DashboardData = {
   activityLog: [],
 };
 
+const mockServicesData = {
+  services: [
+    { name: "fleet-orchestrator", status: "active", statusText: "active" },
+    { name: "fleet-dashboard", status: "active", statusText: "active" },
+  ],
+  timestamp: new Date().toISOString(),
+};
+
+const mockIssuesData = {
+  repos: [
+    {
+      repo: "sergi-izquierdo/fleet-dashboard",
+      total: 10,
+      open: 4,
+      closed: 6,
+      percentComplete: 60,
+      labels: { queued: 1, inProgress: 2, cloud: 1, done: 6 },
+    },
+  ],
+  overall: {
+    total: 10,
+    open: 4,
+    closed: 6,
+    percentComplete: 60,
+    labels: { queued: 1, inProgress: 2, cloud: 1, done: 6 },
+  },
+};
+
+const mockDispatcherData = {
+  offline: true,
+  cycle: { startedAt: "", finishedAt: "", durationMs: 0, nextRunAt: "", consecutiveErrors: 0, errors: [] },
+  rateLimit: { remaining: 5000, limit: 5000, level: "ok", resetAt: "" },
+  phases: {},
+  prPipeline: [],
+  activeAgents: [],
+  completedAgents: [],
+};
+
 describe("Home page", () => {
   beforeEach(() => {
     global.fetch = vi.fn().mockImplementation((url: string) => {
@@ -36,6 +74,42 @@ describe("Home page", () => {
         return Promise.resolve({
           ok: true,
           json: async () => ({ sessions: [] }),
+        });
+      }
+      if (url.includes("/api/services")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => mockServicesData,
+        });
+      }
+      if (url.includes("/api/issues")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => mockIssuesData,
+        });
+      }
+      if (url.includes("/api/dispatcher-status")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => mockDispatcherData,
+        });
+      }
+      if (url.includes("/api/fleet-events")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [],
+        });
+      }
+      if (url.includes("/api/token-usage")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            timeSeries: [],
+            byProject: [],
+            totalCost: 0,
+            totalTokens: 0,
+            source: "mock",
+          }),
         });
       }
       return Promise.resolve({
@@ -89,21 +163,31 @@ describe("Home page", () => {
   });
 
   it("shows error alert when fetch fails but prior data exists", async () => {
-    // First load succeeds so data is populated
-    render(<Home />);
-    await waitFor(() => {
-      expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
-    });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      // First load succeeds so data is populated
+      render(<Home />);
+      await waitFor(() => {
+        expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
+      });
 
-    // Simulate subsequent fetch failure with data already loaded
-    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error("Network error")
-    );
+      // Simulate subsequent fetch failure with data already loaded
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new Error("Network error")
+      );
 
-    // The error alert is rendered alongside existing data
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toBeInTheDocument();
-    });
-    expect(screen.getByText(/network error/i)).toBeInTheDocument();
+      // Advance past the 30s refresh interval to trigger the next fetch
+      await act(async () => {
+        vi.advanceTimersByTime(30_000);
+      });
+
+      // The error alert is rendered alongside existing data
+      await waitFor(() => {
+        expect(screen.getByTestId("error-banner")).toBeInTheDocument();
+      });
+      expect(screen.getByTestId("error-banner").textContent).toMatch(/network error/i);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

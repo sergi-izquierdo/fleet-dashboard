@@ -150,19 +150,16 @@ describe("FleetActivityTimeline", () => {
     );
     fireEvent.click(screen.getByTestId("range-btn-24h"));
 
-    // commit -> agent_spawn, ci_failed -> error, deploy -> stale_recovery, error -> error
+    // commit -> agent_spawn, ci_failed -> error, deploy -> merged, error -> error
     const agentDots = screen.getAllByTestId("timeline-dot-agent_spawn");
     expect(agentDots.length).toBe(1);
 
     const errorDots = screen.getAllByTestId("timeline-dot-error");
     expect(errorDots.length).toBe(2);
 
-    const staleDots = screen.getAllByTestId("timeline-dot-stale_recovery");
-    expect(staleDots.length).toBe(1);
-
-    // merged PRs
+    // merged PRs + deploy event
     const mergedDots = screen.getAllByTestId("timeline-dot-merged");
-    expect(mergedDots.length).toBe(1);
+    expect(mergedDots.length).toBe(2);
   });
 
   it("filters out events outside the selected range", () => {
@@ -232,10 +229,10 @@ describe("FleetActivityTimeline", () => {
       <FleetActivityTimeline activityLog={sampleEvents} prs={samplePRs} />,
     );
     fireEvent.click(screen.getByTestId("range-btn-24h"));
-    // 2 errors (ci_failed + error)
-    expect(screen.getByText("(2)")).toBeInTheDocument();
-    // 1 merged PR, 1 agent_spawn, 1 stale_recovery each show (1)
-    expect(screen.getAllByText("(1)").length).toBe(3);
+    // 2 errors (ci_failed + error) and 2 merged (deploy + merged PR)
+    expect(screen.getAllByText("(2)").length).toBe(2);
+    // 1 agent_spawn shows (1)
+    expect(screen.getAllByText("(1)").length).toBe(1);
   });
 
   it("only includes merged PRs as green dots, not open ones", () => {

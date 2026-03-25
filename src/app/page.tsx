@@ -18,6 +18,7 @@ import ProgressTracker from "@/components/ProgressTracker";
 import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
 import { Footer } from "@/components/Footer";
 import { LogoutButton } from "@/components/LogoutButton";
+import ConfigViewer from "@/components/ConfigViewer";
 import FleetActivityTimeline from "@/components/FleetActivityTimeline";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { CollapsibleCard, useIsMobile } from "@/components/CollapsibleCard";
@@ -319,6 +320,19 @@ export default function Home() {
           </div>
         </PullToRefresh>
       ) : null}
+
+      {/* Dispatcher Config */}
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <CollapsibleCard
+          title="Dispatcher Config"
+          ariaLabel="Dispatcher configuration"
+          defaultExpanded={false}
+        >
+          <SectionErrorBoundary sectionName="Dispatcher Config">
+            <ConfigViewer />
+          </SectionErrorBoundary>
+        </CollapsibleCard>
+      </div>
 
       {/* Bottom Navigation - mobile only */}
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />

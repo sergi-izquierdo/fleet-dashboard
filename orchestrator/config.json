@@ -1,0 +1,28 @@
+{
+  "maxConcurrentAgents": 5,
+  "maxPerProject": 2,
+  "pollIntervalMs": 30000,
+  "agentTimeoutMs": 3600000,
+  "cleanupWindowMs": 86400000,
+  "stateRetentionMs": 604800000,
+  "plannerEnabled": true,
+  "reviewBeforeMerge": true,
+  "projects": [
+    {
+      "repo": "sergi-izquierdo/fleet-dashboard",
+      "url": "https://github.com/sergi-izquierdo/fleet-dashboard"
+    },
+    {
+      "repo": "sergi-izquierdo/pavello-larapita-app",
+      "url": "https://github.com/sergi-izquierdo/pavello-larapita-app"
+    },
+    {
+      "repo": "sergi-izquierdo/synapse-notes",
+      "url": "https://github.com/sergi-izquierdo/synapse-notes"
+    },
+    {
+      "repo": "sergi-izquierdo/autotask-engine",
+      "url": "https://github.com/sergi-izquierdo/autotask-engine"
+    }
+  ]
+}

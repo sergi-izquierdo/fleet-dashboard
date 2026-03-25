@@ -10,22 +10,21 @@ const STATUS_STYLES: Record<ServiceStatus["status"], { dot: string; label: strin
   unknown: { dot: "bg-yellow-500", label: "unknown" },
 };
 
-function ServiceRow({ service }: { service: ServiceStatus }) {
+function ServiceBadge({ service }: { service: ServiceStatus }) {
   const style = STATUS_STYLES[service.status];
   return (
     <div
-      className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/5"
+      className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5 dark:border-white/10 dark:bg-white/5"
       data-testid={`service-row-${service.name}`}
     >
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{service.name}</p>
-        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{service.statusText}</p>
-      </div>
       <span
-        className={`ml-3 inline-flex h-3 w-3 flex-shrink-0 rounded-full ${style.dot}`}
+        className={`inline-flex h-2 w-2 flex-shrink-0 rounded-full ${style.dot}`}
         aria-label={`${service.name} is ${style.label}`}
         data-testid={`service-indicator-${service.name}`}
       />
+      <span className="min-w-0 truncate text-xs font-medium text-gray-800 dark:text-gray-200">
+        {service.name}
+      </span>
     </div>
   );
 }
@@ -59,9 +58,9 @@ export default function ServiceHealth() {
 
   if (isLoading) {
     return (
-      <div className="space-y-2" data-testid="service-health-loading">
+      <div className="grid grid-cols-2 gap-2" data-testid="service-health-loading">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-14 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-800" />
+          <div key={i} className="h-8 animate-pulse rounded-md bg-gray-200 dark:bg-gray-800" />
         ))}
       </div>
     );
@@ -92,9 +91,9 @@ export default function ServiceHealth() {
           {new Date(data.timestamp).toLocaleTimeString()}
         </p>
       </div>
-      <div className="space-y-2" data-testid="service-health-list">
+      <div className="grid grid-cols-2 gap-2" data-testid="service-health-list">
         {data.services.map((service) => (
-          <ServiceRow key={service.name} service={service} />
+          <ServiceBadge key={service.name} service={service} />
         ))}
       </div>
     </div>

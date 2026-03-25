@@ -152,4 +152,24 @@ describe("ActivityLog", () => {
     render(<ActivityLog events={sampleEvents} />);
     expect(sampleEvents).toEqual(original);
   });
+
+  it("renders skeleton rows when isLoading is true and events is empty", () => {
+    render(<ActivityLog events={[]} isLoading={true} />);
+    expect(screen.queryByText("No recent activity")).not.toBeInTheDocument();
+    const list = screen.getByRole("list", { name: "Loading activity" });
+    expect(list).toBeInTheDocument();
+    expect(list.querySelectorAll("li")).toHaveLength(5);
+  });
+
+  it("does not render skeleton when isLoading is true but events are present", () => {
+    render(<ActivityLog events={sampleEvents} isLoading={true} />);
+    expect(screen.queryByRole("list", { name: "Loading activity" })).not.toBeInTheDocument();
+    expect(screen.getByText("Pushed 3 commits to main")).toBeInTheDocument();
+  });
+
+  it("shows empty state when isLoading is false and events is empty", () => {
+    render(<ActivityLog events={[]} isLoading={false} />);
+    expect(screen.getByText("No recent activity")).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Loading activity" })).not.toBeInTheDocument();
+  });
 });

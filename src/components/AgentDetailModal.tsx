@@ -7,6 +7,7 @@ interface AgentDetailModalProps {
   sessionName: string;
   onClose: () => void;
   onViewTerminal?: () => void;
+  onKilled?: () => void;
 }
 
 const STATUS_LABELS: Record<Agent["status"], string> = {
@@ -62,10 +63,34 @@ export function AgentDetailModal({
   sessionName,
   onClose,
   onViewTerminal,
+  onKilled,
 }: AgentDetailModalProps) {
   const [agent, setAgent] = useState<Agent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showKillConfirm, setShowKillConfirm] = useState(false);
+  const [isKilling, setIsKilling] = useState(false);
+
+  async function handleKill() {
+    setIsKilling(true);
+    try {
+      const res = await fetch(`/api/sessions/${encodeURIComponent(sessionName)}/kill`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        setShowKillConfirm(false);
+        onKilled?.();
+        onClose();
+      } else {
+        const data = await res.json() as { error?: string };
+        setError(data.error ?? "Failed to kill session");
+      }
+    } catch {
+      setError("Failed to kill session");
+    } finally {
+      setIsKilling(false);
+    }
+  }
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -265,8 +290,8 @@ export function AgentDetailModal({
             )}
 
             {/* Actions */}
-            {onViewTerminal && (
-              <div className="mt-2 border-t border-gray-200 dark:border-white/10 pt-4">
+            <div className="mt-2 border-t border-gray-200 dark:border-white/10 pt-4 space-y-2">
+              {onViewTerminal && (
                 <button
                   onClick={onViewTerminal}
                   data-testid="agent-detail-terminal-button"
@@ -288,8 +313,40 @@ export function AgentDetailModal({
                   </svg>
                   View Terminal
                 </button>
-              </div>
-            )}
+              )}
+              {showKillConfirm ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600 dark:text-white/60 text-center">
+                    Terminate this session? Any unsaved work will be lost.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      data-testid="agent-detail-kill-cancel-button"
+                      onClick={() => setShowKillConfirm(false)}
+                      className="flex-1 rounded-lg border border-gray-200 dark:border-white/10 px-4 py-2 text-sm text-gray-700 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      data-testid="agent-detail-kill-confirm-button"
+                      onClick={handleKill}
+                      disabled={isKilling}
+                      className="flex-1 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isKilling ? "Killing…" : "Confirm Kill"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  data-testid="agent-detail-kill-button"
+                  onClick={() => setShowKillConfirm(true)}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 dark:border-red-500/30 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                >
+                  Kill Session
+                </button>
+              )}
+            </div>
           </div>
         ) : null}
       </div>

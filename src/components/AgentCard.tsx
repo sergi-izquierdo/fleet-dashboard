@@ -24,6 +24,7 @@ export interface AgentCardProps {
   prUrl?: string;
   healthTimeline?: HealthTimelineEntry[];
   onViewTerminal?: () => void;
+  onKilled?: () => void;
 }
 
 const statusConfig: Record<
@@ -78,10 +79,28 @@ export function AgentCard({
   prUrl,
   healthTimeline,
   onViewTerminal,
+  onKilled,
 }: AgentCardProps) {
   const { label, bgClass, textClass, dotClass } = statusConfig[status];
   const [showTimeline, setShowTimeline] = useState(false);
+  const [showKillConfirm, setShowKillConfirm] = useState(false);
+  const [isKilling, setIsKilling] = useState(false);
   const relativeTime = useRelativeTime(startedAt ?? new Date());
+
+  async function handleKill() {
+    setIsKilling(true);
+    try {
+      const res = await fetch(`/api/sessions/${encodeURIComponent(agentName)}/kill`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        setShowKillConfirm(false);
+        onKilled?.();
+      }
+    } finally {
+      setIsKilling(false);
+    }
+  }
 
   return (
     <>
@@ -166,6 +185,17 @@ export function AgentCard({
                 View PR
               </a>
             ) : null}
+            <button
+              data-testid="kill-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowKillConfirm(true);
+              }}
+              className="text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 transition-colors"
+              aria-label={`Kill agent ${agentName}`}
+            >
+              Kill
+            </button>
           </div>
         </div>
       </div>
@@ -176,6 +206,45 @@ export function AgentCard({
           timeline={healthTimeline}
           onClose={() => setShowTimeline(false)}
         />
+      )}
+
+      {showKillConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowKillConfirm(false)}
+          data-testid="kill-confirm-dialog"
+        >
+          <div
+            className="mx-4 w-full max-w-sm rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+              Kill agent?
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-white/60 mb-4">
+              This will terminate the tmux session for{" "}
+              <span className="font-mono text-gray-900 dark:text-white">{agentName}</span>.
+              Any unsaved work will be lost.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                data-testid="kill-cancel-button"
+                onClick={() => setShowKillConfirm(false)}
+                className="rounded-lg border border-gray-200 dark:border-white/10 px-3 py-1.5 text-sm text-gray-700 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                data-testid="kill-confirm-button"
+                onClick={handleKill}
+                disabled={isKilling}
+                className="rounded-lg bg-red-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isKilling ? "Killing…" : "Kill"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

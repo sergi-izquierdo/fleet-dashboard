@@ -1,5 +1,5 @@
-import { render, screen, cleanup } from "@testing-library/react";
-import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { AgentCard, AgentStatus } from "@/components/AgentCard";
 
 const defaultProps = {
@@ -11,8 +11,13 @@ const defaultProps = {
 };
 
 describe("AgentCard", () => {
+  beforeEach(() => {
+    global.fetch = vi.fn();
+  });
+
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
   });
   it("renders agent name", () => {
     render(<AgentCard {...defaultProps} />);
@@ -49,6 +54,61 @@ describe("AgentCard", () => {
   it("does not render PR link when prUrl is not provided", () => {
     render(<AgentCard {...defaultProps} />);
     expect(screen.queryByRole("link", { name: "View PR" })).toBeNull();
+  });
+
+  describe("kill button", () => {
+    it("renders kill button", () => {
+      render(<AgentCard {...defaultProps} />);
+      expect(screen.getByTestId("kill-button")).toBeInTheDocument();
+    });
+
+    it("shows confirmation dialog when kill button is clicked", () => {
+      render(<AgentCard {...defaultProps} />);
+      fireEvent.click(screen.getByTestId("kill-button"));
+      expect(screen.getByTestId("kill-confirm-dialog")).toBeInTheDocument();
+    });
+
+    it("hides confirmation dialog when cancel is clicked", () => {
+      render(<AgentCard {...defaultProps} />);
+      fireEvent.click(screen.getByTestId("kill-button"));
+      fireEvent.click(screen.getByTestId("kill-cancel-button"));
+      expect(screen.queryByTestId("kill-confirm-dialog")).toBeNull();
+    });
+
+    it("calls fetch and onKilled on successful kill", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, sessionName: "agent-42" }),
+      });
+      const onKilled = vi.fn();
+      render(<AgentCard {...defaultProps} onKilled={onKilled} />);
+      fireEvent.click(screen.getByTestId("kill-button"));
+      fireEvent.click(screen.getByTestId("kill-confirm-button"));
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          "/api/sessions/agent-42/kill",
+          { method: "POST" }
+        );
+        expect(onKilled).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("does not call onKilled when kill returns error", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+      });
+      const onKilled = vi.fn();
+      render(<AgentCard {...defaultProps} onKilled={onKilled} />);
+      fireEvent.click(screen.getByTestId("kill-button"));
+      fireEvent.click(screen.getByTestId("kill-confirm-button"));
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalled();
+      });
+      expect(onKilled).not.toHaveBeenCalled();
+    });
   });
 
   describe("status badge variants", () => {

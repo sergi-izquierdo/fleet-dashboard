@@ -19,29 +19,28 @@ import { GET } from "@/app/api/services/route";
 
 type ExecCallback = (err: NodeJS.ErrnoException | null, result: { stdout: string }) => void;
 
+// execFile can be called as (cmd, args, callback) or (cmd, args, options, callback)
+function getCallback(...args: unknown[]): ExecCallback {
+  return args[args.length - 1] as ExecCallback;
+}
+
 function simulateActive() {
-  mockExecFile.mockImplementation(
-    (_cmd: string, _args: string[], callback: ExecCallback) => {
-      callback(null, { stdout: "active\n" });
-    }
-  );
+  mockExecFile.mockImplementation((...args: unknown[]) => {
+    getCallback(...args)(null, { stdout: "active\n" });
+  });
 }
 
 function simulateInactive() {
-  mockExecFile.mockImplementation(
-    (_cmd: string, _args: string[], callback: ExecCallback) => {
-      const err = Object.assign(new Error("not active"), { stdout: "inactive\n" }) as NodeJS.ErrnoException & { stdout: string };
-      callback(err, { stdout: "inactive\n" });
-    }
-  );
+  mockExecFile.mockImplementation((...args: unknown[]) => {
+    const err = Object.assign(new Error("not active"), { stdout: "inactive\n" }) as NodeJS.ErrnoException & { stdout: string };
+    getCallback(...args)(err, { stdout: "inactive\n" });
+  });
 }
 
 function simulateError() {
-  mockExecFile.mockImplementation(
-    (_cmd: string, _args: string[], callback: ExecCallback) => {
-      callback(new Error("command not found"), { stdout: "" });
-    }
-  );
+  mockExecFile.mockImplementation((...args: unknown[]) => {
+    getCallback(...args)(new Error("command not found"), { stdout: "" });
+  });
 }
 
 describe("/api/services", () => {

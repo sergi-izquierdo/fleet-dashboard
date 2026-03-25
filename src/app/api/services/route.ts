@@ -28,10 +28,23 @@ export interface ServicesResponse {
   timestamp: string;
 }
 
+function getSystemctlEnv(): NodeJS.ProcessEnv {
+  const uid = process.getuid?.() ?? 1000;
+  return {
+    ...process.env,
+    DBUS_SESSION_BUS_ADDRESS:
+      process.env.DBUS_SESSION_BUS_ADDRESS ||
+      `unix:path=/run/user/${uid}/bus`,
+    XDG_RUNTIME_DIR:
+      process.env.XDG_RUNTIME_DIR || `/run/user/${uid}`,
+  };
+}
+
 async function checkService(name: ServiceName): Promise<ServiceStatus> {
+  const env = getSystemctlEnv();
   try {
     const { stdout } = await Promise.race([
-      execFileAsync("systemctl", ["--user", "is-active", name]),
+      execFileAsync("systemctl", ["--user", "is-active", name], { env, timeout: CHECK_TIMEOUT_MS }),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("timeout")), CHECK_TIMEOUT_MS)
       ),

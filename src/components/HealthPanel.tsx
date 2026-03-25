@@ -11,7 +11,6 @@ interface HealthResponse {
   status: "healthy" | "degraded" | "unhealthy";
   services: {
     tmux: ServiceStatus;
-    ao: ServiceStatus;
     observability: ServiceStatus;
     langfuse: ServiceStatus;
   };
@@ -20,7 +19,6 @@ interface HealthResponse {
 
 const SERVICE_LABELS: Record<string, string> = {
   tmux: "tmux Sessions",
-  ao: "Agent Orchestrator",
   observability: "Observability",
   langfuse: "Langfuse",
 };

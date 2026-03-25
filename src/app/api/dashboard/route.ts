@@ -12,7 +12,6 @@ import {
 } from "@/lib/sessionHelpers";
 import type { TmuxSession } from "@/types/sessions";
 
-const AO_API_URL = process.env.AO_API_URL || "http://localhost:3000";
 const FETCH_TIMEOUT_MS = 5000;
 const TMUX_BIN = "/usr/bin/tmux";
 const STATE_PATH =
@@ -30,66 +29,6 @@ const ALL_REPOS = (
   .split(",")
   .map((r) => r.trim())
   .filter(Boolean);
-
-function transformAgent(raw: Record<string, unknown>): Agent {
-  return {
-    name: String(raw.name ?? ""),
-    sessionId: String(raw.sessionId ?? ""),
-    status: raw.status as Agent["status"],
-    issue: {
-      title: String((raw.issue as Record<string, unknown>)?.title ?? ""),
-      number: Number((raw.issue as Record<string, unknown>)?.number ?? 0),
-      url: String((raw.issue as Record<string, unknown>)?.url ?? ""),
-    },
-    branch: String(raw.branch ?? ""),
-    timeElapsed: String(raw.timeElapsed ?? ""),
-    ...(raw.pr
-      ? {
-          pr: {
-            url: String((raw.pr as Record<string, unknown>)?.url ?? ""),
-            number: Number(
-              (raw.pr as Record<string, unknown>)?.number ?? 0,
-            ),
-          },
-        }
-      : {}),
-  };
-}
-
-function transformPR(raw: Record<string, unknown>): PR {
-  return {
-    number: Number(raw.number ?? 0),
-    url: String(raw.url ?? ""),
-    title: String(raw.title ?? ""),
-    ciStatus: raw.ciStatus as PR["ciStatus"],
-    reviewStatus: raw.reviewStatus as PR["reviewStatus"],
-    mergeState: raw.mergeState as PR["mergeState"],
-    author: String(raw.author ?? ""),
-    branch: String(raw.branch ?? ""),
-  };
-}
-
-function transformActivityEvent(raw: Record<string, unknown>): ActivityEvent {
-  return {
-    id: String(raw.id ?? ""),
-    timestamp: String(raw.timestamp ?? ""),
-    agentName: String(raw.agentName ?? ""),
-    eventType: raw.eventType as ActivityEvent["eventType"],
-    description: String(raw.description ?? ""),
-  };
-}
-
-function transformAOResponse(data: Record<string, unknown>): DashboardData {
-  const agents = Array.isArray(data.agents)
-    ? data.agents.map(transformAgent)
-    : [];
-  const prs = Array.isArray(data.prs) ? data.prs.map(transformPR) : [];
-  const activityLog = Array.isArray(data.activityLog)
-    ? data.activityLog.map(transformActivityEvent)
-    : [];
-
-  return { agents, prs, activityLog };
-}
 
 /** Map TmuxSession status to Agent status */
 function sessionStatusToAgentStatus(
@@ -371,52 +310,22 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // First try the AO (Agent Orchestrator) API
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const prRepo = targetRepo || DEFAULT_REPO;
+  const [agents, prs, activityLog] = await Promise.all([
+    fetchRealAgents(),
+    fetchRealPRs(prRepo),
+    fetchActivityLog(),
+  ]);
 
-    const aoUrl = targetRepo
-      ? `${AO_API_URL}/api/ao/dashboard?repo=${encodeURIComponent(targetRepo)}`
-      : `${AO_API_URL}/api/ao/dashboard`;
-    const response = await fetch(aoUrl, {
-      signal: controller.signal,
-      headers: { Accept: "application/json" },
-    });
+  const data: DashboardData = {
+    agents,
+    prs,
+    activityLog,
+  };
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`AO API responded with status ${response.status}`);
-    }
-
-    const raw = await response.json();
-    const data = transformAOResponse(raw);
-
-    apiCache.set(cacheKey, data, CACHE_TTL_MS);
-    return NextResponse.json(data, {
-      status: 200,
-      headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=15" },
-    });
-  } catch {
-    // AO API unavailable — build dashboard from real sources
-    const prRepo = targetRepo || DEFAULT_REPO;
-    const [agents, prs, activityLog] = await Promise.all([
-      fetchRealAgents(),
-      fetchRealPRs(prRepo),
-      fetchActivityLog(),
-    ]);
-
-    const data: DashboardData = {
-      agents,
-      prs,
-      activityLog,
-    };
-
-    apiCache.set(cacheKey, data, CACHE_TTL_MS);
-    return NextResponse.json(data, {
-      status: 200,
-      headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=15" },
-    });
-  }
+  apiCache.set(cacheKey, data, CACHE_TTL_MS);
+  return NextResponse.json(data, {
+    status: 200,
+    headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=15" },
+  });
 }

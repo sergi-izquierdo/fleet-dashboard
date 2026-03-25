@@ -6,7 +6,6 @@ const mockHealthData = {
   status: "degraded" as const,
   services: {
     tmux: { status: "up" as const, message: "tmux sessions active: 3" },
-    ao: { status: "up" as const, message: "AO process is reachable" },
     observability: { status: "down" as const, message: "Observability server unreachable" },
     langfuse: { status: "up" as const, message: "Langfuse is reachable" },
   },
@@ -38,7 +37,6 @@ describe("HealthPanel", () => {
     });
     expect(screen.getByText("Degraded")).toBeInTheDocument();
     expect(screen.getByTestId("health-service-tmux")).toBeInTheDocument();
-    expect(screen.getByTestId("health-service-ao")).toBeInTheDocument();
     expect(screen.getByTestId("health-service-observability")).toBeInTheDocument();
     expect(screen.getByTestId("health-service-langfuse")).toBeInTheDocument();
   });
@@ -48,7 +46,6 @@ describe("HealthPanel", () => {
     await waitFor(() => {
       expect(screen.getByText("tmux Sessions")).toBeInTheDocument();
     });
-    expect(screen.getByText("Agent Orchestrator")).toBeInTheDocument();
     expect(screen.getByText("Observability")).toBeInTheDocument();
     expect(screen.getByText("Langfuse")).toBeInTheDocument();
   });

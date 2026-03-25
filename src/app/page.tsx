@@ -25,6 +25,7 @@ import ServiceHealth from "@/components/ServiceHealth";
 import { CollapsibleCard, useIsMobile } from "@/components/CollapsibleCard";
 import ProjectFilter from "@/components/ProjectFilter";
 import StatsPanel from "@/components/StatsPanel";
+import PRTrendChart from "@/components/PRTrendChart";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useFleetState } from "@/hooks/useFleetState";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -291,6 +292,19 @@ export default function Home() {
                   <MergeQueue />
                 </SectionErrorBoundary>
               </CollapsibleCard>
+
+              <div className="mt-6">
+                <CollapsibleCard
+                  title="PR Merge Trends"
+                  id="section-pr-trends"
+                  ariaLabel="PR merge trends"
+                  defaultExpanded={isMobile !== true}
+                >
+                  <SectionErrorBoundary sectionName="PR Merge Trends">
+                    <PRTrendChart />
+                  </SectionErrorBoundary>
+                </CollapsibleCard>
+              </div>
 
               <div className="mt-6">
                 <CollapsibleCard

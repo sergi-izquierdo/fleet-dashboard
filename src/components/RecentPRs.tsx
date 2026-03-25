@@ -1,7 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import type { RecentPR } from "@/types/prs";
+
+interface RecentPRsProps {
+  filterRepo?: string;
+  filterStatus?: string;
+}
 
 const REFRESH_INTERVAL_MS = 30_000;
 
@@ -60,7 +65,7 @@ export function timeAgo(dateString: string): string {
   return `${diffDays}d ago`;
 }
 
-export default function RecentPRs() {
+export default function RecentPRs({ filterRepo, filterStatus }: RecentPRsProps = {}) {
   const [prs, setPrs] = useState<RecentPR[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +92,14 @@ export default function RecentPRs() {
     return () => clearInterval(interval);
   }, [fetchPRs]);
 
+  const displayedPRs = useMemo(() => {
+    return prs.filter((pr) => {
+      if (filterRepo && filterRepo !== "all" && pr.repo !== filterRepo) return false;
+      if (filterStatus && filterStatus !== "all" && pr.status !== filterStatus) return false;
+      return true;
+    });
+  }, [prs, filterRepo, filterStatus]);
+
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 animate-fade-in">
       <div className="mb-3 flex items-center justify-between">
@@ -110,16 +123,16 @@ export default function RecentPRs() {
         >
           {error}
         </div>
-      ) : prs.length === 0 ? (
+      ) : displayedPRs.length === 0 ? (
         <p className="py-4 text-center text-sm text-gray-500 dark:text-gray-400" data-testid="prs-empty">
-          No recent PRs found.
+          {prs.length === 0 ? "No recent PRs found." : "No PRs match the current filters."}
         </p>
       ) : (
         <div
           className="max-h-[32rem] space-y-2 overflow-y-auto pr-1"
           data-testid="prs-list"
         >
-          {prs.map((pr, index) => {
+          {displayedPRs.map((pr, index) => {
             const statusCfg = statusConfig[pr.status];
             const ciCfg = ciStatusConfig[pr.ciStatus];
             const repoShort = pr.repo.split("/").pop() ?? pr.repo;

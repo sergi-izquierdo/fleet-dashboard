@@ -46,7 +46,12 @@ const subscribe = () => () => {};
 const getSnapshot = () => true;
 const getServerSnapshot = () => false;
 
-export default function TokenUsageDashboard() {
+interface TokenUsageDashboardProps {
+  /** Set to false to hide the summary stats cards (e.g. when the parent shows them) */
+  showStats?: boolean;
+}
+
+export default function TokenUsageDashboard({ showStats = true }: TokenUsageDashboardProps) {
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const { data, isLoading, error, range, setRange, isLiveData } = useTokenUsage();
 
@@ -147,47 +152,49 @@ export default function TokenUsageDashboard() {
       ) : data ? (
         <div className="space-y-6">
           {/* Summary Stats */}
-          <div
-            className="grid grid-cols-2 gap-3 sm:grid-cols-4"
-            data-testid="token-usage-stats"
-          >
-            <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-3 text-center">
-              <p className="text-xl font-bold text-gray-900 dark:text-white">
-                {formatTokens(data.totalTokens)}
-              </p>
-              <p className="mt-0.5 text-xs text-gray-500 dark:text-white/50">
-                Total Tokens
-              </p>
+          {showStats && (
+            <div
+              className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+              data-testid="token-usage-stats"
+            >
+              <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-3 text-center">
+                <p className="text-xl font-bold text-gray-900 dark:text-white">
+                  {formatTokens(data.totalTokens)}
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-white/50">
+                  Total Tokens
+                </p>
+              </div>
+              <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-3 text-center">
+                <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                  {formatCost(data.totalCost)}
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-white/50">
+                  Estimated Cost
+                </p>
+              </div>
+              <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-3 text-center">
+                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                  {formatTokens(
+                    data.byProject.reduce((s, p) => s + p.inputTokens, 0)
+                  )}
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-white/50">
+                  Input Tokens
+                </p>
+              </div>
+              <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-3 text-center">
+                <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
+                  {formatTokens(
+                    data.byProject.reduce((s, p) => s + p.outputTokens, 0)
+                  )}
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-white/50">
+                  Output Tokens
+                </p>
+              </div>
             </div>
-            <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-3 text-center">
-              <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                {formatCost(data.totalCost)}
-              </p>
-              <p className="mt-0.5 text-xs text-gray-500 dark:text-white/50">
-                Estimated Cost
-              </p>
-            </div>
-            <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-3 text-center">
-              <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                {formatTokens(
-                  data.byProject.reduce((s, p) => s + p.inputTokens, 0)
-                )}
-              </p>
-              <p className="mt-0.5 text-xs text-gray-500 dark:text-white/50">
-                Input Tokens
-              </p>
-            </div>
-            <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-3 text-center">
-              <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
-                {formatTokens(
-                  data.byProject.reduce((s, p) => s + p.outputTokens, 0)
-                )}
-              </p>
-              <p className="mt-0.5 text-xs text-gray-500 dark:text-white/50">
-                Output Tokens
-              </p>
-            </div>
-          </div>
+          )}
 
           {/* Token Consumption Over Time */}
           <div>

@@ -5,11 +5,14 @@ import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 export const metadata: Metadata = {
-  title: "Fleet Dashboard",
+  title: {
+    template: "%s | Fleet Dashboard",
+    default: "Overview | Fleet Dashboard",
+  },
   description: "Real-time fleet monitoring dashboard",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon.svg",
+    icon: "/favicon.svg",
     apple: "/icons/icon-192x192.svg",
   },
   appleWebApp: {

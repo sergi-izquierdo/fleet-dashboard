@@ -20,6 +20,7 @@ import { Footer } from "@/components/Footer";
 import { LogoutButton } from "@/components/LogoutButton";
 import ConfigViewer from "@/components/ConfigViewer";
 import FleetActivityTimeline from "@/components/FleetActivityTimeline";
+import DispatcherPipeline from "@/components/DispatcherPipeline";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import ServiceHealth from "@/components/ServiceHealth";
 import { CollapsibleCard, useIsMobile } from "@/components/CollapsibleCard";
@@ -235,6 +236,18 @@ export default function Home() {
             >
               <SectionErrorBoundary sectionName="Service Health">
                 <ServiceHealth />
+              </SectionErrorBoundary>
+            </CollapsibleCard>
+
+            {/* Dispatcher Pipeline */}
+            <CollapsibleCard
+              title="Dispatcher Pipeline"
+              id="section-dispatcher-pipeline"
+              ariaLabel="Dispatcher pipeline"
+              defaultExpanded={isMobile !== true}
+            >
+              <SectionErrorBoundary sectionName="Dispatcher Pipeline">
+                <DispatcherPipeline />
               </SectionErrorBoundary>
             </CollapsibleCard>
 

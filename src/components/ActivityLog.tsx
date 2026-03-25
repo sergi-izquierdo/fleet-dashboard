@@ -67,9 +67,10 @@ function RelativeTimestamp({ timestamp }: { timestamp: string }) {
 interface ActivityLogProps {
   events: AgentEvent[];
   maxHeight?: string;
+  isLoading?: boolean;
 }
 
-export default function ActivityLog({ events, maxHeight = "max-h-96" }: ActivityLogProps) {
+export default function ActivityLog({ events, maxHeight = "max-h-96", isLoading = false }: ActivityLogProps) {
   const sorted = [...events].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
@@ -78,7 +79,28 @@ export default function ActivityLog({ events, maxHeight = "max-h-96" }: Activity
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 animate-fade-in">
       <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Activity Log</h2>
       <div className={`${maxHeight} overflow-y-auto pr-1`} data-testid="activity-log-scroll">
-        {sorted.length === 0 ? (
+        {isLoading && sorted.length === 0 ? (
+          <ul className="space-y-2" role="list" aria-label="Loading activity">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <li
+                key={i}
+                className="flex gap-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-3 h-16 animate-pulse"
+              >
+                <div className="flex flex-col items-center pt-1">
+                  <div className="h-2.5 w-2.5 rounded-full bg-gray-200 dark:bg-gray-700" />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+                    <div className="h-3 w-16 rounded-full bg-gray-200 dark:bg-gray-700" />
+                    <div className="ml-auto h-3 w-12 rounded bg-gray-200 dark:bg-gray-700" />
+                  </div>
+                  <div className="h-3 w-3/4 rounded bg-gray-200 dark:bg-gray-700" />
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : sorted.length === 0 ? (
           <EmptyState
             icon={
               <svg className="h-6 w-6 text-gray-400 dark:text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">

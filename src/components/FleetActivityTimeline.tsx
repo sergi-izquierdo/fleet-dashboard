@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ActivityEvent, PR } from "@/types/dashboard";
 
 type TimelineDotType = "merged" | "agent_spawn" | "error" | "stale_recovery";
@@ -217,7 +217,13 @@ export default function FleetActivityTimeline({
   const selectedRangeMs =
     TIME_RANGE_OPTIONS.find((o) => o.label === selectedRange)!.ms;
 
-  const now = useMemo(() => new Date(), []);
+  // Tick `now` every 10s so the timeline window stays current
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 10_000);
+    return () => clearInterval(id);
+  }, []);
+
   const timelineStart = useMemo(
     () => new Date(now.getTime() - selectedRangeMs),
     [now, selectedRangeMs],

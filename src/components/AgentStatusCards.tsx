@@ -98,9 +98,6 @@ export default function AgentStatusCards() {
   if (isLoading) {
     return (
       <section aria-label="Agent sessions loading">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Agent Sessions
-        </h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 stagger-children">
           {Array.from({ length: 3 }).map((_, i) => (
             <SkeletonCard key={i} />
@@ -113,9 +110,6 @@ export default function AgentStatusCards() {
   if (error && sessions.length === 0) {
     return (
       <section aria-label="Agent sessions">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Agent Sessions
-        </h2>
         <div
           data-testid="sessions-error"
           className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-6 text-center text-sm text-red-500 dark:text-red-400"
@@ -130,9 +124,6 @@ export default function AgentStatusCards() {
   if (sessions.length === 0) {
     return (
       <section aria-label="Agent sessions">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Agent Sessions
-        </h2>
         <div data-testid="sessions-empty">
           <EmptyState
             icon={
@@ -152,9 +143,6 @@ export default function AgentStatusCards() {
 
   return (
     <section aria-label="Agent sessions" className="animate-fade-in">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-        Agent Sessions
-      </h2>
       {error && (
         <div
           data-testid="sessions-warning"

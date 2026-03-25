@@ -22,6 +22,7 @@ import ConfigViewer from "@/components/ConfigViewer";
 import FleetActivityTimeline from "@/components/FleetActivityTimeline";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import ServiceHealth from "@/components/ServiceHealth";
+import DispatcherPipelinePanel from "@/components/DispatcherPipelinePanel";
 import { CollapsibleCard, useIsMobile } from "@/components/CollapsibleCard";
 import ProjectFilter from "@/components/ProjectFilter";
 import StatsPanel from "@/components/StatsPanel";
@@ -318,6 +319,25 @@ export default function Home() {
                   </SectionErrorBoundary>
                 </CollapsibleCard>
               </div>
+            </div>
+
+            {/* Health tab content - mobile only */}
+            <div className={activeTab !== "health" ? "hidden" : "lg:hidden space-y-6"}>
+              <CollapsibleCard title="Dispatcher Pipeline" ariaLabel="Dispatcher pipeline" defaultExpanded>
+                <SectionErrorBoundary sectionName="Dispatcher Pipeline">
+                  <DispatcherPipelinePanel />
+                </SectionErrorBoundary>
+              </CollapsibleCard>
+              <CollapsibleCard title="Service Health" ariaLabel="Service health" defaultExpanded>
+                <SectionErrorBoundary sectionName="Service Health">
+                  <ServiceHealth />
+                </SectionErrorBoundary>
+              </CollapsibleCard>
+              <CollapsibleCard title="Issue Progress" ariaLabel="Issue progress" defaultExpanded>
+                <SectionErrorBoundary sectionName="Issue Progress">
+                  <ProgressTracker />
+                </SectionErrorBoundary>
+              </CollapsibleCard>
             </div>
 
             {/* Activity Tab */}

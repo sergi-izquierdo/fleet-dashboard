@@ -29,4 +29,43 @@ export function invalidate(key: string): void {
 /** Remove all entries (useful for testing). */
 export function clear(): void {
   store.clear();
+  inflight.clear();
+}
+
+/**
+ * In-flight promise map for request coalescing.
+ * If multiple callers request the same key before the first resolves,
+ * they all share the same promise (one fetch, not N).
+ */
+const inflight = new Map<string, Promise<unknown>>();
+
+/**
+ * Get cached value or fetch it, coalescing concurrent requests.
+ * If the cache is cold and a fetch is already in-flight for this key,
+ * returns the existing promise instead of starting a duplicate.
+ */
+export function getOrFetch<T>(
+  key: string,
+  ttlMs: number,
+  fetcher: () => Promise<T>,
+): Promise<T> {
+  const cached = get<T>(key);
+  if (cached !== null) return Promise.resolve(cached);
+
+  const existing = inflight.get(key);
+  if (existing) return existing as Promise<T>;
+
+  const promise = fetcher()
+    .then((data) => {
+      set(key, data, ttlMs);
+      inflight.delete(key);
+      return data;
+    })
+    .catch((err) => {
+      inflight.delete(key);
+      throw err;
+    });
+
+  inflight.set(key, promise);
+  return promise;
 }

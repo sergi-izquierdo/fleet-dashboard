@@ -103,7 +103,7 @@ async function fetchPRsFromGitHub(): Promise<RecentPR[]> {
 
 
 const CACHE_KEY = "api:prs";
-const CACHE_TTL_MS = 30_000;
+const CACHE_TTL_MS = 120_000;
 
 export async function GET(request: NextRequest) {
   const fresh = request.nextUrl.searchParams.get("fresh") === "true";

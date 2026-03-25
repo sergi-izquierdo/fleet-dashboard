@@ -83,7 +83,7 @@ async function fetchMergedPRTrends(): Promise<PRTrendDay[]> {
 }
 
 const CACHE_KEY = "api:pr-trends";
-const CACHE_TTL_MS = 60_000;
+const CACHE_TTL_MS = 600_000;
 
 export async function GET(request: NextRequest) {
   const fresh = request.nextUrl.searchParams.get("fresh") === "true";

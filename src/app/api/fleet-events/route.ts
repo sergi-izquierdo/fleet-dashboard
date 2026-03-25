@@ -10,7 +10,7 @@ const STATE_PATH =
 const ARCHIVE_PATH = STATE_PATH.replace("state.json", "state-archive.jsonl");
 
 const CACHE_KEY = "api:fleet-events";
-const CACHE_TTL_MS = 10_000;
+const CACHE_TTL_MS = 30_000;
 
 interface CompletedAgent {
   repo: string;

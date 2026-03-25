@@ -351,7 +351,7 @@ async function fetchActivityLog(): Promise<ActivityEvent[]> {
 }
 
 const CACHE_KEY_PREFIX = "api:dashboard";
-const CACHE_TTL_MS = 30_000;
+const CACHE_TTL_MS = 60_000;
 
 export async function GET(request: NextRequest) {
   const fresh = request.nextUrl.searchParams.get("fresh") === "true";

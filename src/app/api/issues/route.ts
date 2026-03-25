@@ -145,7 +145,7 @@ function getEmptyProgress(): FleetIssueProgress {
 }
 
 const CACHE_KEY = "api:issues";
-const CACHE_TTL_MS = 60_000;
+const CACHE_TTL_MS = 300_000;
 
 export async function GET(request: NextRequest) {
   const fresh = request.nextUrl.searchParams.get("fresh") === "true";

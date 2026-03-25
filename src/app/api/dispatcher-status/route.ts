@@ -8,7 +8,7 @@ const STATUS_PATH =
   "/home/sergi/agent-fleet/orchestrator/dispatcher-status.json";
 
 const CACHE_KEY = "api:dispatcher-status";
-const CACHE_TTL_MS = 10_000;
+const CACHE_TTL_MS = 20_000;
 const OFFLINE_THRESHOLD_S = 180;
 
 export async function GET() {

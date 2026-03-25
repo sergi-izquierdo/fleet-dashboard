@@ -7,6 +7,7 @@ import FleetActivityTimeline from "@/components/FleetActivityTimeline";
 import MergeQueue from "@/components/MergeQueue";
 import RecentPRs from "@/components/RecentPRs";
 import PRTrendChart from "@/components/PRTrendChart";
+import PRVelocityChart from "@/components/PRVelocityChart";
 import TokenUsageDashboard from "@/components/TokenUsageDashboard";
 import ServiceHealth from "@/components/ServiceHealth";
 import DispatcherPipelinePanel from "@/components/DispatcherPipelinePanel";
@@ -207,6 +208,14 @@ export default function OverviewPage() {
               </SectionErrorBoundary>
             </Card>
           </div>
+
+          {/* PR Velocity */}
+          <Card>
+            <SectionHeader icon={TrendingUp} title="PR Velocity" />
+            <SectionErrorBoundary sectionName="PR Velocity">
+              <PRVelocityChart />
+            </SectionErrorBoundary>
+          </Card>
 
           {/* Activity Log */}
           <Card>

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import type { TmuxSession, SessionsResponse } from "@/types/sessions";
 import TerminalViewer from "@/components/TerminalViewer";
+import { AgentDetailModal } from "@/components/AgentDetailModal";
 import EmptyState from "@/components/EmptyState";
 
 const STATUS_CONFIG = {
@@ -65,6 +66,7 @@ export default function AgentStatusCards() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [detailSession, setDetailSession] = useState<string | null>(null);
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -167,7 +169,7 @@ export default function AgentStatusCards() {
           <button
             key={session.name}
             data-testid="session-card"
-            onClick={() => setSelectedSession(session.name)}
+            onClick={() => setDetailSession(session.name)}
             className="rounded-xl border border-gray-200 bg-white p-5 text-left transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 hover:border-blue-400/50 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/[0.07] cursor-pointer"
           >
             <div className="flex items-center justify-between">
@@ -238,14 +240,25 @@ export default function AgentStatusCards() {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span>View terminal</span>
+              <span>View details</span>
             </div>
           </button>
         ))}
       </div>
+
+      {detailSession && (
+        <AgentDetailModal
+          sessionName={detailSession}
+          onClose={() => setDetailSession(null)}
+          onViewTerminal={() => {
+            setSelectedSession(detailSession);
+            setDetailSession(null);
+          }}
+        />
+      )}
 
       {selectedSession && (
         <TerminalViewer

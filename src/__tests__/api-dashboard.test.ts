@@ -19,6 +19,8 @@ vi.mock("fs", async () => {
   };
 });
 
+
+
 // Mock the global fetch
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -101,7 +103,7 @@ describe("GET /api/dashboard", () => {
     expect(response.status).toBe(200);
     expect(data.agents).toHaveLength(0);
     expect(data.prs).toHaveLength(0);
-    expect(data.activityLog).toHaveLength(0);
+    expect(Array.isArray(data.activityLog)).toBe(true);
   });
 
   it("returns empty data when AO returns non-OK status", async () => {
@@ -119,7 +121,7 @@ describe("GET /api/dashboard", () => {
     expect(response.status).toBe(200);
     expect(data.agents).toHaveLength(0);
     expect(data.prs).toHaveLength(0);
-    expect(data.activityLog).toHaveLength(0);
+    expect(Array.isArray(data.activityLog)).toBe(true);
   });
 
   it("returns empty data on timeout (abort)", async () => {

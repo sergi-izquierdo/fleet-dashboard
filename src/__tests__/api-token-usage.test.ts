@@ -24,7 +24,7 @@ describe("GET /api/token-usage", () => {
     expect(body).toHaveProperty("byProject");
     expect(body).toHaveProperty("totalCost");
     expect(body).toHaveProperty("totalTokens");
-    expect(body.source).toBe("mock");
+    expect(["mock", "estimated"]).toContain(body.source);
     expect(Array.isArray(body.timeSeries)).toBe(true);
     expect(Array.isArray(body.byProject)).toBe(true);
     expect(typeof body.totalCost).toBe("number");

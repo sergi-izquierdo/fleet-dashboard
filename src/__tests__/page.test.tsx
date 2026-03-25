@@ -50,11 +50,12 @@ describe("Home page", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders the main heading", () => {
+  it("renders section headings after loading", async () => {
     render(<Home />);
-    expect(
-      screen.getByRole("heading", { level: 1, name: /fleet dashboard/i })
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
+    });
+    expect(screen.getByText(/active agents/i)).toBeInTheDocument();
   });
 
   it("shows loading skeleton initially", () => {
@@ -62,14 +63,20 @@ describe("Home page", () => {
     expect(screen.getByTestId("loading-skeleton")).toBeInTheDocument();
   });
 
-  it("shows connection indicator", () => {
+  it("shows fleet activity section after loading", async () => {
     render(<Home />);
-    expect(screen.getByTestId("connection-indicator")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
+    });
+    expect(screen.getAllByText(/fleet activity/i).length).toBeGreaterThan(0);
   });
 
-  it("shows refresh button", () => {
+  it("shows services section after loading", async () => {
     render(<Home />);
-    expect(screen.getByTestId("refresh-button")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
+    });
+    expect(screen.getByText(/services/i)).toBeInTheDocument();
   });
 
   it("renders dashboard content after loading", async () => {
@@ -77,20 +84,24 @@ describe("Home page", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
-    expect(screen.getByTestId("pull-to-refresh")).toBeInTheDocument();
+    expect(screen.getByText(/active agents/i)).toBeInTheDocument();
   });
 
-  it("renders bottom navigation", () => {
-    render(<Home />);
-    expect(screen.getByRole("navigation", { name: /mobile navigation/i })).toBeInTheDocument();
-  });
-
-  it("renders pull-to-refresh container after loading", async () => {
+  it("renders multiple section cards after loading", async () => {
     render(<Home />);
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
-    expect(screen.getByTestId("pull-to-refresh")).toBeInTheDocument();
+    expect(screen.getAllByText(/merge queue/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/recent prs/i).length).toBeGreaterThan(0);
+  });
+
+  it("renders all main sections after loading", async () => {
+    render(<Home />);
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
+    });
+    expect(screen.getAllByText(/active agents/i).length).toBeGreaterThan(0);
   });
 
   it("shows error banner on fetch failure", async () => {

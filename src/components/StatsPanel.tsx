@@ -3,9 +3,11 @@ import type { Agent, PR } from "@/types/dashboard";
 interface StatsPanelProps {
   agents: Agent[];
   prs: PR[];
+  successRate?: number;
+  avgTimeToMerge?: number;
 }
 
-export default function StatsPanel({ agents, prs }: StatsPanelProps) {
+export default function StatsPanel({ agents, prs, successRate, avgTimeToMerge }: StatsPanelProps) {
   if (agents.length === 0) {
     return (
       <p className="text-sm font-medium text-gray-500 dark:text-white/50 text-center py-2">
@@ -13,6 +15,15 @@ export default function StatsPanel({ agents, prs }: StatsPanelProps) {
       </p>
     );
   }
+
+  const successRateColor =
+    successRate === undefined
+      ? "text-gray-900 dark:text-white"
+      : successRate > 80
+        ? "text-green-600 dark:text-green-400"
+        : successRate > 60
+          ? "text-yellow-600 dark:text-yellow-400"
+          : "text-red-600 dark:text-red-400";
 
   const stats = [
     {
@@ -45,10 +56,20 @@ export default function StatsPanel({ agents, prs }: StatsPanelProps) {
       value: prs.filter((p) => p.ciStatus === "passing").length,
       color: "text-green-600 dark:text-green-400",
     },
+    {
+      label: "Success Rate",
+      value: successRate !== undefined ? `${successRate}%` : "—",
+      color: successRateColor,
+    },
+    {
+      label: "Avg Merge Time",
+      value: avgTimeToMerge !== undefined ? `${avgTimeToMerge}m` : "—",
+      color: "text-gray-900 dark:text-white",
+    },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 stagger-children">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8 stagger-children">
       {stats.map((stat) => (
         <div
           key={stat.label}

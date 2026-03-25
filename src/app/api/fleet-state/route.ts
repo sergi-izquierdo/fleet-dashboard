@@ -17,6 +17,7 @@ interface CompletedAgent {
   pr: string;
   status: string;
   completedAt: string;
+  startedAt?: string;
 }
 
 interface StateJson {
@@ -40,6 +41,8 @@ interface FleetStateResponse {
     totalCompleted: number;
     byStatus: Record<string, number>;
     byProject: Record<string, number>;
+    successRate: number;
+    avgTimeToMerge: number;
   };
   dispatcherOnline: boolean;
 }
@@ -95,13 +98,40 @@ function buildResponse(
     byProject[entry.project] = (byProject[entry.project] ?? 0) + 1;
   }
 
+  const allCompleted = Object.values(state.completed);
+  const totalCompleted = allCompleted.length;
+  const mergedCount = allCompleted.filter(
+    (a) => a.status === "pr_merged" || a.status === "merged",
+  ).length;
+  const successRate =
+    totalCompleted > 0
+      ? Math.round((mergedCount / totalCompleted) * 100)
+      : 0;
+
+  const mergeDurations = allCompleted
+    .filter((a) => a.startedAt && a.completedAt)
+    .map((a) => {
+      const start = new Date(a.startedAt!).getTime();
+      const end = new Date(a.completedAt).getTime();
+      return (end - start) / 60_000;
+    })
+    .filter((d) => d > 0);
+  const avgTimeToMerge =
+    mergeDurations.length > 0
+      ? Math.round(
+          mergeDurations.reduce((sum, d) => sum + d, 0) / mergeDurations.length,
+        )
+      : 0;
+
   return {
     active: state.active,
     completed: completedEntries,
     stats: {
-      totalCompleted: Object.keys(state.completed).length,
+      totalCompleted,
       byStatus,
       byProject,
+      successRate,
+      avgTimeToMerge,
     },
     dispatcherOnline,
   };

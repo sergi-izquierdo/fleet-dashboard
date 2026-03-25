@@ -42,6 +42,36 @@ describe("StatsPanel", () => {
     expect(screen.getByText("PRs Open")).toBeInTheDocument();
     expect(screen.getByText("PRs Merged")).toBeInTheDocument();
     expect(screen.getByText("CI Passing")).toBeInTheDocument();
+    expect(screen.getByText("Success Rate")).toBeInTheDocument();
+    expect(screen.getByText("Avg Merge Time")).toBeInTheDocument();
+  });
+
+  it("shows success rate with correct color thresholds", () => {
+    const agents = [makeAgent("working", "s1")];
+
+    const { rerender } = render(
+      <StatsPanel agents={agents} prs={[]} successRate={85} />,
+    );
+    expect(screen.getByText("85%").className).toContain("text-green");
+
+    rerender(<StatsPanel agents={agents} prs={[]} successRate={70} />);
+    expect(screen.getByText("70%").className).toContain("text-yellow");
+
+    rerender(<StatsPanel agents={agents} prs={[]} successRate={50} />);
+    expect(screen.getByText("50%").className).toContain("text-red");
+  });
+
+  it("shows avg time-to-merge in minutes", () => {
+    const agents = [makeAgent("working", "s1")];
+    render(<StatsPanel agents={agents} prs={[]} avgTimeToMerge={42} />);
+    expect(screen.getByText("42m")).toBeInTheDocument();
+  });
+
+  it("shows dash when metrics are not provided", () => {
+    const agents = [makeAgent("working", "s1")];
+    render(<StatsPanel agents={agents} prs={[]} />);
+    const dashes = screen.getAllByText("—");
+    expect(dashes).toHaveLength(2);
   });
 
   it("counts agents correctly", () => {

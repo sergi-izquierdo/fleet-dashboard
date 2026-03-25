@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 export const metadata: Metadata = {
   title: "Fleet Dashboard",
@@ -32,7 +33,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head />
       <body className="antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <DashboardLayout>{children}</DashboardLayout>
+        </ThemeProvider>
         <ServiceWorkerRegistrar />
       </body>
     </html>

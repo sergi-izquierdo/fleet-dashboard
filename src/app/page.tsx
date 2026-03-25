@@ -1,52 +1,68 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { useTheme } from "next-themes";
-import ActivityLog from "@/components/ActivityLog";
-import RecentPRs from "@/components/RecentPRs";
-import MergeQueue from "@/components/MergeQueue";
-import { ConnectionIndicator } from "@/components/ConnectionIndicator";
-import { LoadingSkeleton } from "@/components/LoadingSkeleton";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { NotificationCenter } from "@/components/NotificationCenter";
 import AgentStatusCards from "@/components/AgentStatusCards";
-import TokenUsageDashboard from "@/components/TokenUsageDashboard";
-import { ToastContainer, showToast } from "@/components/Toast";
-import { BottomNav, type MobileTab } from "@/components/BottomNav";
-import { PullToRefresh } from "@/components/PullToRefresh";
-import ProgressTracker from "@/components/ProgressTracker";
-import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
-import { Footer } from "@/components/Footer";
-import { LogoutButton } from "@/components/LogoutButton";
-import ConfigViewer from "@/components/ConfigViewer";
+import ActivityLog from "@/components/ActivityLog";
 import FleetActivityTimeline from "@/components/FleetActivityTimeline";
-import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+import MergeQueue from "@/components/MergeQueue";
+import RecentPRs from "@/components/RecentPRs";
+import PRTrendChart from "@/components/PRTrendChart";
+import TokenUsageDashboard from "@/components/TokenUsageDashboard";
 import ServiceHealth from "@/components/ServiceHealth";
 import DispatcherPipelinePanel from "@/components/DispatcherPipelinePanel";
-import { CollapsibleCard, useIsMobile } from "@/components/CollapsibleCard";
-import ProjectFilter from "@/components/ProjectFilter";
-import PRTrendChart from "@/components/PRTrendChart";
+import ProgressTracker from "@/components/ProgressTracker";
 import FleetStatusBanner from "@/components/FleetStatusBanner";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+import { LoadingSkeleton } from "@/components/LoadingSkeleton";
+import { ToastContainer, showToast } from "@/components/Toast";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useFleetState } from "@/hooks/useFleetState";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import {
+  Bot,
+  GitPullRequest,
+  Server,
+  Activity,
+  TrendingUp,
+  DollarSign,
+} from "lucide-react";
 
-const themes = ["light", "dark", "system"] as const;
+function SectionHeader({
+  icon: Icon,
+  title,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <Icon className="h-4 w-4 text-white/30" />
+      <h2 className="text-sm font-semibold text-white/70">{title}</h2>
+    </div>
+  );
+}
 
-export default function Home() {
-  const [selectedRepo, setSelectedRepo] = useState("");
-  const { data, isLoading, error, connectionStatus, countdown, refresh } =
-    useDashboardData(selectedRepo || undefined);
+function Card({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+export default function OverviewPage() {
+  const { data, isLoading, error, refresh } = useDashboardData();
   const { data: fleetState } = useFleetState();
-  const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState<MobileTab>("agents");
-  const [paletteOpen, setPaletteOpen] = useState(false);
-  const [paletteKey, setPaletteKey] = useState(0);
-  const { theme, setTheme } = useTheme();
-
   const prevAgentsRef = useRef<Map<string, string>>(new Map());
 
-  // Toast notifications for real-time status changes
+  // Toast notifications for agent status changes
   useEffect(() => {
     if (!data) return;
     const prevAgents = prevAgentsRef.current;
@@ -55,7 +71,10 @@ export default function Home() {
       for (const agent of data.agents) {
         const prevStatus = prevAgents.get(agent.sessionId);
         if (prevStatus && prevStatus !== agent.status) {
-          const typeMap: Record<string, "success" | "error" | "info" | "warning"> = {
+          const typeMap: Record<
+            string,
+            "success" | "error" | "info" | "warning"
+          > = {
             merged: "success",
             approved: "success",
             error: "error",
@@ -79,308 +98,135 @@ export default function Home() {
     prevAgentsRef.current = next;
   }, [data]);
 
-  const cycleTheme = useCallback(() => {
-    const currentIndex = themes.indexOf(theme as (typeof themes)[number]);
-    const nextIndex = (currentIndex + 1) % themes.length;
-    setTheme(themes[nextIndex]);
-  }, [theme, setTheme]);
-
-  const scrollToSection = useCallback((id: string) => {
-    document.getElementById(`section-${id}`)?.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
-  const openPalette = useCallback(() => {
-    setPaletteKey((k) => k + 1);
-    setPaletteOpen(true);
-  }, []);
-
-  const togglePalette = useCallback(() => {
-    setPaletteOpen((prev) => {
-      if (!prev) setPaletteKey((k) => k + 1);
-      return !prev;
-    });
-  }, []);
-
-  useKeyboardShortcuts({
-    onToggleCommandPalette: togglePalette,
-    onRefresh: refresh,
-    onToggleTheme: cycleTheme,
-  });
-
-  const commandItems = useMemo(
+  const activityEvents = useMemo(
     () =>
-      buildCommandItems(data, {
-        refresh,
-        toggleTheme: cycleTheme,
-        scrollToSection,
-      }),
-    [data, refresh, cycleTheme, scrollToSection],
+      data
+        ? data.activityLog.map((evt) => ({
+            id: evt.id,
+            timestamp: evt.timestamp,
+            agentName: evt.agentName,
+            eventType: evt.eventType as import("@/components/ActivityLog").EventType,
+            description: evt.description,
+          }))
+        : [],
+    [data],
   );
 
-  const activityEvents = data
-    ? data.activityLog.map((evt) => ({
-        id: evt.id,
-        timestamp: evt.timestamp,
-        agentName: evt.agentName,
-        eventType: evt.eventType as import("@/components/ActivityLog").EventType,
-        description: evt.description,
-      }))
-    : [];
+  if (isLoading && !data) {
+    return <LoadingSkeleton />;
+  }
+
+  if (!data) return null;
 
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white pb-[72px] md:pb-0">
+    <>
       <ToastContainer />
-
-      {/* Command Palette */}
-      <CommandPalette
-        key={paletteKey}
-        open={paletteOpen}
-        onClose={() => setPaletteOpen(false)}
-        items={commandItems}
-      />
-
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 dark:border-white/10 dark:bg-gray-900/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
-              <span className="text-sm font-bold">F</span>
-            </div>
-            <h1 className="text-xl font-bold tracking-tight">
-              Fleet Dashboard
-            </h1>
-            <ProjectFilter value={selectedRepo} onChange={setSelectedRepo} />
-          </div>
-          <div className="flex items-center gap-3 sm:gap-4">
-            <button
-              onClick={openPalette}
-              className="hidden sm:flex items-center gap-2 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-1.5 text-xs text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-700 dark:hover:text-white/70 transition-colors"
-              data-testid="command-palette-trigger"
-            >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <span>Search...</span>
-              <kbd className="rounded border border-gray-300 dark:border-white/20 px-1 py-0.5 text-[10px] font-medium">
-                ⌘K
-              </kbd>
-            </button>
-            <ThemeToggle />
-            <LogoutButton />
-            <NotificationCenter activityLog={data?.activityLog ?? []} />
-            <ConnectionIndicator status={connectionStatus} />
-            <div className="hidden items-center gap-2 text-xs text-gray-500 dark:text-white/50 sm:flex">
-              <span data-testid="countdown">
-                {countdown}s
-              </span>
-              <button
-                onClick={refresh}
-                disabled={isLoading}
-                className="rounded-md border border-gray-300 dark:border-white/20 px-2.5 py-1 text-xs text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                data-testid="refresh-button"
-              >
-                {isLoading ? "Refreshing..." : "Refresh"}
-              </button>
-            </div>
-            {/* Mobile refresh button - compact */}
-            <button
-              onClick={refresh}
-              disabled={isLoading}
-              className="flex h-[44px] w-[44px] items-center justify-center rounded-md border border-gray-300 text-gray-600 dark:border-white/20 dark:text-white/70 sm:hidden disabled:opacity-50"
-              data-testid="refresh-button-mobile"
-              aria-label="Refresh data"
-            >
-              <svg className={`h-5 w-5 ${isLoading ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </header>
 
       {/* Error banner */}
       {error && (
         <div
-          className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8 animate-slide-up"
+          className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400"
           role="alert"
-          data-testid="error-banner"
         >
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
-            <span className="font-medium">Connection error:</span> {error}
-          </div>
+          <span className="font-medium">Connection error:</span> {error}
         </div>
       )}
 
-      {/* Fleet Status Banner — always visible KPI strip */}
-      <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
-        <FleetStatusBanner agents={data?.agents ?? []} prs={data?.prs ?? []} />
+      {/* Fleet Status Banner */}
+      <div className="mb-6">
+        <FleetStatusBanner agents={data.agents} prs={data.prs} />
       </div>
 
-      {/* Loading state */}
-      {isLoading && !data ? (
-        <LoadingSkeleton />
-      ) : data ? (
-        <PullToRefresh onRefresh={refresh}>
-          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Main content */}
-              <div className="lg:col-span-8 space-y-6">
-                {/* Agent Sessions */}
-                <div className={activeTab !== "agents" ? "hidden md:block" : ""}>
-                  <CollapsibleCard
-                    title="Agent Sessions"
-                    id="section-sessions"
-                    ariaLabel="Agent sessions"
-                    defaultExpanded
-                  >
-                    <SectionErrorBoundary sectionName="Agents">
-                      <AgentStatusCards />
-                    </SectionErrorBoundary>
-                  </CollapsibleCard>
-                </div>
+      {/* Main grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+        {/* ── Left column (8 cols) ── */}
+        <div className="xl:col-span-8 space-y-5">
+          {/* Agent Sessions */}
+          <Card>
+            <SectionHeader icon={Bot} title="Active Agents" />
+            <SectionErrorBoundary sectionName="Agents">
+              <AgentStatusCards />
+            </SectionErrorBoundary>
+          </Card>
 
-                {/* Fleet Activity Timeline */}
-                <CollapsibleCard
-                  title="Fleet Activity Timeline"
-                  ariaLabel="Fleet activity timeline"
-                  defaultExpanded={isMobile !== true}
-                >
-                  <SectionErrorBoundary sectionName="Fleet Activity Timeline">
-                    <FleetActivityTimeline
-                      activityLog={data.activityLog}
-                      prs={data.prs}
-                    />
-                  </SectionErrorBoundary>
-                </CollapsibleCard>
+          {/* Fleet Activity Timeline */}
+          <Card>
+            <SectionHeader icon={Activity} title="Fleet Activity" />
+            <SectionErrorBoundary sectionName="Fleet Activity Timeline">
+              <FleetActivityTimeline
+                activityLog={data.activityLog}
+                prs={data.prs}
+              />
+            </SectionErrorBoundary>
+          </Card>
 
-                {/* PRs Tab */}
-                <div className={activeTab !== "prs" ? "hidden md:block" : ""}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <CollapsibleCard
-                      title="Merge Queue"
-                      ariaLabel="PR merge queue"
-                      defaultExpanded={isMobile !== true}
-                    >
-                      <SectionErrorBoundary sectionName="Merge Queue">
-                        <MergeQueue />
-                      </SectionErrorBoundary>
-                    </CollapsibleCard>
-                    <CollapsibleCard
-                      title="Recent PRs"
-                      id="section-prs"
-                      ariaLabel="Recent PRs"
-                      defaultExpanded={isMobile !== true}
-                    >
-                      <SectionErrorBoundary sectionName="Recent PRs">
-                        <RecentPRs />
-                      </SectionErrorBoundary>
-                    </CollapsibleCard>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    <CollapsibleCard
-                      title="PR Merge Trends"
-                      id="section-pr-trends"
-                      ariaLabel="PR merge trends"
-                      defaultExpanded={isMobile !== true}
-                    >
-                      <SectionErrorBoundary sectionName="PR Merge Trends">
-                        <PRTrendChart />
-                      </SectionErrorBoundary>
-                    </CollapsibleCard>
-                    <CollapsibleCard
-                      title="Cost & Token Usage"
-                      ariaLabel="Cost and token usage"
-                      defaultExpanded={isMobile !== true}
-                    >
-                      <SectionErrorBoundary sectionName="Token Usage">
-                        <TokenUsageDashboard />
-                      </SectionErrorBoundary>
-                    </CollapsibleCard>
-                  </div>
-                </div>
-
-                {/* Activity Tab - Activity Log */}
-                <div className={activeTab !== "activity" ? "hidden md:block" : ""}>
-                  <CollapsibleCard
-                    title="Activity Log"
-                    id="section-activity"
-                    ariaLabel="Activity log"
-                    defaultExpanded={isMobile !== true}
-                  >
-                    <SectionErrorBoundary sectionName="Activity Log">
-                      <ActivityLog events={activityEvents} maxHeight="max-h-[32rem]" />
-                    </SectionErrorBoundary>
-                  </CollapsibleCard>
-                </div>
-              </div>
-
-              {/* Sidebar */}
-              <div className="hidden lg:block lg:col-span-4 grid-sidebar space-y-6">
-                <SectionErrorBoundary sectionName="Dispatcher Pipeline">
-                  <DispatcherPipelinePanel />
-                </SectionErrorBoundary>
-                <CollapsibleCard
-                  title="Service Health"
-                  id="section-service-health"
-                  ariaLabel="Service health"
-                  defaultExpanded
-                >
-                  <SectionErrorBoundary sectionName="Service Health">
-                    <ServiceHealth />
-                  </SectionErrorBoundary>
-                </CollapsibleCard>
-                <CollapsibleCard
-                  title="Issue Progress"
-                  ariaLabel="Issue progress"
-                  defaultExpanded
-                >
-                  <SectionErrorBoundary sectionName="Issue Progress">
-                    <ProgressTracker />
-                  </SectionErrorBoundary>
-                </CollapsibleCard>
-              </div>
-            </div>
-
-            {/* Health tab content - mobile only */}
-            <div className={activeTab !== "health" ? "hidden" : "lg:hidden space-y-6 mt-6"}>
-              <CollapsibleCard title="Dispatcher Pipeline" ariaLabel="Dispatcher pipeline" defaultExpanded>
-                <SectionErrorBoundary sectionName="Dispatcher Pipeline">
-                  <DispatcherPipelinePanel />
-                </SectionErrorBoundary>
-              </CollapsibleCard>
-              <CollapsibleCard title="Service Health" ariaLabel="Service health" defaultExpanded>
-                <SectionErrorBoundary sectionName="Service Health">
-                  <ServiceHealth />
-                </SectionErrorBoundary>
-              </CollapsibleCard>
-              <CollapsibleCard title="Issue Progress" ariaLabel="Issue progress" defaultExpanded>
-                <SectionErrorBoundary sectionName="Issue Progress">
-                  <ProgressTracker />
-                </SectionErrorBoundary>
-              </CollapsibleCard>
-            </div>
+          {/* PRs row — 2 columns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <Card>
+              <SectionHeader icon={GitPullRequest} title="Merge Queue" />
+              <SectionErrorBoundary sectionName="Merge Queue">
+                <MergeQueue />
+              </SectionErrorBoundary>
+            </Card>
+            <Card>
+              <SectionHeader icon={GitPullRequest} title="Recent PRs" />
+              <SectionErrorBoundary sectionName="Recent PRs">
+                <RecentPRs />
+              </SectionErrorBoundary>
+            </Card>
           </div>
-        </PullToRefresh>
-      ) : null}
 
-      {/* Dispatcher Config */}
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <CollapsibleCard
-          title="Dispatcher Config"
-          ariaLabel="Dispatcher configuration"
-          defaultExpanded={false}
-        >
-          <SectionErrorBoundary sectionName="Dispatcher Config">
-            <ConfigViewer />
-          </SectionErrorBoundary>
-        </CollapsibleCard>
+          {/* Trends row — 2 columns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <Card>
+              <SectionHeader icon={TrendingUp} title="PR Merge Trends" />
+              <SectionErrorBoundary sectionName="PR Merge Trends">
+                <PRTrendChart />
+              </SectionErrorBoundary>
+            </Card>
+            <Card>
+              <SectionHeader icon={DollarSign} title="Cost & Tokens" />
+              <SectionErrorBoundary sectionName="Token Usage">
+                <TokenUsageDashboard />
+              </SectionErrorBoundary>
+            </Card>
+          </div>
+
+          {/* Activity Log */}
+          <Card>
+            <SectionHeader icon={Activity} title="Activity Log" />
+            <SectionErrorBoundary sectionName="Activity Log">
+              <ActivityLog events={activityEvents} maxHeight="max-h-80" />
+            </SectionErrorBoundary>
+          </Card>
+        </div>
+
+        {/* ── Right sidebar (4 cols) ── */}
+        <div className="xl:col-span-4 space-y-5">
+          {/* Dispatcher Pipeline */}
+          <Card>
+            <SectionErrorBoundary sectionName="Dispatcher Pipeline">
+              <DispatcherPipelinePanel />
+            </SectionErrorBoundary>
+          </Card>
+
+          {/* Service Health */}
+          <Card>
+            <SectionHeader icon={Server} title="Services" />
+            <SectionErrorBoundary sectionName="Service Health">
+              <ServiceHealth />
+            </SectionErrorBoundary>
+          </Card>
+
+          {/* Issue Progress */}
+          <Card>
+            <SectionHeader icon={TrendingUp} title="Issue Progress" />
+            <SectionErrorBoundary sectionName="Issue Progress">
+              <ProgressTracker />
+            </SectionErrorBoundary>
+          </Card>
+        </div>
       </div>
-
-      {/* Bottom Navigation - mobile only */}
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-
-      {/* Footer */}
-      <Footer />
-    </main>
+    </>
   );
 }

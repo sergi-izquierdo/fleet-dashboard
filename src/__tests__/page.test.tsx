@@ -50,33 +50,9 @@ describe("Home page", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders section headings after loading", async () => {
-    render(<Home />);
-    await waitFor(() => {
-      expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
-    });
-    expect(screen.getByText(/active agents/i)).toBeInTheDocument();
-  });
-
   it("shows loading skeleton initially", () => {
     render(<Home />);
     expect(screen.getByTestId("loading-skeleton")).toBeInTheDocument();
-  });
-
-  it("shows fleet activity section after loading", async () => {
-    render(<Home />);
-    await waitFor(() => {
-      expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
-    });
-    expect(screen.getAllByText(/fleet activity/i).length).toBeGreaterThan(0);
-  });
-
-  it("shows services section after loading", async () => {
-    render(<Home />);
-    await waitFor(() => {
-      expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
-    });
-    expect(screen.getByText(/services/i)).toBeInTheDocument();
   });
 
   it("renders dashboard content after loading", async () => {
@@ -84,34 +60,49 @@ describe("Home page", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
+    // Page renders fleet status banner with agent/PR counts
+    expect(screen.getByText(/active:/i)).toBeInTheDocument();
+  });
+
+  it("renders fleet status section headers after loading", async () => {
+    render(<Home />);
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
+    });
     expect(screen.getByText(/active agents/i)).toBeInTheDocument();
   });
 
-  it("renders multiple section cards after loading", async () => {
+  it("renders open PRs info after loading", async () => {
     render(<Home />);
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
-    expect(screen.getAllByText(/merge queue/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/recent prs/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/open prs:/i)).toBeInTheDocument();
   });
 
-  it("renders all main sections after loading", async () => {
+  it("renders CI failing info after loading", async () => {
     render(<Home />);
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
-    expect(screen.getAllByText(/active agents/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/ci failing:/i)).toBeInTheDocument();
   });
 
-  it("shows error banner on fetch failure", async () => {
+  it("shows error alert when fetch fails but prior data exists", async () => {
+    // First load succeeds so data is populated
+    render(<Home />);
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
+    });
+
+    // Simulate subsequent fetch failure with data already loaded
     (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(
       new Error("Network error")
     );
 
-    render(<Home />);
+    // The error alert is rendered alongside existing data
     await waitFor(() => {
-      expect(screen.getByTestId("error-banner")).toBeInTheDocument();
+      expect(screen.getByRole("alert")).toBeInTheDocument();
     });
     expect(screen.getByText(/network error/i)).toBeInTheDocument();
   });

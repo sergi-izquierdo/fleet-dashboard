@@ -16,7 +16,7 @@ beforeEach(() => {
 });
 
 describe("GET /api/token-usage", () => {
-  it("returns mock data with source=mock when Langfuse keys are not configured", async () => {
+  it("returns data when obs server is not configured", async () => {
     const res = await GET(makeRequest("daily"));
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -24,7 +24,9 @@ describe("GET /api/token-usage", () => {
     expect(body).toHaveProperty("byProject");
     expect(body).toHaveProperty("totalCost");
     expect(body).toHaveProperty("totalTokens");
-    expect(["mock", "estimated"]).toContain(body.source);
+    // When obs server is unavailable but state.json exists, source is 'estimated'.
+    // When neither is available, source is 'mock'.
+    expect(["estimated", "mock"]).toContain(body.source);
     expect(Array.isArray(body.timeSeries)).toBe(true);
     expect(Array.isArray(body.byProject)).toBe(true);
     expect(typeof body.totalCost).toBe("number");

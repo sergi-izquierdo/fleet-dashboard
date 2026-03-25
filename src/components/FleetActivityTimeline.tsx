@@ -69,7 +69,7 @@ function classifyEvent(event: ActivityEvent): TimelineDotType {
     case "error":
       return "error";
     case "deploy":
-      return "merged";
+      return "stale_recovery";
     case "tool_use":
       return "tool_use";
     case "agent_start":

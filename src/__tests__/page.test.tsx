@@ -1,4 +1,4 @@
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import Home from "@/app/page";
 import type { DashboardData } from "@/types/dashboard";
@@ -38,6 +38,54 @@ describe("Home page", () => {
           json: async () => ({ sessions: [] }),
         });
       }
+      if (url.includes("/api/services")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            services: [],
+            timestamp: new Date().toISOString(),
+          }),
+        });
+      }
+      if (url.includes("/api/issues")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            repos: [],
+            overall: {
+              total: 0,
+              open: 0,
+              closed: 0,
+              percentComplete: 0,
+              labels: { queued: 0, inProgress: 0, cloud: 0, done: 0 },
+            },
+          }),
+        });
+      }
+      if (url.includes("/api/fleet-events")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [],
+        });
+      }
+      if (url.includes("/api/token-usage")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            timeSeries: [],
+            byProject: [],
+            totalCost: 0,
+            totalTokens: 0,
+            source: "mock",
+          }),
+        });
+      }
+      if (url.includes("/api/dispatcher-status")) {
+        return Promise.resolve({
+          ok: false,
+          status: 503,
+        });
+      }
       return Promise.resolve({
         ok: true,
         json: async () => testDashboardData,
@@ -69,7 +117,7 @@ describe("Home page", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
-    expect(screen.getByText(/active agents/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /active agents/i })).toBeInTheDocument();
   });
 
   it("renders open PRs info after loading", async () => {
@@ -89,8 +137,14 @@ describe("Home page", () => {
   });
 
   it("shows error alert when fetch fails but prior data exists", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
     // First load succeeds so data is populated
     render(<Home />);
+    // Let initial fetch complete
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
@@ -100,10 +154,17 @@ describe("Home page", () => {
       new Error("Network error")
     );
 
+    // Advance 31s to trigger the 30s re-fetch timeout
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(31_000);
+    });
+
     // The error alert is rendered alongside existing data
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toBeInTheDocument();
+      expect(screen.getByTestId("error-banner")).toBeInTheDocument();
     });
-    expect(screen.getByText(/network error/i)).toBeInTheDocument();
+    expect(screen.getByTestId("error-banner")).toHaveTextContent(/network error/i);
+
+    vi.useRealTimers();
   });
 });

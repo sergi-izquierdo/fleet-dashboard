@@ -217,6 +217,30 @@ export default function FleetActivityTimeline({
   const selectedRangeMs =
     TIME_RANGE_OPTIONS.find((o) => o.label === selectedRange)!.ms;
 
+  // Local events state, initialized from props and kept in sync
+  const [localEvents, setLocalEvents] = useState<ActivityEvent[]>(activityLog);
+  useEffect(() => {
+    setLocalEvents(activityLog);
+  }, [activityLog]);
+
+  // Poll /api/fleet-events every 15s for fresh data, deduplicated by id
+  useEffect(() => {
+    const id = setInterval(async () => {
+      try {
+        const res = await fetch("/api/fleet-events");
+        if (res.ok) {
+          const events: ActivityEvent[] = await res.json();
+          setLocalEvents((prev) => {
+            const existingIds = new Set(prev.map((e) => e.id));
+            const newEvents = events.filter((e) => !existingIds.has(e.id));
+            return newEvents.length > 0 ? [...prev, ...newEvents] : prev;
+          });
+        }
+      } catch {}
+    }, 15_000);
+    return () => clearInterval(id);
+  }, []);
+
   // Tick `now` every 10s so the timeline window stays current
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -230,8 +254,8 @@ export default function FleetActivityTimeline({
   );
 
   const dots = useMemo(
-    () => buildTimelineDots(activityLog, prs, now, selectedRangeMs),
-    [activityLog, prs, now, selectedRangeMs],
+    () => buildTimelineDots(localEvents, prs, now, selectedRangeMs),
+    [localEvents, prs, now, selectedRangeMs],
   );
 
   const markers = useMemo(

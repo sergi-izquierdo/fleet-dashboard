@@ -22,6 +22,7 @@ import FleetActivityTimeline from "@/components/FleetActivityTimeline";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { CollapsibleCard, useIsMobile } from "@/components/CollapsibleCard";
 import ProjectFilter from "@/components/ProjectFilter";
+import StatsPanel from "@/components/StatsPanel";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
@@ -109,41 +110,6 @@ export default function Home() {
       }),
     [data, refresh, cycleTheme, scrollToSection],
   );
-
-  const stats = data
-    ? [
-        {
-          label: "Total Agents",
-          value: data.agents.length,
-          color: "text-gray-900 dark:text-white",
-        },
-        {
-          label: "Active",
-          value: data.agents.filter((a) => a.status === "working").length,
-          color: "text-blue-600 dark:text-blue-400",
-        },
-        {
-          label: "Errors",
-          value: data.agents.filter((a) => a.status === "error").length,
-          color: "text-red-600 dark:text-red-400",
-        },
-        {
-          label: "PRs Open",
-          value: data.prs.filter((p) => p.mergeState === "open").length,
-          color: "text-yellow-600 dark:text-yellow-400",
-        },
-        {
-          label: "PRs Merged",
-          value: data.prs.filter((p) => p.mergeState === "merged").length,
-          color: "text-purple-600 dark:text-purple-400",
-        },
-        {
-          label: "CI Passing",
-          value: data.prs.filter((p) => p.ciStatus === "passing").length,
-          color: "text-green-600 dark:text-green-400",
-        },
-      ]
-    : [];
 
   const activityEvents = data
     ? data.activityLog.map((evt) => ({
@@ -252,25 +218,7 @@ export default function Home() {
               ariaLabel="Dashboard statistics"
               defaultExpanded
             >
-              {data.agents.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 stagger-children">
-                  {stats.map((stat) => (
-                    <div
-                      key={stat.label}
-                      className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-4 text-center transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 dark:hover:border-white/20"
-                    >
-                      <p className={`text-2xl font-bold ${stat.color}`}>
-                        {stat.value}
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500 dark:text-white/50">{stat.label}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm font-medium text-gray-500 dark:text-white/50 text-center py-2">
-                  Fleet idle &mdash; no active agents
-                </p>
-              )}
+              <StatsPanel agents={data.agents} prs={data.prs} />
             </CollapsibleCard>
 
             {/* Fleet Activity Timeline */}

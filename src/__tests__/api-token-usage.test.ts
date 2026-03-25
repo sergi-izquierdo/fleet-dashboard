@@ -5,6 +5,12 @@ import { NextRequest } from "next/server";
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
+// Set FLEET_STATE_PATH to a non-existent path before the route module loads
+// so readDispatcherState() fails naturally, forcing fallback to mock data
+vi.hoisted(() => {
+  process.env.FLEET_STATE_PATH = "/tmp/vitest-nonexistent-state.json";
+});
+
 function makeRequest(range?: string): NextRequest {
   const url = new URL("http://localhost:3001/api/token-usage");
   if (range) url.searchParams.set("range", range);

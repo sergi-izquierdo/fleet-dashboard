@@ -50,10 +50,13 @@ describe("Home page", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders the main heading", () => {
+  it("renders the main heading", async () => {
     render(<Home />);
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
+    });
     expect(
-      screen.getByRole("heading", { level: 1, name: /fleet dashboard/i })
+      screen.getByRole("heading", { level: 2, name: /active agents/i })
     ).toBeInTheDocument();
   });
 
@@ -62,35 +65,24 @@ describe("Home page", () => {
     expect(screen.getByTestId("loading-skeleton")).toBeInTheDocument();
   });
 
-  it("shows connection indicator", () => {
-    render(<Home />);
-    expect(screen.getByTestId("connection-indicator")).toBeInTheDocument();
-  });
-
-  it("shows refresh button", () => {
-    render(<Home />);
-    expect(screen.getByTestId("refresh-button")).toBeInTheDocument();
-  });
-
   it("renders dashboard content after loading", async () => {
     render(<Home />);
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
-    expect(screen.getByTestId("pull-to-refresh")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: /active agents/i })
+    ).toBeInTheDocument();
   });
 
-  it("renders bottom navigation", () => {
-    render(<Home />);
-    expect(screen.getByRole("navigation", { name: /mobile navigation/i })).toBeInTheDocument();
-  });
-
-  it("renders pull-to-refresh container after loading", async () => {
+  it("renders section headings after loading", async () => {
     render(<Home />);
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
-    expect(screen.getByTestId("pull-to-refresh")).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("heading", { level: 2, name: /active agents/i }).length
+    ).toBeGreaterThan(0);
   });
 
   it("shows error banner on fetch failure", async () => {

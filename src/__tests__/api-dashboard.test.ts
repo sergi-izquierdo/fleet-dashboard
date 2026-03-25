@@ -19,6 +19,12 @@ vi.mock("fs", async () => {
   };
 });
 
+// Set FLEET_STATE_PATH to a non-existent path before the route module loads
+// so fetchActivityLog() returns [] in all environments
+vi.hoisted(() => {
+  process.env.FLEET_STATE_PATH = "/tmp/vitest-nonexistent-state.json";
+});
+
 // Mock the global fetch
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);

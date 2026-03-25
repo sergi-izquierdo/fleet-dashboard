@@ -20,6 +20,7 @@ import { Footer } from "@/components/Footer";
 import { LogoutButton } from "@/components/LogoutButton";
 import FleetActivityTimeline from "@/components/FleetActivityTimeline";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+import PRTrendChart from "@/components/PRTrendChart";
 import { CollapsibleCard, useIsMobile } from "@/components/CollapsibleCard";
 import ProjectFilter from "@/components/ProjectFilter";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -354,6 +355,19 @@ export default function Home() {
                   <TokenUsageDashboard />
                 </SectionErrorBoundary>
               </CollapsibleCard>
+
+              {/* PR Trend Chart */}
+              <div className="mt-6">
+                <CollapsibleCard
+                  title="PR Trend"
+                  ariaLabel="PR merges per day trend"
+                  defaultExpanded={isMobile !== true}
+                >
+                  <SectionErrorBoundary sectionName="PR Trend">
+                    <PRTrendChart />
+                  </SectionErrorBoundary>
+                </CollapsibleCard>
+              </div>
 
               <div className="mt-6">
                 <CollapsibleCard

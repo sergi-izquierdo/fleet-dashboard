@@ -26,6 +26,7 @@ import { CollapsibleCard, useIsMobile } from "@/components/CollapsibleCard";
 import ProjectFilter from "@/components/ProjectFilter";
 import StatsPanel from "@/components/StatsPanel";
 import PRTrendChart from "@/components/PRTrendChart";
+import FleetStatusBanner from "@/components/FleetStatusBanner";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useFleetState } from "@/hooks/useFleetState";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -209,6 +210,11 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Fleet Status Banner — always visible KPI strip */}
+      <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
+        <FleetStatusBanner agents={data?.agents ?? []} prs={data?.prs ?? []} />
+      </div>
 
       {/* Loading state */}
       {isLoading && !data ? (

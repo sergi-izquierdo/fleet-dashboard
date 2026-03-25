@@ -224,6 +224,16 @@ body {
   --foreground: #ededed;
 }
 
+/* ── Grid layout sidebar ── */
+
+.grid-sidebar {
+  position: sticky;
+  top: 5rem;
+  align-self: start;
+  max-height: calc(100vh - 5rem);
+  overflow-y: auto;
+}
+
 /* Improve scrollbar appearance in dark mode */
 .dark ::-webkit-scrollbar {
   width: 6px;

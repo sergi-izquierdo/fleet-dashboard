@@ -10,11 +10,11 @@ const STATUS_STYLES: Record<ServiceStatus["status"], { dot: string; label: strin
   unknown: { dot: "bg-yellow-500", label: "unknown" },
 };
 
-function ServiceBadge({ service }: { service: ServiceStatus }) {
+function ServiceDot({ service }: { service: ServiceStatus }) {
   const style = STATUS_STYLES[service.status];
   return (
     <div
-      className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5 dark:border-white/10 dark:bg-white/5"
+      className="group relative flex items-center gap-1 cursor-default"
       data-testid={`service-row-${service.name}`}
     >
       <span
@@ -22,8 +22,9 @@ function ServiceBadge({ service }: { service: ServiceStatus }) {
         aria-label={`${service.name} is ${style.label}`}
         data-testid={`service-indicator-${service.name}`}
       />
-      <span className="min-w-0 truncate text-xs font-medium text-gray-800 dark:text-gray-200">
-        {service.name}
+      <span className="text-xs text-gray-700 dark:text-gray-300">{service.name}</span>
+      <span className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 dark:bg-gray-700">
+        {service.name}: {style.label}
       </span>
     </div>
   );
@@ -58,9 +59,9 @@ export default function ServiceHealth() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-2" data-testid="service-health-loading">
+      <div className="flex items-center gap-3" data-testid="service-health-loading">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-8 animate-pulse rounded-md bg-gray-200 dark:bg-gray-800" />
+          <div key={i} className="h-4 w-20 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
         ))}
       </div>
     );
@@ -82,18 +83,13 @@ export default function ServiceHealth() {
   const activeCount = data.services.filter((s) => s.status === "active").length;
 
   return (
-    <div data-testid="service-health">
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-xs text-gray-500 dark:text-white/50">
-          {activeCount}/{data.services.length} services active
-        </p>
-        <p className="text-xs text-gray-400 dark:text-gray-500">
-          {new Date(data.timestamp).toLocaleTimeString()}
-        </p>
-      </div>
-      <div className="grid grid-cols-2 gap-2" data-testid="service-health-list">
+    <div data-testid="service-health" className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <span className="text-xs text-gray-500 dark:text-white/50">
+        {activeCount}/{data.services.length} services active
+      </span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="service-health-list">
         {data.services.map((service) => (
-          <ServiceBadge key={service.name} service={service} />
+          <ServiceDot key={service.name} service={service} />
         ))}
       </div>
     </div>

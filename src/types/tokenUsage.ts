@@ -21,5 +21,5 @@ export interface TokenUsageResponse {
   byProject: ProjectTokenUsage[];
   totalCost: number;
   totalTokens: number;
-  source: "langfuse" | "mock";
+  source: "observability" | "estimated" | "mock";
 }

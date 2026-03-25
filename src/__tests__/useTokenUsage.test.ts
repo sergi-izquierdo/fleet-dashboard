@@ -24,7 +24,7 @@ const mockResponse: TokenUsageResponse = {
   ],
   totalCost: 3.75,
   totalTokens: 650000,
-  source: "langfuse",
+  source: "observability",
 };
 
 describe("useTokenUsage", () => {
@@ -94,7 +94,7 @@ describe("useTokenUsage", () => {
     });
   });
 
-  it("reports isLangfuseOnline true when source is langfuse", async () => {
+  it("reports isLiveData true when source is observability", async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       json: async () => mockResponse,
@@ -106,10 +106,25 @@ describe("useTokenUsage", () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    expect(result.current.isLangfuseOnline).toBe(true);
+    expect(result.current.isLiveData).toBe(true);
   });
 
-  it("reports isLangfuseOnline false when source is mock", async () => {
+  it("reports isLiveData false when source is estimated", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ ...mockResponse, source: "estimated" }),
+    });
+
+    const { result } = renderHook(() => useTokenUsage());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.isLiveData).toBe(false);
+  });
+
+  it("reports isLiveData false when source is mock", async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       json: async () => ({ ...mockResponse, source: "mock" }),
@@ -121,7 +136,7 @@ describe("useTokenUsage", () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    expect(result.current.isLangfuseOnline).toBe(false);
+    expect(result.current.isLiveData).toBe(false);
   });
 
   it("sets error on fetch failure", async () => {

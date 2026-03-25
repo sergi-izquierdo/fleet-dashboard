@@ -11,6 +11,9 @@ export interface UseTokenUsageReturn {
   error: string | null;
   range: TimeRange;
   setRange: (range: TimeRange) => void;
+  /** true when data comes from the observability server (real-time hook events) */
+  isLiveData: boolean;
+  /** @deprecated Use isLiveData instead. Kept for backward-compat. */
   isLangfuseOnline: boolean;
 }
 
@@ -43,7 +46,9 @@ export function useTokenUsage(): UseTokenUsageReturn {
     return () => clearInterval(interval);
   }, [fetchData, range]);
 
-  const isLangfuseOnline = data?.source === "langfuse";
+  const isLiveData = data?.source === "observability";
+  // Keep isLangfuseOnline for backward compatibility (maps to observability source)
+  const isLangfuseOnline = isLiveData;
 
-  return { data, isLoading, error, range, setRange, isLangfuseOnline };
+  return { data, isLoading, error, range, setRange, isLiveData, isLangfuseOnline };
 }

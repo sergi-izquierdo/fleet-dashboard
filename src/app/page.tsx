@@ -26,6 +26,7 @@ import { CollapsibleCard, useIsMobile } from "@/components/CollapsibleCard";
 import ProjectFilter from "@/components/ProjectFilter";
 import StatsPanel from "@/components/StatsPanel";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useFleetState } from "@/hooks/useFleetState";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 const themes = ["light", "dark", "system"] as const;
@@ -34,6 +35,7 @@ export default function Home() {
   const [selectedRepo, setSelectedRepo] = useState("");
   const { data, isLoading, error, connectionStatus, countdown, refresh } =
     useDashboardData(selectedRepo || undefined);
+  const { data: fleetState } = useFleetState();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<MobileTab>("agents");
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -213,7 +215,7 @@ export default function Home() {
       ) : data ? (
         <PullToRefresh onRefresh={refresh}>
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
-            {/* Stats Bar - hidden when fleet is idle */}
+            {/* Stats Bar */}
             <CollapsibleCard
               title="Stats"
               id="section-stats"

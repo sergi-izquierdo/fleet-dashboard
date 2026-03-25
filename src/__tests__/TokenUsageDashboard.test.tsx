@@ -54,7 +54,7 @@ const mockData: TokenUsageResponse = {
   ],
   totalCost: 6.15,
   totalTokens: 1050000,
-  source: "langfuse",
+  source: "observability",
 };
 
 describe("TokenUsageDashboard", () => {
@@ -153,7 +153,29 @@ describe("TokenUsageDashboard", () => {
     });
   });
 
-  it("shows Langfuse offline banner when source is mock", async () => {
+  it("shows banner when source is estimated", async () => {
+    const estimatedData: TokenUsageResponse = { ...mockData, source: "estimated" };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => estimatedData,
+      })
+    );
+
+    await act(async () => {
+      render(<TokenUsageDashboard />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("data-source-banner")).toBeDefined();
+      expect(
+        screen.getByText(/showing estimated data from dispatcher state/)
+      ).toBeDefined();
+    });
+  });
+
+  it("shows banner when source is mock", async () => {
     const mockDataOffline: TokenUsageResponse = { ...mockData, source: "mock" };
     vi.stubGlobal(
       "fetch",
@@ -168,12 +190,12 @@ describe("TokenUsageDashboard", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId("langfuse-offline")).toBeDefined();
-      expect(screen.getByText(/Langfuse offline/)).toBeDefined();
+      expect(screen.getByTestId("data-source-banner")).toBeDefined();
+      expect(screen.getByText(/No data sources available/)).toBeDefined();
     });
   });
 
-  it("does not show offline banner when source is langfuse", async () => {
+  it("does not show banner when source is observability", async () => {
     await act(async () => {
       render(<TokenUsageDashboard />);
     });
@@ -182,7 +204,7 @@ describe("TokenUsageDashboard", () => {
       expect(screen.getByTestId("token-usage-stats")).toBeDefined();
     });
 
-    expect(screen.queryByTestId("langfuse-offline")).toBeNull();
+    expect(screen.queryByTestId("data-source-banner")).toBeNull();
   });
 
   it("changes range when buttons are clicked", async () => {

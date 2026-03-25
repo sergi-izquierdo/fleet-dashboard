@@ -48,7 +48,7 @@ const getServerSnapshot = () => false;
 
 export default function TokenUsageDashboard() {
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const { data, isLoading, error, range, setRange, isLangfuseOnline } = useTokenUsage();
+  const { data, isLoading, error, range, setRange, isLiveData } = useTokenUsage();
 
   if (!mounted) {
     return (
@@ -99,14 +99,16 @@ export default function TokenUsageDashboard() {
         </div>
       )}
 
-      {/* Langfuse offline banner */}
-      {!isLoading && data && !isLangfuseOnline && (
+      {/* Data source banner */}
+      {!isLoading && data && !isLiveData && (
         <div
-          data-testid="langfuse-offline"
+          data-testid="data-source-banner"
           className="mb-4 flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-600 dark:text-yellow-400"
         >
           <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
-          Langfuse offline — showing sample data
+          {data.source === "estimated"
+            ? "Observability server offline — showing estimated data from dispatcher state"
+            : "No data sources available — showing empty data"}
         </div>
       )}
 

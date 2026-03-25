@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { DashboardData, Agent, PR, ActivityEvent } from "@/types/dashboard";
 import * as apiCache from "@/lib/apiCache";
 import { accessSync, constants } from "fs";
+import { readFile } from "fs/promises";
 import { execFileAsync } from "@/lib/execFileAsync";
 import {
   parseTmuxList,
@@ -14,6 +15,9 @@ import type { TmuxSession } from "@/types/sessions";
 const AO_API_URL = process.env.AO_API_URL || "http://localhost:3000";
 const FETCH_TIMEOUT_MS = 5000;
 const TMUX_BIN = "/usr/bin/tmux";
+const STATE_PATH =
+  process.env.FLEET_STATE_PATH ||
+  "/home/sergi/agent-fleet/orchestrator/state.json";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const DEFAULT_REPO =
@@ -256,6 +260,96 @@ async function fetchRealPRs(repo: string): Promise<PR[]> {
   }
 }
 
+interface CompletedAgentEntry {
+  repo: string;
+  issue: number;
+  title: string;
+  pr: string;
+  status: string;
+  completedAt: string;
+}
+
+const STATUS_EVENT_MAP: Record<string, ActivityEvent["eventType"]> = {
+  pr_created: "pr_created",
+  pr_merged: "deploy",
+  pr_exists: "pr_created",
+  timeout: "error",
+  recovered: "review",
+  completed: "ci_passed",
+};
+
+function completedAgentToEvent(
+  key: string,
+  agent: CompletedAgentEntry,
+): ActivityEvent {
+  const eventType = STATUS_EVENT_MAP[agent.status] ?? "commit";
+  const prefix =
+    agent.status === "pr_created"
+      ? "PR created"
+      : agent.status === "pr_merged"
+        ? "PR merged"
+        : agent.status === "timeout"
+          ? "Agent timed out"
+          : agent.status === "recovered"
+            ? "Agent recovered"
+            : agent.status === "pr_exists"
+              ? "PR already exists"
+              : agent.status === "completed"
+                ? "Completed"
+                : agent.status;
+
+  return {
+    id: `${key}-${agent.completedAt}`,
+    timestamp: agent.completedAt,
+    agentName: key,
+    eventType,
+    description: `${prefix}: ${agent.title}`,
+  };
+}
+
+/** Read state.json + optional archive to produce activity events */
+async function fetchActivityLog(): Promise<ActivityEvent[]> {
+  const events: ActivityEvent[] = [];
+
+  try {
+    const raw = await readFile(STATE_PATH, "utf-8");
+    const state = JSON.parse(raw) as {
+      completed: Record<string, CompletedAgentEntry>;
+    };
+    for (const [key, agent] of Object.entries(state.completed ?? {})) {
+      events.push(completedAgentToEvent(key, agent));
+    }
+  } catch {
+    // state.json missing or unreadable
+  }
+
+  const archivePath = STATE_PATH.replace("state.json", "state-archive.jsonl");
+  try {
+    const raw = await readFile(archivePath, "utf-8");
+    for (const line of raw.trim().split("\n").filter(Boolean)) {
+      const parsed = JSON.parse(line) as Record<string, unknown>;
+      const key = String(parsed._key ?? "unknown");
+      const entry: CompletedAgentEntry = {
+        repo: String(parsed.repo ?? ""),
+        issue: Number(parsed.issue ?? 0),
+        title: String(parsed.title ?? ""),
+        pr: String(parsed.pr ?? ""),
+        status: String(parsed.status ?? ""),
+        completedAt: String(parsed._archivedAt ?? parsed.completedAt ?? ""),
+      };
+      events.push(completedAgentToEvent(key, entry));
+    }
+  } catch {
+    // archive missing
+  }
+
+  events.sort(
+    (a, b) =>
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+  );
+  return events.slice(0, 100);
+}
+
 const CACHE_KEY_PREFIX = "api:dashboard";
 const CACHE_TTL_MS = 30_000;
 
@@ -307,15 +401,16 @@ export async function GET(request: NextRequest) {
   } catch {
     // AO API unavailable — build dashboard from real sources
     const prRepo = targetRepo || DEFAULT_REPO;
-    const [agents, prs] = await Promise.all([
+    const [agents, prs, activityLog] = await Promise.all([
       fetchRealAgents(),
       fetchRealPRs(prRepo),
+      fetchActivityLog(),
     ]);
 
     const data: DashboardData = {
       agents,
       prs,
-      activityLog: [],
+      activityLog,
     };
 
     apiCache.set(cacheKey, data, CACHE_TTL_MS);

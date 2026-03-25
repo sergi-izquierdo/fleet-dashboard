@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { promises as fs } from "fs";
 import type {
   TokenUsageResponse,
   TokenUsageEntry,
@@ -6,9 +7,11 @@ import type {
   TimeRange,
 } from "@/types/tokenUsage";
 
-const LANGFUSE_URL = process.env.LANGFUSE_URL || "http://localhost:3050";
-const LANGFUSE_PUBLIC_KEY = process.env.LANGFUSE_PUBLIC_KEY || "";
-const LANGFUSE_SECRET_KEY = process.env.LANGFUSE_SECRET_KEY || "";
+const OBS_SERVER_URL =
+  process.env.OBS_SERVER_URL || "http://localhost:4100";
+const FLEET_STATE_PATH =
+  process.env.FLEET_STATE_PATH ||
+  "/home/sergi/agent-fleet/orchestrator/state.json";
 const FETCH_TIMEOUT_MS = 10_000;
 
 // Cost per 1M tokens (rough Claude estimates, configurable via env)
@@ -16,6 +19,11 @@ const INPUT_COST_PER_M =
   Number(process.env.TOKEN_COST_INPUT_PER_M) || 3.0;
 const OUTPUT_COST_PER_M =
   Number(process.env.TOKEN_COST_OUTPUT_PER_M) || 15.0;
+
+// Estimated tokens per minute for Claude Code agents (Sonnet-class)
+const TOKENS_PER_MINUTE = 2000;
+const INPUT_RATIO = 0.7;
+const OUTPUT_RATIO = 0.3;
 
 function estimateCost(inputTokens: number, outputTokens: number): number {
   return (
@@ -41,7 +49,7 @@ function getDateRange(range: TimeRange): { from: Date; to: Date } {
   return { from, to };
 }
 
-function formatDateKey(date: string, range: TimeRange): string {
+function formatDateKey(date: string | number, range: TimeRange): string {
   const d = new Date(date);
   if (range === "monthly") {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -57,78 +65,59 @@ function formatDateKey(date: string, range: TimeRange): string {
   return d.toISOString().slice(0, 10);
 }
 
-interface LangfuseTrace {
-  id: string;
-  name?: string;
-  metadata?: Record<string, unknown>;
-  createdAt: string;
-  usage?: {
-    input?: number;
-    output?: number;
-    total?: number;
-  };
-  totalCost?: number;
+// ---------------------------------------------------------------------------
+// Observability server types
+// ---------------------------------------------------------------------------
+
+interface ObsEvent {
+  id?: number;
+  source_app: string;
+  session_id: string;
+  hook_event_type: string;
+  payload: Record<string, unknown>;
+  timestamp?: number;
+  model_name?: string;
 }
 
-interface LangfuseTracesResponse {
-  data: LangfuseTrace[];
-  meta?: { page: number; totalPages: number; totalItems: number };
-}
+// ---------------------------------------------------------------------------
+// Primary source: Observability Server (port 4100)
+// ---------------------------------------------------------------------------
 
-async function fetchLangfuseTraces(
+async function fetchObsEvents(
   from: Date,
-  to: Date
-): Promise<LangfuseTrace[]> {
-  const allTraces: LangfuseTrace[] = [];
-  let page = 1;
-  const limit = 100;
+  _to: Date
+): Promise<ObsEvent[]> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-  const auth = Buffer.from(
-    `${LANGFUSE_PUBLIC_KEY}:${LANGFUSE_SECRET_KEY}`
-  ).toString("base64");
-
-  while (true) {
-    const url = new URL(`${LANGFUSE_URL}/api/public/traces`);
-    url.searchParams.set("page", String(page));
-    url.searchParams.set("limit", String(limit));
-    url.searchParams.set("fromTimestamp", from.toISOString());
-    url.searchParams.set("toTimestamp", to.toISOString());
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-    const res = await fetch(url.toString(), {
-      signal: controller.signal,
-      headers: {
-        Authorization: `Basic ${auth}`,
-        Accept: "application/json",
-      },
-    });
-
+  try {
+    // Fetch a large batch of recent events
+    const res = await fetch(
+      `${OBS_SERVER_URL}/events/recent?limit=5000`,
+      {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      }
+    );
     clearTimeout(timeoutId);
 
     if (!res.ok) {
-      throw new Error(`Langfuse API responded with status ${res.status}`);
+      throw new Error(`Obs server responded with status ${res.status}`);
     }
 
-    const body: LangfuseTracesResponse = await res.json();
-    allTraces.push(...body.data);
+    const events: ObsEvent[] = await res.json();
 
-    if (
-      !body.meta ||
-      page >= body.meta.totalPages ||
-      body.data.length < limit
-    ) {
-      break;
-    }
-    page++;
+    // Filter to the requested date range
+    const fromMs = from.getTime();
+    return events.filter((e) => (e.timestamp ?? 0) >= fromMs);
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
   }
-
-  return allTraces;
 }
 
-function aggregateTimeSeries(
-  traces: LangfuseTrace[],
+function aggregateObsTimeSeries(
+  events: ObsEvent[],
   range: TimeRange
 ): TokenUsageEntry[] {
   const buckets = new Map<
@@ -136,11 +125,18 @@ function aggregateTimeSeries(
     { inputTokens: number; outputTokens: number }
   >();
 
-  for (const trace of traces) {
-    const key = formatDateKey(trace.createdAt, range);
+  for (const event of events) {
+    const ts = event.timestamp ?? Date.now();
+    const key = formatDateKey(ts, range);
     const existing = buckets.get(key) ?? { inputTokens: 0, outputTokens: 0 };
-    existing.inputTokens += trace.usage?.input ?? 0;
-    existing.outputTokens += trace.usage?.output ?? 0;
+
+    // Each tool-use event represents roughly one turn of work.
+    // Use a conservative estimate: ~500 tokens per event (350 input + 150 output).
+    const inputEst = 350;
+    const outputEst = 150;
+
+    existing.inputTokens += inputEst;
+    existing.outputTokens += outputEst;
     buckets.set(key, existing);
   }
 
@@ -155,21 +151,37 @@ function aggregateTimeSeries(
     }));
 }
 
-function aggregateByProject(traces: LangfuseTrace[]): ProjectTokenUsage[] {
-  const projects = new Map<
+function aggregateObsByProject(events: ObsEvent[]): ProjectTokenUsage[] {
+  // Group by session_id, then derive a project-like name from model or session
+  const sessions = new Map<
+    string,
+    { eventCount: number; model: string }
+  >();
+
+  for (const event of events) {
+    const sid = event.session_id;
+    const existing = sessions.get(sid) ?? { eventCount: 0, model: "unknown" };
+    existing.eventCount += 1;
+    if (event.model_name) {
+      existing.model = event.model_name;
+    }
+    sessions.set(sid, existing);
+  }
+
+  // Aggregate by model name to create a meaningful project-level breakdown
+  const byModel = new Map<
     string,
     { inputTokens: number; outputTokens: number }
   >();
 
-  for (const trace of traces) {
-    const name = trace.name ?? "unknown";
-    const existing = projects.get(name) ?? { inputTokens: 0, outputTokens: 0 };
-    existing.inputTokens += trace.usage?.input ?? 0;
-    existing.outputTokens += trace.usage?.output ?? 0;
-    projects.set(name, existing);
+  for (const [, { eventCount, model }] of sessions) {
+    const existing = byModel.get(model) ?? { inputTokens: 0, outputTokens: 0 };
+    existing.inputTokens += eventCount * 350;
+    existing.outputTokens += eventCount * 150;
+    byModel.set(model, existing);
   }
 
-  return Array.from(projects.entries())
+  return Array.from(byModel.entries())
     .map(([name, { inputTokens, outputTokens }]) => ({
       name,
       inputTokens,
@@ -180,45 +192,134 @@ function aggregateByProject(traces: LangfuseTrace[]): ProjectTokenUsage[] {
     .sort((a, b) => b.totalTokens - a.totalTokens);
 }
 
-function generateMockData(range: TimeRange): TokenUsageResponse {
-  const agents = ["agent-1", "agent-2", "agent-3", "agent-4", "agent-5"];
-  const { from, to } = getDateRange(range);
-  const timeSeries: TokenUsageEntry[] = [];
+// ---------------------------------------------------------------------------
+// Secondary source: State.json estimates
+// ---------------------------------------------------------------------------
 
-  const current = new Date(from);
-  while (current <= to) {
-    const key = formatDateKey(current.toISOString(), range);
-    if (!timeSeries.find((e) => e.date === key)) {
-      const input = Math.floor(Math.random() * 500_000) + 50_000;
-      const output = Math.floor(Math.random() * 150_000) + 10_000;
-      timeSeries.push({
-        date: key,
-        inputTokens: input,
-        outputTokens: output,
-        totalTokens: input + output,
-        cost: estimateCost(input, output),
-      });
-    }
-    current.setDate(current.getDate() + (range === "monthly" ? 30 : range === "weekly" ? 7 : 1));
+interface StateAgent {
+  repo: string;
+  issue: number;
+  title: string;
+  pr?: string;
+  status: string;
+  startedAt?: string;
+  completedAt?: string;
+}
+
+interface DispatcherState {
+  active: Record<string, StateAgent>;
+  completed: Record<string, StateAgent>;
+}
+
+async function readDispatcherState(): Promise<DispatcherState> {
+  const raw = await fs.readFile(FLEET_STATE_PATH, "utf-8");
+  return JSON.parse(raw) as DispatcherState;
+}
+
+function estimateFromState(
+  state: DispatcherState,
+  range: TimeRange
+): TokenUsageResponse {
+  const { from } = getDateRange(range);
+  const fromMs = from.getTime();
+
+  const allAgents: StateAgent[] = [
+    ...Object.values(state.active),
+    ...Object.values(state.completed),
+  ];
+
+  const timeSeriesBuckets = new Map<
+    string,
+    { inputTokens: number; outputTokens: number }
+  >();
+  const projectBuckets = new Map<
+    string,
+    { inputTokens: number; outputTokens: number }
+  >();
+
+  for (const agent of allAgents) {
+    // Determine agent time window
+    const startedAt = agent.startedAt
+      ? new Date(agent.startedAt).getTime()
+      : agent.completedAt
+        ? new Date(agent.completedAt).getTime() - 30 * 60_000 // assume 30 min if no startedAt
+        : 0;
+    const completedAt = agent.completedAt
+      ? new Date(agent.completedAt).getTime()
+      : Date.now(); // still active
+
+    if (completedAt < fromMs) continue;
+
+    // Duration in minutes
+    const durationMin = Math.max(
+      1,
+      (completedAt - Math.max(startedAt, fromMs)) / 60_000
+    );
+    const totalTokens = Math.round(durationMin * TOKENS_PER_MINUTE);
+    const inputTokens = Math.round(totalTokens * INPUT_RATIO);
+    const outputTokens = Math.round(totalTokens * OUTPUT_RATIO);
+
+    // Time series: use completedAt (or startedAt) as the bucket key
+    const dateRef = agent.completedAt ?? agent.startedAt ?? new Date().toISOString();
+    const dateKey = formatDateKey(dateRef, range);
+    const tsExisting = timeSeriesBuckets.get(dateKey) ?? {
+      inputTokens: 0,
+      outputTokens: 0,
+    };
+    tsExisting.inputTokens += inputTokens;
+    tsExisting.outputTokens += outputTokens;
+    timeSeriesBuckets.set(dateKey, tsExisting);
+
+    // Project breakdown
+    const projectName = agent.repo.split("/")[1] ?? agent.repo;
+    const projExisting = projectBuckets.get(projectName) ?? {
+      inputTokens: 0,
+      outputTokens: 0,
+    };
+    projExisting.inputTokens += inputTokens;
+    projExisting.outputTokens += outputTokens;
+    projectBuckets.set(projectName, projExisting);
   }
 
-  const byProject: ProjectTokenUsage[] = agents.map((name) => {
-    const input = Math.floor(Math.random() * 2_000_000) + 100_000;
-    const output = Math.floor(Math.random() * 600_000) + 50_000;
-    return {
+  const timeSeries: TokenUsageEntry[] = Array.from(
+    timeSeriesBuckets.entries()
+  )
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, { inputTokens, outputTokens }]) => ({
+      date,
+      inputTokens,
+      outputTokens,
+      totalTokens: inputTokens + outputTokens,
+      cost: estimateCost(inputTokens, outputTokens),
+    }));
+
+  const byProject: ProjectTokenUsage[] = Array.from(
+    projectBuckets.entries()
+  )
+    .map(([name, { inputTokens, outputTokens }]) => ({
       name,
-      inputTokens: input,
-      outputTokens: output,
-      totalTokens: input + output,
-      cost: estimateCost(input, output),
-    };
-  });
+      inputTokens,
+      outputTokens,
+      totalTokens: inputTokens + outputTokens,
+      cost: estimateCost(inputTokens, outputTokens),
+    }))
+    .sort((a, b) => b.totalTokens - a.totalTokens);
 
   const totalTokens = byProject.reduce((s, p) => s + p.totalTokens, 0);
   const totalCost = byProject.reduce((s, p) => s + p.cost, 0);
 
-  return { timeSeries, byProject, totalCost, totalTokens, source: "mock" as const };
+  return {
+    timeSeries,
+    byProject,
+    totalCost,
+    totalTokens,
+    source: "estimated" as const,
+  };
 }
+
+// ---------------------------------------------------------------------------
+// GET handler
+// ---------------------------------------------------------------------------
 
 export async function GET(request: NextRequest) {
   const range = (request.nextUrl.searchParams.get("range") ??
@@ -231,29 +332,55 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // --- Primary: Observability Server ---
   try {
-    if (!LANGFUSE_PUBLIC_KEY || !LANGFUSE_SECRET_KEY) {
-      throw new Error("Langfuse API keys not configured");
-    }
-
     const { from, to } = getDateRange(range);
-    const traces = await fetchLangfuseTraces(from, to);
+    const events = await fetchObsEvents(from, to);
 
-    const timeSeries = aggregateTimeSeries(traces, range);
-    const byProject = aggregateByProject(traces);
+    const timeSeries = aggregateObsTimeSeries(events, range);
+    const byProject = aggregateObsByProject(events);
     const totalTokens = byProject.reduce((s, p) => s + p.totalTokens, 0);
     const totalCost = byProject.reduce((s, p) => s + p.cost, 0);
 
     return NextResponse.json(
-      { timeSeries, byProject, totalCost, totalTokens, source: "langfuse" } satisfies TokenUsageResponse,
+      {
+        timeSeries,
+        byProject,
+        totalCost,
+        totalTokens,
+        source: "observability",
+      } satisfies TokenUsageResponse,
       { status: 200 }
     );
-  } catch (error) {
+  } catch (obsError) {
     console.error(
-      "Failed to fetch from Langfuse, falling back to mock data:",
-      error instanceof Error ? error.message : error
+      "Obs server unreachable, falling back to state.json estimates:",
+      obsError instanceof Error ? obsError.message : obsError
     );
-
-    return NextResponse.json(generateMockData(range), { status: 200 });
   }
+
+  // --- Secondary: State.json estimates ---
+  try {
+    const state = await readDispatcherState();
+    const response = estimateFromState(state, range);
+
+    return NextResponse.json(response, { status: 200 });
+  } catch (stateError) {
+    console.error(
+      "Failed to read dispatcher state:",
+      stateError instanceof Error ? stateError.message : stateError
+    );
+  }
+
+  // --- Last resort: empty data with mock source ---
+  return NextResponse.json(
+    {
+      timeSeries: [],
+      byProject: [],
+      totalCost: 0,
+      totalTokens: 0,
+      source: "mock",
+    } satisfies TokenUsageResponse,
+    { status: 200 }
+  );
 }

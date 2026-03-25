@@ -59,24 +59,21 @@ import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 describe("LoadingSkeleton edge cases", () => {
   afterEach(cleanup);
 
-  it("renders stats bar skeleton with 6 pulse elements", () => {
+  it("renders agent card grid skeleton with 4 pulse elements", () => {
     const { container } = render(<LoadingSkeleton />);
-    // The stats grid should have 6 skeleton items
-    const statsGrid = container.querySelector(
-      ".grid.grid-cols-2"
-    );
-    expect(statsGrid).not.toBeNull();
-    const pulses = statsGrid!.querySelectorAll(".animate-pulse");
-    expect(pulses).toHaveLength(6);
-  });
-
-  it("renders agent cards skeleton with 3 pulse elements", () => {
-    const { container } = render(<LoadingSkeleton />);
-    const agentGrid = container.querySelector(
-      ".grid.grid-cols-1"
-    );
+    // The 2x2 agent card grid
+    const agentGrid = container.querySelector(".grid.grid-cols-2");
     expect(agentGrid).not.toBeNull();
     const pulses = agentGrid!.querySelectorAll(".animate-pulse");
+    expect(pulses).toHaveLength(4);
+  });
+
+  it("renders right sidebar with 3 panel skeletons", () => {
+    const { container } = render(<LoadingSkeleton />);
+    // The right sidebar col-span-4 should have 3 panels
+    const rightCol = container.querySelector(".lg\\:col-span-4");
+    expect(rightCol).not.toBeNull();
+    const pulses = rightCol!.querySelectorAll(".animate-pulse");
     expect(pulses).toHaveLength(3);
   });
 
@@ -85,7 +82,7 @@ describe("LoadingSkeleton edge cases", () => {
     const pulse = container.querySelector(".animate-pulse");
     expect(pulse).not.toBeNull();
     expect(pulse!.className).toContain("border");
-    expect(pulse!.className).toContain("bg-white/5");
+    expect(pulse!.className).toContain("dark:bg-gray-800");
   });
 });
 

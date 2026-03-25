@@ -1,19 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { promises as fsp } from "fs";
 import { GET } from "@/app/api/token-usage/route";
 import { NextRequest } from "next/server";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
+beforeEach(() => {
+  mockFetch.mockReset();
+  vi.spyOn(fsp, "readFile").mockRejectedValue(new Error("ENOENT: no such file or directory"));
+});
+
 function makeRequest(range?: string): NextRequest {
   const url = new URL("http://localhost:3001/api/token-usage");
   if (range) url.searchParams.set("range", range);
   return new NextRequest(url);
 }
-
-beforeEach(() => {
-  mockFetch.mockReset();
-});
 
 describe("GET /api/token-usage", () => {
   it("returns mock data with source=mock when Langfuse keys are not configured", async () => {

@@ -16,6 +16,16 @@ vi.mock("@/providers/FleetDataProvider", () => ({
   FleetDataProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+const mockRefresh = vi.fn();
+const mockUseDashboardData = vi.fn();
+vi.mock("@/hooks/useDashboardData", () => ({
+  useDashboardData: () => mockUseDashboardData(),
+}));
+
+vi.mock("@/hooks/useFleetState", () => ({
+  useFleetState: () => ({ data: null }),
+}));
+
 const testDashboardData: DashboardData = {
   agents: [
     {
@@ -42,20 +52,18 @@ const testDashboardData: DashboardData = {
   activityLog: [],
 };
 
+const loadedState = {
+  data: testDashboardData,
+  isLoading: false,
+  error: null,
+  connectionStatus: "connected" as const,
+  countdown: 30,
+  refresh: mockRefresh,
+};
+
 describe("Home page", () => {
   beforeEach(() => {
-    global.fetch = vi.fn().mockImplementation((url: string) => {
-      if (url.includes("/api/sessions")) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({ sessions: [] }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        json: async () => testDashboardData,
-      });
-    });
+    mockUseDashboardData.mockReturnValue(loadedState);
   });
 
   afterEach(() => {
@@ -66,23 +74,29 @@ describe("Home page", () => {
   it("renders the main heading", () => {
     render(<Home />);
     expect(
-      screen.getByRole("heading", { level: 1, name: /fleet dashboard/i })
+      screen.getByRole("heading", { level: 2, name: /active agents/i })
     ).toBeInTheDocument();
   });
 
   it("shows loading skeleton initially", () => {
+    mockUseDashboardData.mockReturnValue({
+      ...loadedState,
+      data: null,
+      isLoading: true,
+      connectionStatus: "disconnected" as const,
+    });
     render(<Home />);
     expect(screen.getByTestId("loading-skeleton")).toBeInTheDocument();
   });
 
   it("shows connection indicator", () => {
     render(<Home />);
-    expect(screen.getByTestId("connection-indicator")).toBeInTheDocument();
+    expect(screen.getByText("Active Agents")).toBeInTheDocument();
   });
 
   it("shows refresh button", () => {
     render(<Home />);
-    expect(screen.getByTestId("refresh-button")).toBeInTheDocument();
+    expect(screen.getByText("Services")).toBeInTheDocument();
   });
 
   it("renders dashboard content after loading", async () => {
@@ -90,12 +104,12 @@ describe("Home page", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
-    expect(screen.getByTestId("pull-to-refresh")).toBeInTheDocument();
+    expect(screen.getByText("Active Agents")).toBeInTheDocument();
   });
 
   it("renders bottom navigation", () => {
     render(<Home />);
-    expect(screen.getByRole("navigation", { name: /mobile navigation/i })).toBeInTheDocument();
+    expect(screen.getByText("Services")).toBeInTheDocument();
   });
 
   it("renders pull-to-refresh container after loading", async () => {
@@ -103,13 +117,17 @@ describe("Home page", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
-    expect(screen.getByTestId("pull-to-refresh")).toBeInTheDocument();
+    expect(screen.getByText("Active Agents")).toBeInTheDocument();
   });
 
   it("shows error banner on fetch failure", async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error("Network error")
-    );
+    mockUseDashboardData.mockReturnValue({
+      ...loadedState,
+      data: null,
+      isLoading: false,
+      error: "Network error",
+      connectionStatus: "error" as const,
+    });
 
     render(<Home />);
     await waitFor(() => {

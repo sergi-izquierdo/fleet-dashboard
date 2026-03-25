@@ -116,6 +116,18 @@ export default function OverviewPage() {
     return <LoadingSkeleton />;
   }
 
+  if (!data && error) {
+    return (
+      <div
+        data-testid="error-banner"
+        className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400"
+        role="alert"
+      >
+        <span className="font-medium">Connection error:</span> {error}
+      </div>
+    );
+  }
+
   if (!data) return null;
 
   return (
@@ -125,6 +137,7 @@ export default function OverviewPage() {
       {/* Error banner */}
       {error && (
         <div
+          data-testid="error-banner"
           className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400"
           role="alert"
         >

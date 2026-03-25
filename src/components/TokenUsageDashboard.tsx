@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, useRef, useState, useEffect } from "react";
 import { useTokenUsage } from "@/hooks/useTokenUsage";
 import type { TimeRange } from "@/types/tokenUsage";
 import {
@@ -49,6 +49,36 @@ const getServerSnapshot = () => false;
 export default function TokenUsageDashboard() {
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const { data, isLoading, error, range, setRange, isLiveData } = useTokenUsage();
+
+  const timeChartRef = useRef<HTMLDivElement>(null);
+  const [isTimeChartVisible, setIsTimeChartVisible] = useState(true);
+  useEffect(() => {
+    const el = timeChartRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        setIsTimeChartVisible(width > 0 && height > 0);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const projectChartRef = useRef<HTMLDivElement>(null);
+  const [isProjectChartVisible, setIsProjectChartVisible] = useState(true);
+  useEffect(() => {
+    const el = projectChartRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        setIsProjectChartVisible(width > 0 && height > 0);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   if (!mounted) {
     return (
@@ -165,10 +195,11 @@ export default function TokenUsageDashboard() {
               Token Consumption Over Time
             </h3>
             <div
+              ref={timeChartRef}
               className="h-64"
               data-testid="token-time-chart"
             >
-              <ResponsiveContainer width="100%" height="100%">
+              {isTimeChartVisible && <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.timeSeries}>
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -218,6 +249,7 @@ export default function TokenUsageDashboard() {
                   />
                 </BarChart>
               </ResponsiveContainer>
+              }
             </div>
           </div>
 
@@ -227,10 +259,11 @@ export default function TokenUsageDashboard() {
               Tokens by Agent / Project
             </h3>
             <div
+              ref={projectChartRef}
               className="h-64"
               data-testid="token-project-chart"
             >
-              <ResponsiveContainer width="100%" height="100%">
+              {isProjectChartVisible && <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={data.byProject}
                   layout="vertical"
@@ -286,6 +319,7 @@ export default function TokenUsageDashboard() {
                   />
                 </BarChart>
               </ResponsiveContainer>
+              }
             </div>
           </div>
 

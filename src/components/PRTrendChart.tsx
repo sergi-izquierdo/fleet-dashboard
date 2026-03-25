@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore, useRef } from "react";
 import {
   BarChart,
   Bar,
@@ -28,6 +28,21 @@ export default function PRTrendChart() {
   const [trends, setTrends] = useState<PRTrendDay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        setIsVisible(width > 0 && height > 0);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const fetchTrends = useCallback(async () => {
     try {
@@ -133,8 +148,8 @@ export default function PRTrendChart() {
           {error}
         </div>
       ) : (
-        <div data-testid="pr-trend-chart-container" className="h-48 w-full">
-          <ResponsiveContainer width="100%" height="100%">
+        <div ref={containerRef} data-testid="pr-trend-chart-container" className="h-48 w-full">
+          {isVisible && <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
               margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
@@ -179,6 +194,7 @@ export default function PRTrendChart() {
               />
             </BarChart>
           </ResponsiveContainer>
+          }
         </div>
       )}
     </div>

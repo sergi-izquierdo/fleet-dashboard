@@ -80,8 +80,8 @@ describe("/api/health edge cases", () => {
     const response = await GET();
     const body = await response.json();
 
-    expect(body.services.ao.status).toBe("down");
-    expect(body.services.ao.message).toContain("unreachable");
+    expect(body.services.observability.status).toBe("down");
+    expect(body.services.observability.message).toContain("unreachable");
   });
 
   it("returns correct HTTP status for degraded state", async () => {
@@ -109,7 +109,7 @@ describe("/api/health edge cases", () => {
     expect(response.status).toBe(503);
   });
 
-  it("reports all four services in the response", async () => {
+  it("reports all three services in the response", async () => {
     simulateExec(null, "main: 1 windows");
     mockFetch.mockResolvedValue({ ok: true, status: 200 });
 
@@ -117,9 +117,9 @@ describe("/api/health edge cases", () => {
     const body = await response.json();
 
     expect(body.services).toHaveProperty("tmux");
-    expect(body.services).toHaveProperty("ao");
     expect(body.services).toHaveProperty("observability");
     expect(body.services).toHaveProperty("langfuse");
+    expect(body.services).not.toHaveProperty("ao");
   });
 
   it("each service has status and message fields", async () => {

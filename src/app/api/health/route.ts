@@ -6,7 +6,6 @@ const CHECK_TIMEOUT_MS = 3000;
 const OBSERVABILITY_URL =
   process.env.OBSERVABILITY_URL || "http://localhost:4000";
 const LANGFUSE_URL = process.env.LANGFUSE_URL || "http://localhost:3100";
-const AO_API_URL = process.env.AO_API_URL || "http://localhost:3000";
 
 interface ServiceStatus {
   status: "up" | "down";
@@ -17,7 +16,6 @@ interface HealthResponse {
   status: "healthy" | "degraded" | "unhealthy";
   services: {
     tmux: ServiceStatus;
-    ao: ServiceStatus;
     observability: ServiceStatus;
     langfuse: ServiceStatus;
   };
@@ -80,14 +78,13 @@ function fetchWithTimeout(url: string, label: string): Promise<ServiceStatus> {
 }
 
 export async function GET() {
-  const [tmux, ao, observability, langfuse] = await Promise.all([
+  const [tmux, observability, langfuse] = await Promise.all([
     checkTmux(),
-    fetchWithTimeout(AO_API_URL, "AO process"),
     fetchWithTimeout(OBSERVABILITY_URL, "Observability server"),
     fetchWithTimeout(LANGFUSE_URL, "Langfuse"),
   ]);
 
-  const services = { tmux, ao, observability, langfuse };
+  const services = { tmux, observability, langfuse };
   const statuses = Object.values(services);
   const upCount = statuses.filter((s) => s.status === "up").length;
 

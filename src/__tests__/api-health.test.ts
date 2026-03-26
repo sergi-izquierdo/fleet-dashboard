@@ -51,7 +51,6 @@ describe("/api/health", () => {
     simulateExec(null, "main: 1 windows (created Mon Mar 23 10:00:00 2026)");
     simulateFetch(
       new Map([
-        ["http://localhost:3000", { ok: true, status: 200 }],
         ["http://localhost:4000", { ok: true, status: 200 }],
         ["http://localhost:3100", { ok: true, status: 200 }],
       ])
@@ -63,7 +62,6 @@ describe("/api/health", () => {
     expect(response.status).toBe(200);
     expect(body.status).toBe("healthy");
     expect(body.services.tmux.status).toBe("up");
-    expect(body.services.ao.status).toBe("up");
     expect(body.services.observability.status).toBe("up");
     expect(body.services.langfuse.status).toBe("up");
     expect(body.timestamp).toBeDefined();
@@ -79,7 +77,6 @@ describe("/api/health", () => {
     expect(response.status).toBe(200);
     expect(body.status).toBe("degraded");
     expect(body.services.tmux.status).toBe("up");
-    expect(body.services.ao.status).toBe("down");
     expect(body.services.observability.status).toBe("down");
     expect(body.services.langfuse.status).toBe("down");
   });
@@ -94,7 +91,6 @@ describe("/api/health", () => {
     expect(response.status).toBe(503);
     expect(body.status).toBe("unhealthy");
     expect(body.services.tmux.status).toBe("down");
-    expect(body.services.ao.status).toBe("down");
     expect(body.services.observability.status).toBe("down");
     expect(body.services.langfuse.status).toBe("down");
   });
@@ -103,7 +99,6 @@ describe("/api/health", () => {
     simulateExec(null, "main: 1 windows");
     simulateFetch(
       new Map([
-        ["http://localhost:3000", { ok: false, status: 500 }],
         ["http://localhost:4000", { ok: true, status: 200 }],
         ["http://localhost:3100", { ok: false, status: 502 }],
       ])
@@ -115,8 +110,6 @@ describe("/api/health", () => {
     expect(response.status).toBe(200);
     expect(body.status).toBe("degraded");
     expect(body.services.tmux.status).toBe("up");
-    expect(body.services.ao.status).toBe("down");
-    expect(body.services.ao.message).toContain("500");
     expect(body.services.observability.status).toBe("up");
     expect(body.services.langfuse.status).toBe("down");
     expect(body.services.langfuse.message).toContain("502");

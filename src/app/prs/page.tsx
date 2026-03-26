@@ -1,9 +1,12 @@
-"use client";
-
+import type { Metadata } from "next";
 import MergeQueue from "@/components/MergeQueue";
 import RecentPRs from "@/components/RecentPRs";
 import PRTrendChart from "@/components/PRTrendChart";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+
+export const metadata: Metadata = {
+  title: "Pull Requests",
+};
 
 export default function PRsPage() {
   return (

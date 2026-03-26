@@ -1,7 +1,10 @@
-"use client";
-
+import type { Metadata } from "next";
 import TokenUsageDashboard from "@/components/TokenUsageDashboard";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+
+export const metadata: Metadata = {
+  title: "Costs",
+};
 
 export default function CostsPage() {
   return (

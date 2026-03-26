@@ -1,7 +1,10 @@
-"use client";
-
+import type { Metadata } from "next";
 import AgentStatusCards from "@/components/AgentStatusCards";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+
+export const metadata: Metadata = {
+  title: "Agents",
+};
 
 export default function AgentsPage() {
   return (

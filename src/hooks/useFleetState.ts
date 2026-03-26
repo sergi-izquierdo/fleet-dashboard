@@ -17,6 +17,8 @@ interface FleetStateStats {
   totalCompleted: number;
   byStatus: Record<string, number>;
   byProject: Record<string, number>;
+  successRate: number | null;
+  avgTimeToMerge: number | null;
 }
 
 interface FleetStateData {

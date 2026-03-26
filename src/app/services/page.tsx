@@ -1,7 +1,10 @@
-"use client";
-
+import type { Metadata } from "next";
 import ServiceHealth from "@/components/ServiceHealth";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+
+export const metadata: Metadata = {
+  title: "Services",
+};
 
 export default function ServicesPage() {
   return (

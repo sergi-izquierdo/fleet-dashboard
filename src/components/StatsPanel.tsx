@@ -3,9 +3,11 @@ import type { Agent, PR } from "@/types/dashboard";
 interface StatsPanelProps {
   agents: Agent[];
   prs: PR[];
+  successRate?: number | null;
+  avgTimeToMerge?: number | null;
 }
 
-export default function StatsPanel({ agents, prs }: StatsPanelProps) {
+export default function StatsPanel({ agents, prs, successRate, avgTimeToMerge }: StatsPanelProps) {
   if (agents.length === 0) {
     return (
       <p className="text-sm font-medium text-gray-500 dark:text-white/50 text-center py-2">
@@ -14,41 +16,60 @@ export default function StatsPanel({ agents, prs }: StatsPanelProps) {
     );
   }
 
+  const successRateColor =
+    successRate == null
+      ? "text-gray-400 dark:text-white/30"
+      : successRate > 80
+        ? "text-green-600 dark:text-green-400"
+        : successRate > 60
+          ? "text-yellow-600 dark:text-yellow-400"
+          : "text-red-600 dark:text-red-400";
+
   const stats = [
     {
       label: "Total Agents",
-      value: agents.length,
+      value: String(agents.length),
       color: "text-gray-900 dark:text-white",
     },
     {
       label: "Active",
-      value: agents.filter((a) => a.status === "working").length,
+      value: String(agents.filter((a) => a.status === "working").length),
       color: "text-blue-600 dark:text-blue-400",
     },
     {
       label: "Errors",
-      value: agents.filter((a) => a.status === "error").length,
+      value: String(agents.filter((a) => a.status === "error").length),
       color: "text-red-600 dark:text-red-400",
     },
     {
       label: "PRs Open",
-      value: prs.filter((p) => p.mergeState === "open").length,
+      value: String(prs.filter((p) => p.mergeState === "open").length),
       color: "text-yellow-600 dark:text-yellow-400",
     },
     {
       label: "PRs Merged",
-      value: prs.filter((p) => p.mergeState === "merged").length,
+      value: String(prs.filter((p) => p.mergeState === "merged").length),
       color: "text-purple-600 dark:text-purple-400",
     },
     {
       label: "CI Passing",
-      value: prs.filter((p) => p.ciStatus === "passing").length,
+      value: String(prs.filter((p) => p.ciStatus === "passing").length),
       color: "text-green-600 dark:text-green-400",
+    },
+    {
+      label: "Success Rate",
+      value: successRate != null ? `${Math.round(successRate)}%` : "—",
+      color: successRateColor,
+    },
+    {
+      label: "Avg Merge Time",
+      value: avgTimeToMerge != null ? `${avgTimeToMerge}m` : "—",
+      color: "text-gray-900 dark:text-white",
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 stagger-children">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8 stagger-children">
       {stats.map((stat) => (
         <div
           key={stat.label}

@@ -42,6 +42,8 @@ describe("StatsPanel", () => {
     expect(screen.getByText("PRs Open")).toBeInTheDocument();
     expect(screen.getByText("PRs Merged")).toBeInTheDocument();
     expect(screen.getByText("CI Passing")).toBeInTheDocument();
+    expect(screen.getByText("Success Rate")).toBeInTheDocument();
+    expect(screen.getByText("Avg Merge Time")).toBeInTheDocument();
   });
 
   it("counts agents correctly", () => {
@@ -72,5 +74,46 @@ describe("StatsPanel", () => {
     const values = screen.getAllByRole("paragraph").map((el) => el.textContent);
     expect(values).toContain("1"); // PRs Open
     expect(values).toContain("2"); // PRs Merged or CI Passing
+  });
+
+  it("shows success rate with correct value when provided", () => {
+    const agents = [makeAgent("working", "s1")];
+    render(<StatsPanel agents={agents} prs={[]} successRate={85} />);
+    expect(screen.getByText("85%")).toBeInTheDocument();
+  });
+
+  it("shows dash for success rate when not provided", () => {
+    const agents = [makeAgent("working", "s1")];
+    render(<StatsPanel agents={agents} prs={[]} />);
+    // Both Success Rate and Avg Merge Time show "—"
+    const dashes = screen.getAllByText("—");
+    expect(dashes.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("shows avg time to merge in minutes when provided", () => {
+    const agents = [makeAgent("working", "s1")];
+    render(<StatsPanel agents={agents} prs={[]} avgTimeToMerge={42} />);
+    expect(screen.getByText("42m")).toBeInTheDocument();
+  });
+
+  it("applies green color for success rate > 80%", () => {
+    const agents = [makeAgent("working", "s1")];
+    render(<StatsPanel agents={agents} prs={[]} successRate={90} />);
+    const rateEl = screen.getByText("90%");
+    expect(rateEl.className).toContain("green");
+  });
+
+  it("applies yellow color for success rate between 60 and 80", () => {
+    const agents = [makeAgent("working", "s1")];
+    render(<StatsPanel agents={agents} prs={[]} successRate={70} />);
+    const rateEl = screen.getByText("70%");
+    expect(rateEl.className).toContain("yellow");
+  });
+
+  it("applies red color for success rate < 60%", () => {
+    const agents = [makeAgent("working", "s1")];
+    render(<StatsPanel agents={agents} prs={[]} successRate={50} />);
+    const rateEl = screen.getByText("50%");
+    expect(rateEl.className).toContain("red");
   });
 });

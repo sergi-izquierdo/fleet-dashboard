@@ -1,7 +1,10 @@
-"use client";
-
+import type { Metadata } from "next";
 import ConfigViewer from "@/components/ConfigViewer";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+
+export const metadata: Metadata = {
+  title: "Settings",
+};
 
 export default function SettingsPage() {
   return (

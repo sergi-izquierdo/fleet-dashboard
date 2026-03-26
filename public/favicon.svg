@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Robot head -->
+  <rect x="6" y="10" width="20" height="14" rx="3" fill="#6366f1"/>
+  <!-- Antenna -->
+  <rect x="15" y="4" width="2" height="6" rx="1" fill="#6366f1"/>
+  <circle cx="16" cy="4" r="2" fill="#a5b4fc"/>
+  <!-- Eyes -->
+  <rect x="10" y="14" width="4" height="3" rx="1" fill="#a5b4fc"/>
+  <rect x="18" y="14" width="4" height="3" rx="1" fill="#a5b4fc"/>
+  <!-- Mouth -->
+  <rect x="11" y="19" width="10" height="2" rx="1" fill="#c7d2fe"/>
+  <!-- Ears/bolts -->
+  <rect x="3" y="14" width="3" height="4" rx="1" fill="#4f46e5"/>
+  <rect x="26" y="14" width="3" height="4" rx="1" fill="#4f46e5"/>
+</svg>

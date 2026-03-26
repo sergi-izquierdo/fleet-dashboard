@@ -7,6 +7,7 @@ import FleetActivityTimeline from "@/components/FleetActivityTimeline";
 import MergeQueue from "@/components/MergeQueue";
 import RecentPRs from "@/components/RecentPRs";
 import PRTrendChart from "@/components/PRTrendChart";
+import PRVelocityChart from "@/components/PRVelocityChart";
 import TokenUsageDashboard from "@/components/TokenUsageDashboard";
 import ServiceHealth from "@/components/ServiceHealth";
 import DispatcherPipelinePanel from "@/components/DispatcherPipelinePanel";
@@ -192,12 +193,18 @@ export default function OverviewContent() {
             </Card>
           </div>
 
-          {/* Trends row — 2 columns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Trends row — 3 columns */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <Card>
               <SectionHeader icon={TrendingUp} title="PR Merge Trends" />
               <SectionErrorBoundary sectionName="PR Merge Trends">
                 <PRTrendChart />
+              </SectionErrorBoundary>
+            </Card>
+            <Card>
+              <SectionHeader icon={TrendingUp} title="PR Velocity" />
+              <SectionErrorBoundary sectionName="PR Velocity">
+                <PRVelocityChart />
               </SectionErrorBoundary>
             </Card>
             <Card>

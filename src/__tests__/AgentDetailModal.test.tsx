@@ -273,6 +273,125 @@ describe("AgentDetailModal", () => {
     ).toBeNull();
   });
 
+  describe("kill functionality", () => {
+    it("does not render kill button when onKilled is not provided", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockDashboardData,
+      });
+      render(<AgentDetailModal sessionName="agent-42" onClose={vi.fn()} />);
+      await waitFor(() => {
+        expect(screen.getByTestId("agent-detail-content")).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId("agent-detail-kill-button")).toBeNull();
+    });
+
+    it("renders kill button when onKilled is provided", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockDashboardData,
+      });
+      render(
+        <AgentDetailModal
+          sessionName="agent-42"
+          onClose={vi.fn()}
+          onKilled={vi.fn()}
+        />
+      );
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("agent-detail-kill-button")
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("shows confirmation when kill button is clicked", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockDashboardData,
+      });
+      render(
+        <AgentDetailModal
+          sessionName="agent-42"
+          onClose={vi.fn()}
+          onKilled={vi.fn()}
+        />
+      );
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("agent-detail-kill-button")
+        ).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId("agent-detail-kill-button"));
+      expect(
+        screen.getByTestId("agent-detail-kill-confirm")
+      ).toBeInTheDocument();
+    });
+
+    it("calls onKilled and onClose after successful kill", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockDashboardData,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ sessionName: "agent-42", killed: true }),
+        });
+      const onClose = vi.fn();
+      const onKilled = vi.fn();
+      render(
+        <AgentDetailModal
+          sessionName="agent-42"
+          onClose={onClose}
+          onKilled={onKilled}
+        />
+      );
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("agent-detail-kill-button")
+        ).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId("agent-detail-kill-button"));
+      fireEvent.click(screen.getByTestId("agent-detail-kill-confirm-button"));
+      await waitFor(() => {
+        expect(onKilled).toHaveBeenCalledTimes(1);
+        expect(onClose).toHaveBeenCalled();
+      });
+    });
+
+    it("shows error when kill fails", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockDashboardData,
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          json: async () => ({ error: "Session not found" }),
+        });
+      render(
+        <AgentDetailModal
+          sessionName="agent-42"
+          onClose={vi.fn()}
+          onKilled={vi.fn()}
+        />
+      );
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("agent-detail-kill-button")
+        ).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId("agent-detail-kill-button"));
+      fireEvent.click(screen.getByTestId("agent-detail-kill-confirm-button"));
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("agent-detail-kill-error")
+        ).toHaveTextContent("Session not found");
+      });
+    });
+  });
+
   it("fetches dashboard data with fresh=true", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce({
       ok: true,

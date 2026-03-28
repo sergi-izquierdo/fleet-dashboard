@@ -14,6 +14,7 @@ import SystemHealthCard from "@/components/SystemHealthCard";
 import DispatcherPipelinePanel from "@/components/DispatcherPipelinePanel";
 import ProgressTracker from "@/components/ProgressTracker";
 import FleetStatusBanner from "@/components/FleetStatusBanner";
+import AutoRefreshIndicator from "@/components/AutoRefreshIndicator";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { ToastContainer, showToast } from "@/components/Toast";
@@ -60,7 +61,7 @@ function Card({
 }
 
 export default function OverviewContent() {
-  const { data, isLoading, error } = useDashboardData();
+  const { data, isLoading, error, refresh } = useDashboardData();
   useFleetState();
   const prevAgentsRef = useRef<Map<string, string>>(new Map());
 
@@ -152,8 +153,11 @@ export default function OverviewContent() {
       )}
 
       {/* Fleet Status Banner */}
-      <div className="mb-6">
-        <FleetStatusBanner agents={data.agents} prs={data.prs} />
+      <div className="mb-6 flex items-center gap-3">
+        <div className="flex-1">
+          <FleetStatusBanner agents={data.agents} prs={data.prs} />
+        </div>
+        <AutoRefreshIndicator onRefresh={refresh} />
       </div>
 
       {/* Main grid */}

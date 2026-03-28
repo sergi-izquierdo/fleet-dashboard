@@ -21,6 +21,8 @@ export interface ServiceStatus {
   name: ServiceName;
   status: "active" | "inactive" | "failed" | "unknown";
   statusText: string;
+  uptime: string | null;
+  restartCount: number | null;
 }
 
 export interface ServicesResponse {
@@ -38,6 +40,43 @@ function getSystemctlEnv(): NodeJS.ProcessEnv {
     XDG_RUNTIME_DIR:
       process.env.XDG_RUNTIME_DIR || `/run/user/${uid}`,
   };
+}
+
+async function getServiceDetails(
+  name: ServiceName,
+  env: NodeJS.ProcessEnv,
+): Promise<{ uptime: string | null; restartCount: number | null }> {
+  try {
+    const { stdout } = await execFileAsync(
+      "systemctl",
+      ["--user", "show", name, "--property=ActiveEnterTimestamp,NRestarts"],
+      { env, timeout: CHECK_TIMEOUT_MS },
+    );
+    let uptime: string | null = null;
+    let restartCount: number | null = null;
+    for (const line of stdout.split("\n")) {
+      if (line.startsWith("ActiveEnterTimestamp=")) {
+        const val = line.slice("ActiveEnterTimestamp=".length).trim();
+        if (val && val !== "n/a" && val !== "") {
+          const since = new Date(val).getTime();
+          if (!isNaN(since)) {
+            const diffMs = Date.now() - since;
+            const diffSec = Math.floor(diffMs / 1000);
+            const h = Math.floor(diffSec / 3600);
+            const m = Math.floor((diffSec % 3600) / 60);
+            const s = diffSec % 60;
+            uptime = h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m ${s}s` : `${s}s`;
+          }
+        }
+      } else if (line.startsWith("NRestarts=")) {
+        const val = parseInt(line.slice("NRestarts=".length).trim(), 10);
+        if (!isNaN(val)) restartCount = val;
+      }
+    }
+    return { uptime, restartCount };
+  } catch {
+    return { uptime: null, restartCount: null };
+  }
 }
 
 async function checkService(name: ServiceName): Promise<ServiceStatus> {
@@ -58,7 +97,8 @@ async function checkService(name: ServiceName): Promise<ServiceStatus> {
           : statusText === "failed"
             ? "failed"
             : "unknown";
-    return { name, status, statusText };
+    const details = await getServiceDetails(name, env);
+    return { name, status, statusText, ...details };
   } catch (err) {
     // execFile rejects with non-zero exit code when service is not active
     if (err instanceof Error && "stdout" in err) {
@@ -69,9 +109,10 @@ async function checkService(name: ServiceName): Promise<ServiceStatus> {
           : statusText === "failed"
             ? "failed"
             : "unknown";
-      return { name, status, statusText };
+      const details = await getServiceDetails(name, env);
+      return { name, status, statusText, ...details };
     }
-    return { name, status: "unknown", statusText: "unknown" };
+    return { name, status: "unknown", statusText: "unknown", uptime: null, restartCount: null };
   }
 }
 

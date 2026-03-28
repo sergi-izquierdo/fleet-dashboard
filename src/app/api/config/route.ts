@@ -34,7 +34,8 @@ export interface DispatcherConfig {
 
 export async function GET() {
   try {
-    const configPath = join(process.cwd(), "orchestrator", "config.json");
+    const fleetRoot = process.env.FLEET_ROOT || "/home/sergi/agent-fleet";
+    const configPath = join(fleetRoot, "orchestrator", "config.json");
     const raw = readFileSync(configPath, "utf-8");
     const config: DispatcherConfig = JSON.parse(raw) as DispatcherConfig;
     return NextResponse.json(config);

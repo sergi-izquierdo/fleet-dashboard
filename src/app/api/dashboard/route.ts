@@ -61,6 +61,47 @@ function sessionToAgent(session: TmuxSession): Agent {
   };
 }
 
+/** Read state.json active agents to enrich tmux data */
+async function readActiveState(): Promise<
+  Record<string, Record<string, unknown>>
+> {
+  try {
+    const raw = await readFile(STATE_PATH, "utf-8");
+    const state = JSON.parse(raw) as { active?: Record<string, Record<string, unknown>> };
+    return state.active ?? {};
+  } catch {
+    return {};
+  }
+}
+
+/** Enrich a tmux-based Agent with data from dispatcher state.json */
+function enrichAgentFromState(
+  agent: Agent,
+  stateEntry: Record<string, unknown> | undefined,
+): Agent {
+  if (!stateEntry) return agent;
+
+  const issueNum = Number(stateEntry.issue ?? 0);
+  const repo = String(stateEntry.repo ?? "");
+  const title = String(stateEntry.title ?? agent.issue.title);
+  const branch = String(stateEntry.branch ?? agent.branch);
+  const startedAt = String(stateEntry.startedAt ?? "");
+
+  return {
+    ...agent,
+    issue: {
+      title,
+      number: issueNum,
+      url: repo && issueNum ? `https://github.com/${repo}/issues/${issueNum}` : "",
+    },
+    branch,
+    lifecycleTimestamps: {
+      spawned: startedAt || undefined,
+      working: startedAt || undefined,
+    },
+  };
+}
+
 /** Fetch real tmux sessions and convert to Agent[] */
 async function fetchRealAgents(): Promise<Agent[]> {
   try {
@@ -70,8 +111,11 @@ async function fetchRealAgents(): Promise<Agent[]> {
   }
 
   try {
-    const { stdout: tmuxListOutput } = await execFileAsync(TMUX_BIN, ["ls"]);
-    const rawSessions = parseTmuxList(tmuxListOutput);
+    const [tmuxResult, activeState] = await Promise.all([
+      execFileAsync(TMUX_BIN, ["ls"]),
+      readActiveState(),
+    ]);
+    const rawSessions = parseTmuxList(tmuxResult.stdout);
 
     const sessions: TmuxSession[] = await Promise.all(
       rawSessions.map(async ({ name, created }) => {
@@ -99,7 +143,10 @@ async function fetchRealAgents(): Promise<Agent[]> {
       }),
     );
 
-    return sessions.map(sessionToAgent);
+    return sessions.map((s) => {
+      const agent = sessionToAgent(s);
+      return enrichAgentFromState(agent, activeState[s.name]);
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (

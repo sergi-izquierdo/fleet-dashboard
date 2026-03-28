@@ -234,8 +234,8 @@ export default function OverviewContent() {
             </Card>
           </div>
 
-          {/* Trends row — 3 columns */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Trends row — responsive columns */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <Card>
               <SectionHeader icon={TrendingUp} title="PR Merge Trends" />
               <SectionErrorBoundary sectionName="PR Merge Trends">

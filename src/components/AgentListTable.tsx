@@ -275,7 +275,7 @@ export default function AgentListTable() {
                 <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-white/50">
                   Agent Name
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-white/50">
+                <th className="hidden sm:table-cell px-4 py-3 text-left font-medium text-gray-500 dark:text-white/50">
                   Project
                 </th>
                 <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-white/50">
@@ -284,10 +284,10 @@ export default function AgentListTable() {
                 <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-white/50">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-white/50">
+                <th className="hidden md:table-cell px-4 py-3 text-left font-medium text-gray-500 dark:text-white/50">
                   Duration
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-white/50">
+                <th className="hidden sm:table-cell px-4 py-3 text-left font-medium text-gray-500 dark:text-white/50">
                   PR
                 </th>
               </tr>
@@ -303,7 +303,7 @@ export default function AgentListTable() {
                   <td className="px-4 py-3 font-medium text-gray-900 dark:text-white truncate max-w-[200px]">
                     {agent.name}
                   </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-white/60">
+                  <td className="hidden sm:table-cell px-4 py-3 text-gray-600 dark:text-white/60">
                     {agent.project || "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-white/60">
@@ -312,10 +312,10 @@ export default function AgentListTable() {
                   <td className="px-4 py-3">
                     <StatusBadge status={agent.status} />
                   </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-white/60">
+                  <td className="hidden md:table-cell px-4 py-3 text-gray-600 dark:text-white/60">
                     {agent.duration}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="hidden sm:table-cell px-4 py-3">
                     {agent.prUrl ? (
                       <a
                         href={agent.prUrl}

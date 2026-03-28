@@ -295,6 +295,26 @@ interface AgentLifecycleTimelineProps {
 export function AgentLifecycleTimeline({ agent }: AgentLifecycleTimelineProps) {
   const steps = buildSteps(agent);
 
+  // If no timestamps at all and agent is just "working", show a simplified view
+  const hasAnyTimestamp = steps.some((s) => s.timestamp);
+  if (!hasAnyTimestamp && agent.status === "working") {
+    return (
+      <div
+        data-testid="agent-lifecycle-timeline"
+        className="space-y-1"
+        aria-label="Agent lifecycle timeline"
+      >
+        <div className="flex items-center gap-2 text-sm">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-blue-500 animate-pulse" />
+          <span className="text-blue-600 dark:text-blue-400 font-medium">Working on task...</span>
+          {agent.timeElapsed && (
+            <span className="text-xs text-gray-400 dark:text-gray-500">({agent.timeElapsed})</span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       data-testid="agent-lifecycle-timeline"

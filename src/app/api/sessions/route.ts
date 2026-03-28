@@ -19,7 +19,7 @@ function tmuxExists(): boolean {
 }
 
 const GIT_BIN = "/usr/bin/git";
-const WORKTREE_BASE = process.cwd().replace(/\/\.worktrees\/[^/]+$/, "/.worktrees");
+const PROJECTS_DIR = process.env.PROJECTS_DIR || "/home/sergi/projects";
 
 async function capturePane(sessionName: string): Promise<string> {
   try {
@@ -33,7 +33,22 @@ async function capturePane(sessionName: string): Promise<string> {
 }
 
 async function getGitBranch(sessionName: string): Promise<string | null> {
-  const worktreePath = `${WORKTREE_BASE}/${sessionName}`;
+  // Session names are like agent-fle-42, agent-syn-10. Extract project prefix and issue number.
+  // Worktrees live at {project}/.worktrees/issue-{N}
+  const match = sessionName.match(/^agent-([a-z]+)-(\d+)$/);
+  if (!match) return null;
+
+  const prefixToProject: Record<string, string> = {
+    fle: "fleet-dashboard",
+    syn: "synapse-notes",
+    aut: "autotask-engine",
+    pav: "pavello-larapita-app",
+  };
+
+  const project = prefixToProject[match[1]];
+  if (!project) return null;
+
+  const worktreePath = `${PROJECTS_DIR}/${project}/.worktrees/issue-${match[2]}`;
   try {
     const { stdout } = await execFileAsync(
       GIT_BIN, ["-C", worktreePath, "branch", "--show-current"]

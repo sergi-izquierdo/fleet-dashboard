@@ -43,7 +43,7 @@ function PhaseBar({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="w-32 shrink-0 truncate text-right text-xs text-gray-500 dark:text-gray-400">
+      <span className="w-20 sm:w-32 shrink-0 truncate text-right text-xs text-gray-500 dark:text-gray-400">
         {name}
       </span>
       <div className="flex flex-1 items-center gap-1">

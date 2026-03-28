@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 
 const CHECK_TIMEOUT_MS = 3000;
 
 const OBSERVABILITY_URL =
-  process.env.OBSERVABILITY_URL || "http://localhost:4000";
-const LANGFUSE_URL = process.env.LANGFUSE_URL || "http://localhost:3100";
+  process.env.OBSERVABILITY_URL || "http://localhost:4100";
+const LANGFUSE_URL = process.env.LANGFUSE_URL || "http://localhost:3050";
 
 interface ServiceStatus {
   status: "up" | "down";
@@ -28,7 +28,7 @@ function checkTmux(): Promise<ServiceStatus> {
       resolve({ status: "down", message: "tmux check timed out" });
     }, CHECK_TIMEOUT_MS);
 
-    exec("tmux ls", (error, stdout) => {
+    execFile("/usr/bin/tmux", ["ls"], (error, stdout) => {
       clearTimeout(timeout);
       if (error) {
         resolve({

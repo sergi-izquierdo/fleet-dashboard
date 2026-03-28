@@ -17,11 +17,11 @@ export interface UseTokenUsageReturn {
   isLangfuseOnline: boolean;
 }
 
-export function useTokenUsage(): UseTokenUsageReturn {
+export function useTokenUsage(initialRange: TimeRange = "daily"): UseTokenUsageReturn {
   const [data, setData] = useState<TokenUsageResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [range, setRange] = useState<TimeRange>("daily");
+  const [range, setRange] = useState<TimeRange>(initialRange);
 
   const fetchData = useCallback(async (r: TimeRange) => {
     setIsLoading(true);

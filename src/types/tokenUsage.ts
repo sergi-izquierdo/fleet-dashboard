@@ -14,7 +14,7 @@ export interface ProjectTokenUsage {
   cost: number;
 }
 
-export type TimeRange = "daily" | "weekly" | "monthly";
+export type TimeRange = "daily" | "weekly" | "monthly" | "24h" | "7d" | "30d";
 
 export interface TokenUsageResponse {
   timeSeries: TokenUsageEntry[];

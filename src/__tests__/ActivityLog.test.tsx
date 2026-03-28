@@ -1,4 +1,4 @@
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach } from "vitest";
 import ActivityLog, { type AgentEvent } from "@/components/ActivityLog";
 
@@ -37,6 +37,49 @@ const sampleEvents: AgentEvent[] = [
     agentName: "Agent Alpha",
     eventType: "deploy",
     description: "Deployed v1.2.0 to production",
+  },
+];
+
+const eventsWithProjects: AgentEvent[] = [
+  {
+    id: "p1",
+    timestamp: "2026-03-20T10:00:00Z",
+    agentName: "Agent Alpha",
+    eventType: "commit",
+    description: "Commit to repo-alpha",
+    project: "org/repo-alpha",
+  },
+  {
+    id: "p2",
+    timestamp: "2026-03-21T14:30:00Z",
+    agentName: "Agent Beta",
+    eventType: "pr_created",
+    description: "PR in repo-alpha",
+    project: "org/repo-alpha",
+  },
+  {
+    id: "p3",
+    timestamp: "2026-03-22T09:15:00Z",
+    agentName: "Agent Gamma",
+    eventType: "ci_failed",
+    description: "CI failed in repo-beta",
+    project: "org/repo-beta",
+  },
+  {
+    id: "p4",
+    timestamp: "2026-03-19T16:45:00Z",
+    agentName: "Agent Delta",
+    eventType: "review",
+    description: "Review in repo-beta",
+    project: "org/repo-beta",
+  },
+  {
+    id: "p5",
+    timestamp: "2026-03-23T08:00:00Z",
+    agentName: "Agent Alpha",
+    eventType: "deploy",
+    description: "Deploy in repo-gamma",
+    project: "org/repo-gamma",
   },
 ];
 
@@ -171,5 +214,66 @@ describe("ActivityLog", () => {
     render(<ActivityLog events={[]} isLoading={false} />);
     expect(screen.getByText("No recent activity")).toBeInTheDocument();
     expect(screen.queryByRole("list", { name: "Loading activity" })).not.toBeInTheDocument();
+  });
+
+  // Project filter tests
+  it("renders project filter dropdown when events have project fields", () => {
+    render(<ActivityLog events={eventsWithProjects} />);
+    expect(screen.getByTestId("project-filter-trigger")).toBeInTheDocument();
+  });
+
+  it("does not render project filter when no events have project fields", () => {
+    render(<ActivityLog events={sampleEvents} />);
+    expect(screen.queryByTestId("project-filter-trigger")).not.toBeInTheDocument();
+  });
+
+  it("filter dropdown lists all unique projects", () => {
+    render(<ActivityLog events={eventsWithProjects} />);
+    fireEvent.click(screen.getByTestId("project-filter-trigger"));
+    expect(screen.getByTestId("project-filter-menu")).toBeInTheDocument();
+    expect(screen.getByTestId("project-filter-all")).toBeInTheDocument();
+    expect(screen.getByTestId("project-filter-option-org/repo-alpha")).toBeInTheDocument();
+    expect(screen.getByTestId("project-filter-option-org/repo-beta")).toBeInTheDocument();
+    expect(screen.getByTestId("project-filter-option-org/repo-gamma")).toBeInTheDocument();
+  });
+
+  it("selecting a project filters the event list", () => {
+    render(<ActivityLog events={eventsWithProjects} />);
+    fireEvent.click(screen.getByTestId("project-filter-trigger"));
+    fireEvent.click(screen.getByTestId("project-filter-option-org/repo-alpha"));
+    expect(screen.getByText("Commit to repo-alpha")).toBeInTheDocument();
+    expect(screen.getByText("PR in repo-alpha")).toBeInTheDocument();
+    expect(screen.queryByText("CI failed in repo-beta")).not.toBeInTheDocument();
+    expect(screen.queryByText("Deploy in repo-gamma")).not.toBeInTheDocument();
+  });
+
+  it("All Projects option shows all events", () => {
+    render(<ActivityLog events={eventsWithProjects} />);
+    // Select a specific project first
+    fireEvent.click(screen.getByTestId("project-filter-trigger"));
+    fireEvent.click(screen.getByTestId("project-filter-option-org/repo-beta"));
+    // Verify filtering is active
+    expect(screen.queryByText("Commit to repo-alpha")).not.toBeInTheDocument();
+    // Now click All Projects
+    fireEvent.click(screen.getByTestId("project-filter-trigger"));
+    fireEvent.click(screen.getByTestId("project-filter-all"));
+    // All events should be visible again
+    expect(screen.getByText("Commit to repo-alpha")).toBeInTheDocument();
+    expect(screen.getByText("CI failed in repo-beta")).toBeInTheDocument();
+    expect(screen.getByText("Deploy in repo-gamma")).toBeInTheDocument();
+  });
+
+  it("event count badges show correct numbers per project", () => {
+    render(<ActivityLog events={eventsWithProjects} />);
+    fireEvent.click(screen.getByTestId("project-filter-trigger"));
+    const alphaOption = screen.getByTestId("project-filter-option-org/repo-alpha");
+    const betaOption = screen.getByTestId("project-filter-option-org/repo-beta");
+    const gammaOption = screen.getByTestId("project-filter-option-org/repo-gamma");
+    // org/repo-alpha has 2 events, org/repo-beta has 2, org/repo-gamma has 1
+    expect(alphaOption).toHaveTextContent("2");
+    expect(betaOption).toHaveTextContent("2");
+    expect(gammaOption).toHaveTextContent("1");
+    // "All Projects" shows total count (5)
+    expect(screen.getByTestId("project-filter-all")).toHaveTextContent("5");
   });
 });

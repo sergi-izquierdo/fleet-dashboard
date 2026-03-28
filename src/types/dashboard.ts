@@ -56,6 +56,7 @@ export interface ActivityEvent {
     | "agent_start"
     | "agent_stop";
   description: string;
+  project?: string;
 }
 
 export interface DashboardData {

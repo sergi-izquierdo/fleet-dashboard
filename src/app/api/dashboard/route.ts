@@ -243,6 +243,7 @@ function completedAgentToEvent(
     agentName: key,
     eventType,
     description: `${prefix}: ${agent.title}`,
+    project: agent.repo,
   };
 }
 

@@ -108,6 +108,7 @@ export default function OverviewContent() {
             agentName: evt.agentName,
             eventType: evt.eventType as import("@/components/ActivityLog").EventType,
             description: evt.description,
+            project: evt.project,
           }))
         : [],
     [data],

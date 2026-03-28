@@ -100,7 +100,7 @@ export default function SystemHealthCard() {
   if (!data) return null;
 
   const metrics = [data.disk, data.memory, data.cpu].filter(
-    (m): m is SystemMetric => m !== null,
+    (m): m is SystemMetric => m != null,
   );
 
   if (metrics.length === 0) {

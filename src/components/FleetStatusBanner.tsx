@@ -1,7 +1,21 @@
 "use client";
 
+import { Clock } from "lucide-react";
 import { useDispatcherStatus } from "@/hooks/useDispatcherStatus";
 import type { Agent, PR } from "@/types/dashboard";
+
+export function formatUptime(startedAt: string): string {
+  const started = new Date(startedAt).getTime();
+  if (isNaN(started)) return "";
+  const diffMs = Date.now() - started;
+  if (diffMs < 0) return "";
+  const totalMinutes = Math.floor(diffMs / 60000);
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return `${days}d ${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
 
 interface FleetStatusBannerProps {
   agents: Agent[];
@@ -22,6 +36,7 @@ export default function FleetStatusBanner({ agents, prs }: FleetStatusBannerProp
   const { data, connectionStatus, countdown } = useDispatcherStatus();
 
   const isOnline = connectionStatus === "connected" && !data?.offline;
+  const uptimeText = data?.cycle?.startedAt ? formatUptime(data.cycle.startedAt) : "";
   const activeAgents = agents.filter((a) => a.status === "working").length;
   const openPRs = prs.filter((p) => p.mergeState !== "merged").length;
   const ciFailingCount = prs.filter((p) => p.ciStatus === "failing").length;
@@ -54,6 +69,14 @@ export default function FleetStatusBanner({ agents, prs }: FleetStatusBannerProp
           <span>Tokens:</span>
           <RateLimitGauge remaining={rateLimitRemaining} />
         </div>
+
+        {/* Uptime badge */}
+        {uptimeText && (
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-white/50">
+            <Clock className="w-3 h-3" />
+            <span>{uptimeText}</span>
+          </div>
+        )}
       </div>
 
       {/* Right section */}

@@ -1,6 +1,66 @@
 "use client";
 
 import { useDispatcherStatus } from "@/hooks/useDispatcherStatus";
+import type { DispatcherPhase } from "@/types/dispatcherStatus";
+
+const PHASE_ORDER = [
+  "rateLimit",
+  "planner",
+  "spawn",
+  "checkAgents",
+  "recoverStale",
+  "autoLabel",
+  "autoRebase",
+  "fixCI",
+  "cleanupReviewFix",
+  "autoMerge",
+  "cleanup",
+  "writeStatus",
+] as const;
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  return `${parseFloat((ms / 1000).toFixed(1))}s`;
+}
+
+function PhaseBar({
+  name,
+  phase,
+  widthPercent,
+}: {
+  name: string;
+  phase: DispatcherPhase;
+  widthPercent: number;
+}) {
+  const barColor =
+    phase.status === "completed"
+      ? "bg-green-500 dark:bg-green-500"
+      : phase.status === "error"
+        ? "bg-red-500 dark:bg-red-500"
+        : "bg-gray-400 dark:bg-gray-500";
+
+  const minWidth = widthPercent < 2 && widthPercent > 0 ? 2 : widthPercent;
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-32 shrink-0 truncate text-right text-xs text-gray-500 dark:text-gray-400">
+        {name}
+      </span>
+      <div className="flex flex-1 items-center gap-1">
+        <div className="relative h-4 flex-1 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
+          <div
+            className={`h-full rounded ${barColor}`}
+            style={{ width: `${minWidth}%` }}
+            aria-label={`${name} ${phase.status}`}
+          />
+        </div>
+        <span className="w-14 shrink-0 text-right text-xs text-gray-500 dark:text-gray-400">
+          {phase.durationMs != null ? formatDuration(phase.durationMs) : "—"}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 export default function DispatcherPipelinePanel() {
   const { data, isLoading, error } = useDispatcherStatus();
@@ -38,8 +98,35 @@ export default function DispatcherPipelinePanel() {
     unknown: "text-gray-500 dark:text-gray-400",
   };
 
+  const phases = data.phases ?? {};
+  const phaseEntries = PHASE_ORDER.filter((name) => name in phases).map(
+    (name) => ({ name, phase: phases[name] })
+  );
+
+  // Include any phases not in the known order
+  const unknownPhases = Object.keys(phases)
+    .filter((k) => !PHASE_ORDER.includes(k as (typeof PHASE_ORDER)[number]))
+    .map((name) => ({ name, phase: phases[name] }));
+
+  const allPhaseEntries = [...phaseEntries, ...unknownPhases];
+
+  const maxDuration = Math.max(
+    ...allPhaseEntries.map((e) => e.phase.durationMs ?? 0),
+    1
+  );
+
   return (
     <div className="space-y-4 text-sm">
+      {/* Cycle total time */}
+      {data.cycle.durationMs != null && (
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600 dark:text-gray-400">Cycle Duration</span>
+          <span className="font-medium text-gray-700 dark:text-gray-300">
+            {formatDuration(data.cycle.durationMs)}
+          </span>
+        </div>
+      )}
+
       {/* Rate Limit */}
       <div className="flex items-center justify-between">
         <span className="text-gray-600 dark:text-gray-400">GitHub Rate Limit</span>
@@ -47,6 +134,31 @@ export default function DispatcherPipelinePanel() {
           {data.rateLimit.remaining} / {data.rateLimit.limit}
         </span>
       </div>
+
+      {/* Cycle Phase Timeline */}
+      {allPhaseEntries.length > 0 && (
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <p className="font-medium text-gray-700 dark:text-gray-300">
+              Cycle Phase Timeline
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            {allPhaseEntries.map(({ name, phase }) => (
+              <PhaseBar
+                key={name}
+                name={name}
+                phase={phase}
+                widthPercent={
+                  phase.durationMs != null
+                    ? (phase.durationMs / maxDuration) * 100
+                    : 0
+                }
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Active agents */}
       <div>

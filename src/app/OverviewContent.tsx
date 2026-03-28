@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import AgentStatusCards from "@/components/AgentStatusCards";
 import ActivityLog from "@/components/ActivityLog";
 import FleetActivityTimeline from "@/components/FleetActivityTimeline";
@@ -17,6 +17,7 @@ import FleetStatusBanner from "@/components/FleetStatusBanner";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { ToastContainer, showToast } from "@/components/Toast";
+import { BottomNav, type MobileTab } from "@/components/BottomNav";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useFleetState } from "@/hooks/useFleetState";
 import {
@@ -27,6 +28,13 @@ import {
   TrendingUp,
   DollarSign,
 } from "lucide-react";
+
+const SECTION_IDS: Record<MobileTab, string> = {
+  agents: "section-agents",
+  prs: "section-prs",
+  activity: "section-activity",
+  health: "section-health",
+};
 
 function SectionHeader({
   icon: Icon,
@@ -46,12 +54,15 @@ function SectionHeader({
 function Card({
   children,
   className = "",
+  id,
 }: {
   children: React.ReactNode;
   className?: string;
+  id?: string;
 }) {
   return (
     <div
+      id={id}
       className={`rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 ${className}`}
     >
       {children}
@@ -63,6 +74,15 @@ export default function OverviewContent() {
   const { data, isLoading, error } = useDashboardData();
   useFleetState();
   const prevAgentsRef = useRef<Map<string, string>>(new Map());
+  const [activeTab, setActiveTab] = useState<MobileTab>("agents");
+
+  const handleTabChange = useCallback((tab: MobileTab) => {
+    setActiveTab(tab);
+    const el = document.getElementById(SECTION_IDS[tab]);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
 
   // Toast notifications for agent status changes
   useEffect(() => {
@@ -157,11 +177,11 @@ export default function OverviewContent() {
       </div>
 
       {/* Main grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 pb-16 md:pb-0">
         {/* ── Left column (8 cols) ── */}
         <div className="xl:col-span-8 space-y-5">
           {/* Agent Sessions */}
-          <Card>
+          <Card id="section-agents">
             <SectionHeader icon={Bot} title="Active Agents" />
             <SectionErrorBoundary sectionName="Agents">
               <AgentStatusCards />
@@ -180,7 +200,7 @@ export default function OverviewContent() {
           </Card>
 
           {/* PRs row — 2 columns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div id="section-prs" className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <Card>
               <SectionHeader icon={GitPullRequest} title="Merge Queue" />
               <SectionErrorBoundary sectionName="Merge Queue">
@@ -218,16 +238,50 @@ export default function OverviewContent() {
           </div>
 
           {/* Activity Log */}
-          <Card>
+          <Card id="section-activity">
             <SectionHeader icon={Activity} title="Activity Log" />
             <SectionErrorBoundary sectionName="Activity Log">
               <ActivityLog events={activityEvents} maxHeight="max-h-80" />
             </SectionErrorBoundary>
           </Card>
+
+          {/* Mobile-only sidebar content */}
+          <div className="xl:hidden space-y-5">
+            {/* Dispatcher Pipeline */}
+            <Card>
+              <SectionErrorBoundary sectionName="Dispatcher Pipeline">
+                <DispatcherPipelinePanel />
+              </SectionErrorBoundary>
+            </Card>
+
+            {/* System Health */}
+            <Card>
+              <SectionHeader icon={Server} title="System Health" />
+              <SectionErrorBoundary sectionName="System Health">
+                <SystemHealthCard />
+              </SectionErrorBoundary>
+            </Card>
+
+            {/* Service Health */}
+            <Card id="section-health">
+              <SectionHeader icon={Server} title="Services" />
+              <SectionErrorBoundary sectionName="Service Health">
+                <ServiceHealth />
+              </SectionErrorBoundary>
+            </Card>
+
+            {/* Issue Progress */}
+            <Card>
+              <SectionHeader icon={TrendingUp} title="Issue Progress" />
+              <SectionErrorBoundary sectionName="Issue Progress">
+                <ProgressTracker />
+              </SectionErrorBoundary>
+            </Card>
+          </div>
         </div>
 
-        {/* ── Right sidebar (4 cols) ── */}
-        <div className="xl:col-span-4 space-y-5">
+        {/* ── Right sidebar (4 cols) — desktop only ── */}
+        <div className="hidden xl:block xl:col-span-4 space-y-5">
           {/* Dispatcher Pipeline */}
           <Card>
             <SectionErrorBoundary sectionName="Dispatcher Pipeline">
@@ -244,7 +298,7 @@ export default function OverviewContent() {
           </Card>
 
           {/* Service Health */}
-          <Card>
+          <Card id="section-health">
             <SectionHeader icon={Server} title="Services" />
             <SectionErrorBoundary sectionName="Service Health">
               <ServiceHealth />
@@ -260,6 +314,9 @@ export default function OverviewContent() {
           </Card>
         </div>
       </div>
+
+      {/* Mobile bottom navigation */}
+      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
     </>
   );
 }

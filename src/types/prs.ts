@@ -8,4 +8,14 @@ export interface RecentPR {
   number: number;
   author: string;
   hasConflicts?: boolean;
+  reviewStatus?: "approved" | "changes_requested" | "pending" | "none";
+  mergedAt?: string;
+}
+
+export type PRGroupKey = "awaiting-ci" | "awaiting-review" | "ready-to-merge" | "merged-today";
+
+export interface PRGroup {
+  key: PRGroupKey;
+  label: string;
+  prs: RecentPR[];
 }

@@ -139,7 +139,7 @@ describe("Home page", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
-    expect(screen.getByText(/active agents/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /active agents/i })).toBeInTheDocument();
   });
 
   it("renders open PRs info after loading", async () => {

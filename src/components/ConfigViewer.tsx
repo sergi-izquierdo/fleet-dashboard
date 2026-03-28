@@ -1,23 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
-interface DispatcherProject {
-  repo: string;
-  url: string;
-}
-
-interface DispatcherConfig {
-  maxConcurrentAgents: number;
-  maxPerProject: number;
-  pollIntervalMs: number;
-  agentTimeoutMs: number;
-  cleanupWindowMs: number;
-  stateRetentionMs: number;
-  plannerEnabled: boolean;
-  reviewBeforeMerge: boolean;
-  projects: DispatcherProject[];
-}
+import type { DispatcherConfig } from "@/app/api/config/route";
 
 function msToHuman(ms: number): string {
   const seconds = ms / 1000;
@@ -151,6 +135,69 @@ export default function ConfigViewer() {
           ))}
         </div>
       </div>
+
+      {/* Label configuration */}
+      {config.labels && config.labels.length > 0 && (
+        <div>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-white/30">
+            Labels ({config.labels.length})
+          </h3>
+          <div
+            className="rounded-lg border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-black/20 px-3 py-3 flex flex-wrap gap-2"
+            data-testid="labels-section"
+          >
+            {config.labels.map((label) => (
+              <span
+                key={label.name}
+                className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border"
+                style={{
+                  backgroundColor: `${label.color}20`,
+                  borderColor: `${label.color}50`,
+                  color: label.color,
+                }}
+                data-testid={`label-badge-${label.name}`}
+              >
+                {label.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Quality-gate hooks */}
+      {config.qualityGateHooks && config.qualityGateHooks.length > 0 && (
+        <div>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-white/30">
+            Quality-Gate Hooks ({config.qualityGateHooks.length})
+          </h3>
+          <div
+            className="rounded-lg border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-black/20 divide-y divide-gray-100 dark:divide-white/5"
+            data-testid="quality-gate-hooks-section"
+          >
+            {config.qualityGateHooks.map((hook) => (
+              <div key={hook.name} className="flex items-center justify-between px-3 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm font-medium text-gray-700 dark:text-white/70">
+                    {hook.name}
+                  </span>
+                  <code className="text-xs text-gray-400 dark:text-white/30 font-mono truncate">
+                    {hook.command}
+                  </code>
+                </div>
+                <span
+                  className={`ml-3 shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ${
+                    hook.enabled
+                      ? "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20"
+                      : "bg-gray-500/10 text-gray-500 dark:text-gray-400 border-gray-500/20"
+                  }`}
+                >
+                  {hook.enabled ? "Active" : "Inactive"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

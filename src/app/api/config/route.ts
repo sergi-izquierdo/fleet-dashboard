@@ -7,6 +7,17 @@ export interface DispatcherProject {
   url: string;
 }
 
+export interface LabelConfig {
+  name: string;
+  color: string;
+}
+
+export interface QualityGateHook {
+  name: string;
+  command: string;
+  enabled: boolean;
+}
+
 export interface DispatcherConfig {
   maxConcurrentAgents: number;
   maxPerProject: number;
@@ -17,6 +28,8 @@ export interface DispatcherConfig {
   plannerEnabled: boolean;
   reviewBeforeMerge: boolean;
   projects: DispatcherProject[];
+  labels?: LabelConfig[];
+  qualityGateHooks?: QualityGateHook[];
 }
 
 export async function GET() {

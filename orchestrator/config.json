@@ -24,5 +24,20 @@
       "repo": "sergi-izquierdo/autotask-engine",
       "url": "https://github.com/sergi-izquierdo/autotask-engine"
     }
+  ],
+  "labels": [
+    { "name": "bug", "color": "#d73a4a" },
+    { "name": "enhancement", "color": "#a2eeef" },
+    { "name": "agent-task", "color": "#0075ca" },
+    { "name": "blocked", "color": "#e4e669" },
+    { "name": "in-progress", "color": "#fbca04" },
+    { "name": "ready-for-review", "color": "#0e8a16" }
+  ],
+  "qualityGateHooks": [
+    { "name": "lint", "command": "npm run lint", "enabled": true },
+    { "name": "type-check", "command": "npx tsc --noEmit", "enabled": true },
+    { "name": "test", "command": "npm test -- --run", "enabled": true },
+    { "name": "build", "command": "npm run build", "enabled": true },
+    { "name": "security-audit", "command": "npm audit --audit-level=high", "enabled": false }
   ]
 }

@@ -1,6 +1,6 @@
 import { render, screen, cleanup } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
-import FleetStatusBanner from "@/components/FleetStatusBanner";
+import FleetStatusBanner, { formatUptime } from "@/components/FleetStatusBanner";
 import type { Agent, PR } from "@/types/dashboard";
 
 vi.mock("@/hooks/useDispatcherStatus", () => ({
@@ -140,5 +140,50 @@ describe("FleetStatusBanner", () => {
     render(<FleetStatusBanner agents={[]} prs={[]} />);
     // All counters default to 0; verify at least one exists
     expect(screen.getAllByText("0").length).toBeGreaterThan(0);
+  });
+
+  it("renders uptime badge when startedAt is present", () => {
+    const startedAt = new Date(Date.now() - 2 * 60 * 60 * 1000 - 35 * 60 * 1000).toISOString();
+    mockUseDispatcherStatus.mockReturnValue({
+      ...defaultHookReturn,
+      data: {
+        ...defaultHookReturn.data,
+        cycle: { ...defaultHookReturn.data.cycle, startedAt },
+      },
+    });
+    render(<FleetStatusBanner agents={[]} prs={[]} />);
+    expect(screen.getByText("2h 35m")).toBeInTheDocument();
+  });
+
+  it("hides uptime badge when startedAt is missing", () => {
+    mockUseDispatcherStatus.mockReturnValue({
+      ...defaultHookReturn,
+      data: {
+        ...defaultHookReturn.data,
+        cycle: { ...defaultHookReturn.data.cycle, startedAt: "" },
+      },
+    });
+    render(<FleetStatusBanner agents={[]} prs={[]} />);
+    expect(screen.queryByText(/h \d+m/)).toBeNull();
+  });
+});
+
+describe("formatUptime", () => {
+  it("formats hours and minutes correctly", () => {
+    const startedAt = new Date(Date.now() - (3 * 60 * 60 + 15 * 60) * 1000).toISOString();
+    expect(formatUptime(startedAt)).toBe("3h 15m");
+  });
+
+  it("formats days correctly", () => {
+    const startedAt = new Date(Date.now() - (1 * 24 * 60 * 60 + 4 * 60 * 60) * 1000).toISOString();
+    expect(formatUptime(startedAt)).toBe("1d 4h");
+  });
+
+  it("returns empty string for invalid date", () => {
+    expect(formatUptime("not-a-date")).toBe("");
+  });
+
+  it("returns empty string for empty string", () => {
+    expect(formatUptime("")).toBe("");
   });
 });

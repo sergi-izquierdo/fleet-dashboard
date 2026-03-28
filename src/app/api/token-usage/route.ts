@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
 import type {
   TokenUsageResponse,
   TokenUsageEntry,
@@ -9,9 +8,6 @@ import type {
 
 const OBS_SERVER_URL =
   process.env.OBS_SERVER_URL || "http://localhost:4100";
-const FLEET_STATE_PATH =
-  process.env.FLEET_STATE_PATH ||
-  "/home/sergi/agent-fleet/orchestrator/state.json";
 const FETCH_TIMEOUT_MS = 10_000;
 
 // Cost per 1M tokens (rough Claude estimates, configurable via env)
@@ -19,11 +15,6 @@ const INPUT_COST_PER_M =
   Number(process.env.TOKEN_COST_INPUT_PER_M) || 3.0;
 const OUTPUT_COST_PER_M =
   Number(process.env.TOKEN_COST_OUTPUT_PER_M) || 15.0;
-
-// Estimated tokens per minute for Claude Code agents (Sonnet-class)
-const TOKENS_PER_MINUTE = 2000;
-const INPUT_RATIO = 0.7;
-const OUTPUT_RATIO = 0.3;
 
 function estimateCost(inputTokens: number, outputTokens: number): number {
   return (
@@ -36,11 +27,16 @@ function getDateRange(range: TimeRange): { from: Date; to: Date } {
   const to = new Date();
   const from = new Date();
   switch (range) {
+    case "24h":
+      from.setHours(from.getHours() - 24);
+      break;
+    case "7d":
     case "daily":
       from.setDate(from.getDate() - 7);
       break;
+    case "30d":
     case "weekly":
-      from.setDate(from.getDate() - 28);
+      from.setDate(from.getDate() - 30);
       break;
     case "monthly":
       from.setMonth(from.getMonth() - 6);
@@ -54,13 +50,17 @@ function formatDateKey(date: string | number, range: TimeRange): string {
   if (range === "monthly") {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   }
-  if (range === "weekly") {
+  if (range === "weekly" || range === "30d") {
     // Group by week start (Monday)
     const day = d.getDay();
     const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(d);
     monday.setDate(diff);
     return monday.toISOString().slice(0, 10);
+  }
+  if (range === "24h") {
+    // Group by hour
+    return `${d.toISOString().slice(0, 13)}:00`;
   }
   return d.toISOString().slice(0, 10);
 }
@@ -193,141 +193,18 @@ function aggregateObsByProject(events: ObsEvent[]): ProjectTokenUsage[] {
 }
 
 // ---------------------------------------------------------------------------
-// Secondary source: State.json estimates
-// ---------------------------------------------------------------------------
-
-interface StateAgent {
-  repo: string;
-  issue: number;
-  title: string;
-  pr?: string;
-  status: string;
-  startedAt?: string;
-  completedAt?: string;
-}
-
-interface DispatcherState {
-  active: Record<string, StateAgent>;
-  completed: Record<string, StateAgent>;
-}
-
-async function readDispatcherState(): Promise<DispatcherState> {
-  const raw = await fs.readFile(FLEET_STATE_PATH, "utf-8");
-  return JSON.parse(raw) as DispatcherState;
-}
-
-function estimateFromState(
-  state: DispatcherState,
-  range: TimeRange
-): TokenUsageResponse {
-  const { from } = getDateRange(range);
-  const fromMs = from.getTime();
-
-  const allAgents: StateAgent[] = [
-    ...Object.values(state.active),
-    ...Object.values(state.completed),
-  ];
-
-  const timeSeriesBuckets = new Map<
-    string,
-    { inputTokens: number; outputTokens: number }
-  >();
-  const projectBuckets = new Map<
-    string,
-    { inputTokens: number; outputTokens: number }
-  >();
-
-  for (const agent of allAgents) {
-    // Determine agent time window
-    const startedAt = agent.startedAt
-      ? new Date(agent.startedAt).getTime()
-      : agent.completedAt
-        ? new Date(agent.completedAt).getTime() - 30 * 60_000 // assume 30 min if no startedAt
-        : 0;
-    const completedAt = agent.completedAt
-      ? new Date(agent.completedAt).getTime()
-      : Date.now(); // still active
-
-    if (completedAt < fromMs) continue;
-
-    // Duration in minutes
-    const durationMin = Math.max(
-      1,
-      (completedAt - Math.max(startedAt, fromMs)) / 60_000
-    );
-    const totalTokens = Math.round(durationMin * TOKENS_PER_MINUTE);
-    const inputTokens = Math.round(totalTokens * INPUT_RATIO);
-    const outputTokens = Math.round(totalTokens * OUTPUT_RATIO);
-
-    // Time series: use completedAt (or startedAt) as the bucket key
-    const dateRef = agent.completedAt ?? agent.startedAt ?? new Date().toISOString();
-    const dateKey = formatDateKey(dateRef, range);
-    const tsExisting = timeSeriesBuckets.get(dateKey) ?? {
-      inputTokens: 0,
-      outputTokens: 0,
-    };
-    tsExisting.inputTokens += inputTokens;
-    tsExisting.outputTokens += outputTokens;
-    timeSeriesBuckets.set(dateKey, tsExisting);
-
-    // Project breakdown
-    const projectName = agent.repo.split("/")[1] ?? agent.repo;
-    const projExisting = projectBuckets.get(projectName) ?? {
-      inputTokens: 0,
-      outputTokens: 0,
-    };
-    projExisting.inputTokens += inputTokens;
-    projExisting.outputTokens += outputTokens;
-    projectBuckets.set(projectName, projExisting);
-  }
-
-  const timeSeries: TokenUsageEntry[] = Array.from(
-    timeSeriesBuckets.entries()
-  )
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, { inputTokens, outputTokens }]) => ({
-      date,
-      inputTokens,
-      outputTokens,
-      totalTokens: inputTokens + outputTokens,
-      cost: estimateCost(inputTokens, outputTokens),
-    }));
-
-  const byProject: ProjectTokenUsage[] = Array.from(
-    projectBuckets.entries()
-  )
-    .map(([name, { inputTokens, outputTokens }]) => ({
-      name,
-      inputTokens,
-      outputTokens,
-      totalTokens: inputTokens + outputTokens,
-      cost: estimateCost(inputTokens, outputTokens),
-    }))
-    .sort((a, b) => b.totalTokens - a.totalTokens);
-
-  const totalTokens = byProject.reduce((s, p) => s + p.totalTokens, 0);
-  const totalCost = byProject.reduce((s, p) => s + p.cost, 0);
-
-  return {
-    timeSeries,
-    byProject,
-    totalCost,
-    totalTokens,
-    source: "estimated" as const,
-  };
-}
-
-// ---------------------------------------------------------------------------
 // GET handler
 // ---------------------------------------------------------------------------
+
+const VALID_RANGES: TimeRange[] = ["daily", "weekly", "monthly", "24h", "7d", "30d"];
 
 export async function GET(request: NextRequest) {
   const range = (request.nextUrl.searchParams.get("range") ??
     "daily") as TimeRange;
 
-  if (!["daily", "weekly", "monthly"].includes(range)) {
+  if (!VALID_RANGES.includes(range)) {
     return NextResponse.json(
-      { error: "Invalid range. Use daily, weekly, or monthly." },
+      { error: "Invalid range. Use daily, weekly, monthly, 24h, 7d, or 30d." },
       { status: 400 }
     );
   }
@@ -354,21 +231,8 @@ export async function GET(request: NextRequest) {
     );
   } catch (obsError) {
     console.error(
-      "Obs server unreachable, falling back to state.json estimates:",
+      "Obs server unreachable, returning empty state:",
       obsError instanceof Error ? obsError.message : obsError
-    );
-  }
-
-  // --- Secondary: State.json estimates ---
-  try {
-    const state = await readDispatcherState();
-    const response = estimateFromState(state, range);
-
-    return NextResponse.json(response, { status: 200 });
-  } catch (stateError) {
-    console.error(
-      "Failed to read dispatcher state:",
-      stateError instanceof Error ? stateError.message : stateError
     );
   }
 

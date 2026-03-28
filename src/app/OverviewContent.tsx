@@ -10,6 +10,7 @@ import PRTrendChart from "@/components/PRTrendChart";
 import PRVelocityChart from "@/components/PRVelocityChart";
 import TokenUsageDashboard from "@/components/TokenUsageDashboard";
 import ServiceHealth from "@/components/ServiceHealth";
+import SystemHealthCard from "@/components/SystemHealthCard";
 import DispatcherPipelinePanel from "@/components/DispatcherPipelinePanel";
 import ProgressTracker from "@/components/ProgressTracker";
 import FleetStatusBanner from "@/components/FleetStatusBanner";
@@ -230,6 +231,14 @@ export default function OverviewContent() {
           <Card>
             <SectionErrorBoundary sectionName="Dispatcher Pipeline">
               <DispatcherPipelinePanel />
+            </SectionErrorBoundary>
+          </Card>
+
+          {/* System Health */}
+          <Card>
+            <SectionHeader icon={Server} title="System Health" />
+            <SectionErrorBoundary sectionName="System Health">
+              <SystemHealthCard />
             </SectionErrorBoundary>
           </Card>
 

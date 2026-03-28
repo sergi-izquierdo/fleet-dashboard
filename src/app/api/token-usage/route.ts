@@ -372,45 +372,14 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // --- Last resort: generated mock data ---
-  const { from } = getDateRange(range);
-  const mockTimeSeries: TokenUsageEntry[] = [];
-  const cursor = new Date(from);
-  const now = new Date();
-  while (cursor <= now) {
-    const key = formatDateKey(cursor.toISOString(), range);
-    if (!mockTimeSeries.find((e) => e.date === key)) {
-      const inputTokens = 10000 + Math.floor(Math.random() * 5000);
-      const outputTokens = 4000 + Math.floor(Math.random() * 2000);
-      mockTimeSeries.push({
-        date: key,
-        inputTokens,
-        outputTokens,
-        totalTokens: inputTokens + outputTokens,
-        cost: estimateCost(inputTokens, outputTokens),
-      });
-    }
-    if (range === "monthly") {
-      cursor.setMonth(cursor.getMonth() + 1);
-    } else if (range === "weekly") {
-      cursor.setDate(cursor.getDate() + 7);
-    } else {
-      cursor.setDate(cursor.getDate() + 1);
-    }
-  }
-  const mockByProject: ProjectTokenUsage[] = [
-    { name: "fleet-dashboard", inputTokens: 42000, outputTokens: 18000, totalTokens: 60000, cost: estimateCost(42000, 18000) },
-    { name: "agent-worker", inputTokens: 28000, outputTokens: 12000, totalTokens: 40000, cost: estimateCost(28000, 12000) },
-  ];
-  const mockTotalTokens = mockByProject.reduce((s, p) => s + p.totalTokens, 0);
-  const mockTotalCost = mockByProject.reduce((s, p) => s + p.cost, 0);
+  // --- No data available: return empty state ---
   return NextResponse.json(
     {
-      timeSeries: mockTimeSeries,
-      byProject: mockByProject,
-      totalCost: mockTotalCost,
-      totalTokens: mockTotalTokens,
-      source: "mock",
+      timeSeries: [],
+      byProject: [],
+      totalCost: 0,
+      totalTokens: 0,
+      source: "empty",
     } satisfies TokenUsageResponse,
     { status: 200 }
   );

@@ -21,5 +21,5 @@ export interface TokenUsageResponse {
   byProject: ProjectTokenUsage[];
   totalCost: number;
   totalTokens: number;
-  source: "observability" | "estimated" | "mock";
+  source: "observability" | "estimated" | "mock" | "empty";
 }

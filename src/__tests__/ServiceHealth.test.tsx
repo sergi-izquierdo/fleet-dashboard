@@ -5,12 +5,12 @@ import type { ServicesResponse } from "@/app/api/services/route";
 
 const mockServicesData: ServicesResponse = {
   services: [
-    { name: "fleet-orchestrator", status: "active", statusText: "active" },
-    { name: "fleet-telegram", status: "inactive", statusText: "inactive" },
-    { name: "fleet-dashboard", status: "active", statusText: "active" },
-    { name: "fleet-obs-server", status: "failed", statusText: "failed" },
-    { name: "fleet-obs-client", status: "active", statusText: "active" },
-    { name: "fleet-auto-accept", status: "unknown", statusText: "unknown" },
+    { name: "fleet-orchestrator", status: "active", statusText: "active", uptime: "1h", restartCount: 0 },
+    { name: "fleet-telegram", status: "inactive", statusText: "inactive", uptime: null, restartCount: null },
+    { name: "fleet-dashboard", status: "active", statusText: "active", uptime: "2h", restartCount: 0 },
+    { name: "fleet-obs-server", status: "failed", statusText: "failed", uptime: null, restartCount: 2 },
+    { name: "fleet-obs-client", status: "active", statusText: "active", uptime: "30m", restartCount: 0 },
+    { name: "fleet-auto-accept", status: "unknown", statusText: "unknown", uptime: null, restartCount: null },
   ],
   timestamp: new Date().toISOString(),
 };

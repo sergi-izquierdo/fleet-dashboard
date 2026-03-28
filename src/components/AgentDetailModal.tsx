@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { Agent } from "@/types/dashboard";
+import { AgentLifecycleTimeline } from "@/components/AgentLifecycleTimeline";
 
 interface AgentDetailModalProps {
   sessionName: string;
@@ -293,6 +294,14 @@ export function AgentDetailModal({
                 </a>
               </div>
             )}
+
+            {/* Lifecycle Timeline */}
+            <div>
+              <span className="text-sm text-gray-500 dark:text-white/50 block mb-2">
+                Lifecycle
+              </span>
+              <AgentLifecycleTimeline agent={agent} />
+            </div>
 
             {/* Actions */}
             {(onViewTerminal || onKilled !== undefined) && (

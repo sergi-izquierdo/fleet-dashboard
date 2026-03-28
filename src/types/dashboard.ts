@@ -5,6 +5,23 @@ export interface HealthTimelineEntry {
   status: HealthStatus;
 }
 
+export interface AgentLifecycleTimestamps {
+  spawned?: string;
+  working?: string;
+  committed?: string;
+  prCreated?: string;
+  ciStarted?: string;
+  ciPassed?: string;
+  ciFailed?: string;
+  reviewStarted?: string;
+  reviewApproved?: string;
+  reviewChangesRequested?: string;
+  merged?: string;
+  error?: string;
+  ciFixAttempts?: Array<{ startedAt: string; completedAt?: string }>;
+  reviewFixAttempts?: Array<{ startedAt: string; completedAt?: string }>;
+}
+
 export interface Agent {
   name: string;
   sessionId: string;
@@ -27,6 +44,7 @@ export interface Agent {
     number: number;
   };
   healthTimeline?: HealthTimelineEntry[];
+  lifecycleTimestamps?: AgentLifecycleTimestamps;
 }
 
 export interface PR {

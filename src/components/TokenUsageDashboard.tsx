@@ -3,6 +3,7 @@
 import { useSyncExternalStore, useRef, useState, useEffect } from "react";
 import { useTokenUsage } from "@/hooks/useTokenUsage";
 import type { TimeRange } from "@/types/tokenUsage";
+import EmptyState from "@/components/EmptyState";
 import {
   BarChart,
   Bar,
@@ -144,6 +145,11 @@ export default function TokenUsageDashboard() {
 
       {isLoading && !data ? (
         <SkeletonChart />
+      ) : data && (data.source === "empty" || data.source === "mock") ? (
+        <EmptyState
+          title="No token data available"
+          description="Start the observability server to see real token usage data."
+        />
       ) : data ? (
         <div className="space-y-6">
           {/* Summary Stats */}

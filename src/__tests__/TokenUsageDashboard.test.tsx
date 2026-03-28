@@ -175,8 +175,15 @@ describe("TokenUsageDashboard", () => {
     });
   });
 
-  it("shows banner when source is mock", async () => {
-    const mockDataOffline: TokenUsageResponse = { ...mockData, source: "mock" };
+  it("shows empty state when source is mock", async () => {
+    const mockDataOffline: TokenUsageResponse = {
+      ...mockData,
+      source: "mock",
+      timeSeries: [],
+      byProject: [],
+      totalTokens: 0,
+      totalCost: 0,
+    };
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -190,8 +197,35 @@ describe("TokenUsageDashboard", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId("data-source-banner")).toBeDefined();
-      expect(screen.getByText(/No data sources available/)).toBeDefined();
+      expect(screen.getByTestId("empty-state")).toBeDefined();
+      expect(screen.getByText("No token data available")).toBeDefined();
+    });
+  });
+
+  it("shows empty state when source is empty", async () => {
+    const emptyData: TokenUsageResponse = {
+      timeSeries: [],
+      byProject: [],
+      totalCost: 0,
+      totalTokens: 0,
+      source: "empty",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => emptyData,
+      })
+    );
+
+    await act(async () => {
+      render(<TokenUsageDashboard />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("empty-state")).toBeDefined();
+      expect(screen.getByText("No token data available")).toBeDefined();
+      expect(screen.getByText(/observability server/)).toBeDefined();
     });
   });
 

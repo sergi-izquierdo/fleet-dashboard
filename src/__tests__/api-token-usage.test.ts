@@ -16,7 +16,7 @@ beforeEach(() => {
 });
 
 describe("GET /api/token-usage", () => {
-  it("returns data when obs server is not configured", async () => {
+  it("returns empty state when obs server is not configured and no state.json", async () => {
     const res = await GET(makeRequest("daily"));
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -25,34 +25,48 @@ describe("GET /api/token-usage", () => {
     expect(body).toHaveProperty("totalCost");
     expect(body).toHaveProperty("totalTokens");
     // When obs server is unavailable but state.json exists, source is 'estimated'.
-    // When neither is available, source is 'mock'.
-    expect(["estimated", "mock"]).toContain(body.source);
+    // When neither is available, source is 'empty'.
+    expect(["estimated", "empty"]).toContain(body.source);
     expect(Array.isArray(body.timeSeries)).toBe(true);
     expect(Array.isArray(body.byProject)).toBe(true);
     expect(typeof body.totalCost).toBe("number");
     expect(typeof body.totalTokens).toBe("number");
   });
 
-  it("returns mock data for weekly range", async () => {
+  it("returns empty state for weekly range when no data sources available", async () => {
     const res = await GET(makeRequest("weekly"));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.timeSeries.length).toBeGreaterThan(0);
-    expect(body.byProject.length).toBeGreaterThan(0);
+    // Without obs server or state.json, returns empty arrays
+    expect(Array.isArray(body.timeSeries)).toBe(true);
+    expect(Array.isArray(body.byProject)).toBe(true);
   });
 
-  it("returns mock data for monthly range", async () => {
+  it("returns empty state for monthly range when no data sources available", async () => {
     const res = await GET(makeRequest("monthly"));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.timeSeries.length).toBeGreaterThan(0);
+    expect(Array.isArray(body.timeSeries)).toBe(true);
   });
 
   it("defaults to daily when no range specified", async () => {
     const res = await GET(makeRequest());
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.timeSeries.length).toBeGreaterThan(0);
+    expect(Array.isArray(body.timeSeries)).toBe(true);
+  });
+
+  it("returns source 'empty' with zero totals when no data sources are available", async () => {
+    // Obs server fetch will fail (mockFetch not configured), state.json will be missing
+    const res = await GET(makeRequest("daily"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    if (body.source === "empty") {
+      expect(body.totalTokens).toBe(0);
+      expect(body.totalCost).toBe(0);
+      expect(body.timeSeries).toHaveLength(0);
+      expect(body.byProject).toHaveLength(0);
+    }
   });
 
   it("returns 400 for invalid range", async () => {

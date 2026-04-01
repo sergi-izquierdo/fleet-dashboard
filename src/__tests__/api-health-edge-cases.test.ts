@@ -9,8 +9,10 @@ vi.mock("child_process", async (importOriginal) => {
     default: {
       ...actual,
       exec: (...args: unknown[]) => mockExec(...args),
+      execFile: (...args: unknown[]) => mockExec(...args),
     },
     exec: (...args: unknown[]) => mockExec(...args),
+    execFile: (...args: unknown[]) => mockExec(...args),
   };
 });
 
@@ -22,10 +24,10 @@ import { GET } from "@/app/api/health/route";
 
 function simulateExec(error: Error | null, stdout = "") {
   mockExec.mockImplementation(
-    (
-      _cmd: string,
-      callback: (err: Error | null, stdout: string, stderr: string) => void
-    ) => {
+    (_cmd: string, argsOrCb: unknown, maybeCb?: unknown) => {
+      const callback = (
+        typeof argsOrCb === "function" ? argsOrCb : maybeCb
+      ) as (err: Error | null, stdout: string, stderr: string) => void;
       callback(error, stdout, "");
     }
   );
@@ -88,7 +90,7 @@ describe("/api/health edge cases", () => {
     simulateExec(null, "main: 1 windows");
     // Only some services fail
     mockFetch.mockImplementation((url: string) => {
-      if (url.includes("4000")) {
+      if (url.includes("4100")) {
         return Promise.resolve({ ok: true, status: 200 });
       }
       return Promise.reject(new Error("Connection refused"));

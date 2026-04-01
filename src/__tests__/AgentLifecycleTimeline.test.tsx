@@ -12,6 +12,7 @@ function makeAgent(overrides: Partial<Agent> = {}): Agent {
     issue: { title: "Feature X", number: 42, url: "" },
     branch: "feat/issue-42",
     timeElapsed: "2m 5s",
+    lifecycleTimestamps: { spawned: "2024-01-01T10:00:00Z" },
     ...overrides,
   };
 }

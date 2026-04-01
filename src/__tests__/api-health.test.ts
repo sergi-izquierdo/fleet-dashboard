@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock child_process.exec
+// Mock child_process.exec and execFile
 const mockExec = vi.fn();
 vi.mock("child_process", async (importOriginal) => {
   const actual = await importOriginal<typeof import("child_process")>();
@@ -9,8 +9,10 @@ vi.mock("child_process", async (importOriginal) => {
     default: {
       ...actual,
       exec: (...args: unknown[]) => mockExec(...args),
+      execFile: (...args: unknown[]) => mockExec(...args),
     },
     exec: (...args: unknown[]) => mockExec(...args),
+    execFile: (...args: unknown[]) => mockExec(...args),
   };
 });
 
@@ -22,14 +24,14 @@ vi.stubGlobal("fetch", mockFetch);
 import { GET } from "@/app/api/health/route";
 
 function simulateExec(error: Error | null, stdout = "") {
-  mockExec.mockImplementation(
-    (
-      _cmd: string,
-      callback: (err: Error | null, stdout: string, stderr: string) => void
-    ) => {
-      callback(error, stdout, "");
-    }
-  );
+  mockExec.mockImplementation((...args: unknown[]) => {
+    const callback = args[args.length - 1] as (
+      err: Error | null,
+      stdout: string,
+      stderr: string
+    ) => void;
+    callback(error, stdout, "");
+  });
 }
 
 function simulateFetch(results: Map<string, { ok: boolean; status: number }>) {
@@ -51,8 +53,8 @@ describe("/api/health", () => {
     simulateExec(null, "main: 1 windows (created Mon Mar 23 10:00:00 2026)");
     simulateFetch(
       new Map([
-        ["http://localhost:4000", { ok: true, status: 200 }],
-        ["http://localhost:3100", { ok: true, status: 200 }],
+        ["http://localhost:4100", { ok: true, status: 200 }],
+        ["http://localhost:3050", { ok: true, status: 200 }],
       ])
     );
 
@@ -99,8 +101,8 @@ describe("/api/health", () => {
     simulateExec(null, "main: 1 windows");
     simulateFetch(
       new Map([
-        ["http://localhost:4000", { ok: true, status: 200 }],
-        ["http://localhost:3100", { ok: false, status: 502 }],
+        ["http://localhost:4100", { ok: true, status: 200 }],
+        ["http://localhost:3050", { ok: false, status: 502 }],
       ])
     );
 

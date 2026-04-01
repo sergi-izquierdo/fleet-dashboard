@@ -117,7 +117,7 @@ describe("FleetStatusBanner", () => {
       makePR("merged", "passing", 3),
     ];
     render(<FleetStatusBanner agents={[]} prs={prs} />);
-    expect(screen.getByText("Open PRs:")).toBeInTheDocument();
+    expect(screen.getByText("PRs:")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
   });
 
@@ -128,7 +128,7 @@ describe("FleetStatusBanner", () => {
       makePR("open", "passing", 3),
     ];
     render(<FleetStatusBanner agents={[]} prs={prs} />);
-    expect(screen.getByText("CI Failing:")).toBeInTheDocument();
+    expect(screen.getByText("CI Fail:")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
   });
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import AgentStatusCards from "@/components/AgentStatusCards";
 import AgentListTable from "@/components/AgentListTable";
+import AgentTimeline from "@/components/AgentTimeline";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 
 export const metadata: Metadata = {
@@ -18,6 +19,9 @@ export default function AgentsPage() {
       </div>
       <SectionErrorBoundary sectionName="Agent List">
         <AgentListTable />
+      </SectionErrorBoundary>
+      <SectionErrorBoundary sectionName="Agent Timeline">
+        <AgentTimeline />
       </SectionErrorBoundary>
     </div>
   );

@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock child_process.exec
-const mockExec = vi.fn();
+// Mock child_process.execFile
+const mockExecFile = vi.fn();
 vi.mock("child_process", async (importOriginal) => {
   const actual = await importOriginal<typeof import("child_process")>();
   return {
     ...actual,
+    execFile: (...args: unknown[]) => mockExecFile(...args),
     default: {
       ...actual,
-      exec: (...args: unknown[]) => mockExec(...args),
+      execFile: (...args: unknown[]) => mockExecFile(...args),
     },
-    exec: (...args: unknown[]) => mockExec(...args),
   };
 });
 
@@ -22,9 +22,10 @@ vi.stubGlobal("fetch", mockFetch);
 import { GET } from "@/app/api/health/route";
 
 function simulateExec(error: Error | null, stdout = "") {
-  mockExec.mockImplementation(
+  mockExecFile.mockImplementation(
     (
-      _cmd: string,
+      _path: string,
+      _args: string[],
       callback: (err: Error | null, stdout: string, stderr: string) => void
     ) => {
       callback(error, stdout, "");
@@ -51,8 +52,8 @@ describe("/api/health", () => {
     simulateExec(null, "main: 1 windows (created Mon Mar 23 10:00:00 2026)");
     simulateFetch(
       new Map([
-        ["http://localhost:4000", { ok: true, status: 200 }],
-        ["http://localhost:3100", { ok: true, status: 200 }],
+        ["http://localhost:4100", { ok: true, status: 200 }],
+        ["http://localhost:3050", { ok: true, status: 200 }],
       ])
     );
 
@@ -99,8 +100,8 @@ describe("/api/health", () => {
     simulateExec(null, "main: 1 windows");
     simulateFetch(
       new Map([
-        ["http://localhost:4000", { ok: true, status: 200 }],
-        ["http://localhost:3100", { ok: false, status: 502 }],
+        ["http://localhost:4100", { ok: true, status: 200 }],
+        ["http://localhost:3050", { ok: false, status: 502 }],
       ])
     );
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Agent } from "@/types/dashboard";
 import { AgentLifecycleTimeline } from "@/components/AgentLifecycleTimeline";
+import { AgentLogViewer } from "@/components/AgentLogViewer";
 
 interface AgentDetailModalProps {
   sessionName: string;
@@ -302,6 +303,9 @@ export function AgentDetailModal({
               </span>
               <AgentLifecycleTimeline agent={agent} />
             </div>
+
+            {/* Log Viewer */}
+            <AgentLogViewer sessionName={sessionName} />
 
             {/* Actions */}
             {(onViewTerminal || onKilled !== undefined) && (

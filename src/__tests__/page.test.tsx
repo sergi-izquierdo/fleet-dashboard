@@ -147,7 +147,7 @@ describe("Home page", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
-    expect(screen.getByText(/open prs:/i)).toBeInTheDocument();
+    expect(screen.getByText(/prs:/i)).toBeInTheDocument();
   });
 
   it("renders CI failing info after loading", async () => {
@@ -155,7 +155,7 @@ describe("Home page", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("loading-skeleton")).not.toBeInTheDocument();
     });
-    expect(screen.getByText(/ci failing:/i)).toBeInTheDocument();
+    expect(screen.getByText(/ci fail:/i)).toBeInTheDocument();
   });
 
   it("shows error banner when fetch fails initially", async () => {

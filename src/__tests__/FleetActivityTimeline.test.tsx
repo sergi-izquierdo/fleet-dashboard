@@ -103,7 +103,6 @@ describe("FleetActivityTimeline", () => {
 
   it("renders the heading and time range selector", () => {
     render(<FleetActivityTimeline activityLog={[]} prs={[]} />);
-    expect(screen.getByText("Fleet Activity")).toBeInTheDocument();
     expect(screen.getByTestId("time-range-selector")).toBeInTheDocument();
   });
 

@@ -21,6 +21,7 @@ import { ToastContainer, showToast } from "@/components/Toast";
 import { BottomNav, type MobileTab } from "@/components/BottomNav";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useFleetState } from "@/hooks/useFleetState";
+import { useFleetEvents } from "@/hooks/useFleetEvents";
 import {
   Bot,
   GitPullRequest,
@@ -75,6 +76,11 @@ export default function OverviewContent() {
   const { data, isLoading, error, refresh } = useDashboardData();
   useFleetState();
   const prevAgentsRef = useRef<Map<string, string>>(new Map());
+
+  // SSE: trigger immediate refresh on fleet events (polling stays as fallback)
+  useFleetEvents(refresh, {
+    eventTypes: ["cycle", "agent-started", "agent-completed", "pr-created", "pr-merged"],
+  });
   const [activeTab, setActiveTab] = useState<MobileTab>("agents");
 
   const handleTabChange = useCallback((tab: MobileTab) => {

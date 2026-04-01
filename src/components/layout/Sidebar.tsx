@@ -13,12 +13,14 @@ import {
   PanelLeftClose,
   PanelLeft,
   Activity,
+  ListTodo,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/agents", label: "Agents", icon: Bot },
   { href: "/prs", label: "Pull Requests", icon: GitPullRequest },
+  { href: "/queue", label: "Queue", icon: ListTodo },
   { href: "/services", label: "Services", icon: Server },
   { href: "/costs", label: "Costs", icon: DollarSign },
   { href: "/settings", label: "Settings", icon: Settings },

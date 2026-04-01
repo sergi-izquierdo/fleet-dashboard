@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { RotateCw } from "lucide-react";
 import type { ServicesResponse, ServiceStatus } from "@/app/api/services/route";
 import type { DispatcherStatus } from "@/types/dispatcherStatus";
 import SystemHealthCard from "@/components/SystemHealthCard";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+import { showToast, ToastContainer } from "@/components/Toast";
+
+const RESTART_COOLDOWN_MS = 3000;
 
 const STATUS_CONFIG: Record<
   ServiceStatus["status"],
@@ -32,8 +36,33 @@ const STATUS_CONFIG: Record<
   },
 };
 
-function ServiceCard({ service }: { service: ServiceStatus }) {
+function ServiceCard({
+  service,
+  onRestart,
+}: {
+  service: ServiceStatus;
+  onRestart: (serviceName: string) => void;
+}) {
   const cfg = STATUS_CONFIG[service.status];
+  const [isCoolingDown, setIsCoolingDown] = useState(false);
+  const cooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearTimeout(cooldownRef.current);
+    };
+  }, []);
+
+  const handleRestart = () => {
+    if (isCoolingDown) return;
+    setIsCoolingDown(true);
+    onRestart(service.name);
+    cooldownRef.current = setTimeout(() => setIsCoolingDown(false), RESTART_COOLDOWN_MS);
+  };
+
+  // Extract the short service name (strip "fleet-" prefix) for the API call
+  const shortName = service.name.replace(/^fleet-/, "");
+
   return (
     <div
       data-testid={`service-card-${service.name}`}
@@ -46,13 +75,28 @@ function ServiceCard({ service }: { service: ServiceStatus }) {
         >
           {service.name}
         </span>
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${cfg.badge}`}
-          data-testid={`service-status-${service.name}`}
-        >
-          <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
-          {cfg.label}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${cfg.badge}`}
+            data-testid={`service-status-${service.name}`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+            {cfg.label}
+          </span>
+          <button
+            onClick={handleRestart}
+            disabled={isCoolingDown}
+            data-testid={`service-restart-${service.name}`}
+            title={isCoolingDown ? "Please wait..." : `Restart ${shortName}`}
+            aria-label={`Restart ${service.name}`}
+            className="rounded p-1 text-gray-400 transition-colors hover:bg-white/[0.06] hover:text-gray-200 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <RotateCw
+              size={13}
+              className={isCoolingDown ? "animate-spin" : ""}
+            />
+          </button>
+        </div>
       </div>
       <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
         <div data-testid={`service-uptime-${service.name}`}>
@@ -84,6 +128,29 @@ function ServiceCardsSection() {
       setError(err instanceof Error ? err.message : "Failed to fetch services");
     } finally {
       setIsLoading(false);
+    }
+  }, []);
+
+  const handleRestart = useCallback(async (fullServiceName: string) => {
+    const shortName = fullServiceName.replace(/^fleet-/, "");
+    try {
+      const res = await fetch("/api/services/restart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ service: shortName }),
+      });
+      const json = await res.json() as { success: boolean; message: string };
+      if (json.success) {
+        showToast({ type: "success", title: "Service restarted", description: json.message });
+      } else {
+        showToast({ type: "error", title: "Restart failed", description: json.message });
+      }
+    } catch (err) {
+      showToast({
+        type: "error",
+        title: "Restart failed",
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
     }
   }, []);
 
@@ -134,7 +201,7 @@ function ServiceCardsSection() {
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {data.services.map((service) => (
-          <ServiceCard key={service.name} service={service} />
+          <ServiceCard key={service.name} service={service} onRestart={handleRestart} />
         ))}
       </div>
     </div>
@@ -259,6 +326,7 @@ function DispatcherCycleSection() {
 export default function ServicesPageContent() {
   return (
     <div data-testid="services-page-content" className="space-y-6">
+      <ToastContainer />
       <div>
         <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">System Health</h2>
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">

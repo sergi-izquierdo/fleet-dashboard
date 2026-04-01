@@ -9,6 +9,7 @@ import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
 import { CreateIssueDialog } from "@/components/CreateIssueDialog";
 import { ToastContainer } from "@/components/Toast";
+import { DispatcherToggle } from "@/components/DispatcherToggle";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -52,6 +53,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </button>
           <div className="hidden lg:block" />
           <div className="flex items-center gap-2">
+            <DispatcherToggle />
             <button
               onClick={() => setCreateIssueOpen(true)}
               className="flex h-8 items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.04] px-2.5 text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition-colors"

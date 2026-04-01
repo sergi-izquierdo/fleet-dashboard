@@ -25,11 +25,9 @@ import { useFleetState } from "@/hooks/useFleetState";
 import { useFleetEvents } from "@/hooks/useFleetEvents";
 import {
   Bot,
-  GitPullRequest,
   Server,
   Activity,
   TrendingUp,
-  DollarSign,
 } from "lucide-react";
 
 const SECTION_IDS: Record<MobileTab, string> = {
@@ -180,8 +178,8 @@ export default function OverviewContent() {
       )}
 
       {/* Fleet Status Banner */}
-      <div className="mb-6 flex items-center gap-3">
-        <div className="flex-1">
+      <div className="mb-6 flex items-center gap-2 min-w-0">
+        <div className="flex-1 min-w-0">
           <FleetStatusBanner agents={data.agents} prs={data.prs} />
         </div>
         <AutoRefreshIndicator onRefresh={refresh} />
@@ -220,49 +218,36 @@ export default function OverviewContent() {
 
           {/* PRs row — 2 columns */}
           <div id="section-prs" className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <Card>
-              <SectionHeader icon={GitPullRequest} title="Merge Queue" />
-              <SectionErrorBoundary sectionName="Merge Queue">
-                <MergeQueue />
-              </SectionErrorBoundary>
-            </Card>
-            <Card>
-              <SectionHeader icon={GitPullRequest} title="Recent PRs" />
-              <SectionErrorBoundary sectionName="Recent PRs">
-                <RecentPRs />
-              </SectionErrorBoundary>
-            </Card>
+            <SectionErrorBoundary sectionName="Merge Queue">
+              <MergeQueue />
+            </SectionErrorBoundary>
+            <SectionErrorBoundary sectionName="Recent PRs">
+              <RecentPRs />
+            </SectionErrorBoundary>
           </div>
 
           {/* Trends row — responsive columns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            <Card>
-              <SectionHeader icon={TrendingUp} title="PR Merge Trends" />
-              <SectionErrorBoundary sectionName="PR Merge Trends">
-                <PRTrendChart />
-              </SectionErrorBoundary>
-            </Card>
+            <SectionErrorBoundary sectionName="PR Merge Trends">
+              <PRTrendChart />
+            </SectionErrorBoundary>
             <Card>
               <SectionHeader icon={TrendingUp} title="PR Velocity" />
               <SectionErrorBoundary sectionName="PR Velocity">
                 <PRVelocityChart />
               </SectionErrorBoundary>
             </Card>
-            <Card>
-              <SectionHeader icon={DollarSign} title="Cost & Tokens" />
-              <SectionErrorBoundary sectionName="Token Usage">
-                <TokenUsageDashboard />
-              </SectionErrorBoundary>
-            </Card>
+            <SectionErrorBoundary sectionName="Token Usage">
+              <TokenUsageDashboard />
+            </SectionErrorBoundary>
           </div>
 
           {/* Activity Log */}
-          <Card id="section-activity">
-            <SectionHeader icon={Activity} title="Activity Log" />
+          <div id="section-activity">
             <SectionErrorBoundary sectionName="Activity Log">
               <ActivityLog events={activityEvents} maxHeight="max-h-80" />
             </SectionErrorBoundary>
-          </Card>
+          </div>
 
           {/* Mobile-only sidebar content */}
           <div className="xl:hidden space-y-5">
@@ -290,12 +275,9 @@ export default function OverviewContent() {
             </Card>
 
             {/* Issue Progress */}
-            <Card>
-              <SectionHeader icon={TrendingUp} title="Issue Progress" />
-              <SectionErrorBoundary sectionName="Issue Progress">
-                <ProgressTracker />
-              </SectionErrorBoundary>
-            </Card>
+            <SectionErrorBoundary sectionName="Issue Progress">
+              <ProgressTracker />
+            </SectionErrorBoundary>
           </div>
         </div>
 
@@ -325,12 +307,9 @@ export default function OverviewContent() {
           </Card>
 
           {/* Issue Progress */}
-          <Card>
-            <SectionHeader icon={TrendingUp} title="Issue Progress" />
-            <SectionErrorBoundary sectionName="Issue Progress">
-              <ProgressTracker />
-            </SectionErrorBoundary>
-          </Card>
+          <SectionErrorBoundary sectionName="Issue Progress">
+            <ProgressTracker />
+          </SectionErrorBoundary>
         </div>
       </div>
 

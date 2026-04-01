@@ -297,17 +297,13 @@ export default function FleetActivityTimeline({
 
   return (
     <div
-      className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-4 animate-fade-in"
+      className="animate-fade-in"
       data-testid="fleet-activity-timeline"
     >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Fleet Activity
-        </h2>
-        {/* Time range selector */}
+      {/* Time range selector */}
+      <div className="flex items-center justify-end mb-3">
         <div
-          className="flex items-center rounded-lg border border-gray-200 dark:border-white/10 p-0.5 gap-0.5"
+          className="flex flex-wrap items-center rounded-lg border border-gray-200 dark:border-white/10 p-0.5 gap-0.5"
           data-testid="time-range-selector"
         >
           {TIME_RANGE_OPTIONS.map((opt) => (

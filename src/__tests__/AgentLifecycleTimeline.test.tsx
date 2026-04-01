@@ -27,7 +27,11 @@ describe("AgentLifecycleTimeline", () => {
   });
 
   it("renders all 8 expected steps", () => {
-    render(<AgentLifecycleTimeline agent={makeAgent()} />);
+    render(
+      <AgentLifecycleTimeline
+        agent={makeAgent({ lifecycleTimestamps: { spawned: "2024-01-01T10:00:00Z" } })}
+      />
+    );
     const expectedSteps = [
       "spawned",
       "working",
@@ -44,7 +48,11 @@ describe("AgentLifecycleTimeline", () => {
   });
 
   it("marks spawned as completed and working as current for status=working", () => {
-    render(<AgentLifecycleTimeline agent={makeAgent({ status: "working" })} />);
+    render(
+      <AgentLifecycleTimeline
+        agent={makeAgent({ status: "working", lifecycleTimestamps: { spawned: "2024-01-01T10:00:00Z" } })}
+      />
+    );
     const spawned = screen.getByTestId("step-label-spawned");
     expect(spawned).toHaveClass("text-gray-900");
 

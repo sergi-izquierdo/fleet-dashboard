@@ -194,10 +194,10 @@ describe("GroupedPRView", () => {
     });
     render(<GroupedPRView />);
     await waitFor(() => {
-      const card = screen.getByTestId("grouped-pr-card");
-      expect(card).toHaveAttribute("href", mockPRs[0].url);
-      expect(card).toHaveAttribute("target", "_blank");
-      expect(card).toHaveAttribute("rel", "noopener noreferrer");
+      const link = screen.getByRole("link", { name: new RegExp(String(mockPRs[0].number)) });
+      expect(link).toHaveAttribute("href", mockPRs[0].url);
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", "noopener noreferrer");
     });
   });
 

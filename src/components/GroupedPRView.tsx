@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import type { RecentPR, PRGroup, PRGroupKey } from "@/types/prs";
 import { timeAgo } from "@/components/RecentPRs";
+import { PRActionMenu } from "@/components/PRActionMenu";
+import { ToastContainer, showToast } from "@/components/Toast";
 
 const REFRESH_INTERVAL_MS = 30_000;
 
@@ -117,24 +119,38 @@ const groupHeaderConfig: Record<PRGroupKey, { className: string; countClassName:
   },
 };
 
-function PRCard({ pr, index }: { pr: RecentPR; index: number }) {
+function PRCard({
+  pr,
+  index,
+  onMerge,
+  onClose,
+  actionDisabled,
+}: {
+  pr: RecentPR;
+  index: number;
+  onMerge: (pr: RecentPR) => void;
+  onClose: (pr: RecentPR) => void;
+  actionDisabled: boolean;
+}) {
   const ciCfg = ciStatusConfig[pr.ciStatus];
   const repoShort = pr.repo.split("/").pop() ?? pr.repo;
   const reviewCfg = pr.reviewStatus ? reviewStatusConfig[pr.reviewStatus] : null;
 
   return (
-    <a
-      href={pr.url}
-      target="_blank"
-      rel="noopener noreferrer"
+    <div
       className="flex items-start gap-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-3 transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-gray-800/80 animate-slide-up"
       style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
       data-testid="grouped-pr-card"
     >
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-blue-500 dark:text-blue-400 hover:underline">
+        <a
+          href={pr.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="truncate text-sm font-medium text-blue-500 dark:text-blue-400 hover:underline block"
+        >
           #{pr.number} {pr.title}
-        </p>
+        </a>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
           <span
             className="inline-flex items-center rounded px-1.5 py-0.5 font-medium bg-gray-200/60 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300"
@@ -162,15 +178,42 @@ function PRCard({ pr, index }: { pr: RecentPR; index: number }) {
             {reviewCfg.label}
           </span>
         )}
+        <PRActionMenu
+          prNumber={pr.number}
+          repo={pr.repo}
+          status={pr.status}
+          onMerge={() => onMerge(pr)}
+          onClose={() => onClose(pr)}
+          disabled={actionDisabled}
+        />
       </div>
-    </a>
+    </div>
   );
+}
+
+async function mergePR(repo: string, prNumber: number): Promise<{ success: boolean; message?: string; error?: string }> {
+  const res = await fetch("/api/prs/merge", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ repo, prNumber, method: "squash" }),
+  });
+  return res.json() as Promise<{ success: boolean; message?: string; error?: string }>;
+}
+
+async function closePR(repo: string, prNumber: number): Promise<{ success: boolean; message?: string; error?: string }> {
+  const res = await fetch("/api/prs/close", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ repo, prNumber }),
+  });
+  return res.json() as Promise<{ success: boolean; message?: string; error?: string }>;
 }
 
 export default function GroupedPRView() {
   const [prs, setPrs] = useState<RecentPR[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionInProgress, setActionInProgress] = useState(false);
 
   const fetchPRs = useCallback(async () => {
     try {
@@ -188,6 +231,40 @@ export default function GroupedPRView() {
     }
   }, []);
 
+  const handleMerge = useCallback(async (pr: RecentPR) => {
+    setActionInProgress(true);
+    try {
+      const result = await mergePR(pr.repo, pr.number);
+      if (result.success) {
+        showToast({ type: "success", title: "Merge queued", description: result.message });
+        await fetchPRs();
+      } else {
+        showToast({ type: "error", title: "Merge failed", description: result.error });
+      }
+    } catch {
+      showToast({ type: "error", title: "Merge failed", description: "Unexpected error" });
+    } finally {
+      setActionInProgress(false);
+    }
+  }, [fetchPRs]);
+
+  const handleClose = useCallback(async (pr: RecentPR) => {
+    setActionInProgress(true);
+    try {
+      const result = await closePR(pr.repo, pr.number);
+      if (result.success) {
+        showToast({ type: "success", title: "PR closed", description: result.message });
+        await fetchPRs();
+      } else {
+        showToast({ type: "error", title: "Close failed", description: result.error });
+      }
+    } catch {
+      showToast({ type: "error", title: "Close failed", description: "Unexpected error" });
+    } finally {
+      setActionInProgress(false);
+    }
+  }, [fetchPRs]);
+
   useEffect(() => {
     fetchPRs();
     const interval = setInterval(fetchPRs, REFRESH_INTERVAL_MS);
@@ -199,6 +276,7 @@ export default function GroupedPRView() {
 
   return (
     <div className="space-y-5 animate-fade-in">
+      <ToastContainer />
       {/* Merged today counter */}
       <div
         className="inline-flex items-center gap-2 rounded-full border border-purple-600/30 bg-purple-600/10 px-4 py-1.5 text-sm font-medium text-purple-600 dark:text-purple-400"
@@ -254,7 +332,14 @@ export default function GroupedPRView() {
                 ) : (
                   <div className="space-y-2">
                     {group.prs.map((pr, index) => (
-                      <PRCard key={`${pr.repo}-${pr.number}`} pr={pr} index={index} />
+                      <PRCard
+                        key={`${pr.repo}-${pr.number}`}
+                        pr={pr}
+                        index={index}
+                        onMerge={handleMerge}
+                        onClose={handleClose}
+                        actionDisabled={actionInProgress}
+                      />
                     ))}
                   </div>
                 )}

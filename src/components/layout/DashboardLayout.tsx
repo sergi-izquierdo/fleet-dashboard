@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Menu } from "lucide-react";
+import { Menu, Plus } from "lucide-react";
 import { Sidebar, MobileSidebar } from "./Sidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
+import { CreateIssueDialog } from "@/components/CreateIssueDialog";
+import { ToastContainer } from "@/components/Toast";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -15,6 +17,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [createIssueOpen, setCreateIssueOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-[#0a0b0f] text-white">
@@ -49,6 +52,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </button>
           <div className="hidden lg:block" />
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCreateIssueOpen(true)}
+              className="flex h-8 items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.04] px-2.5 text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition-colors"
+              aria-label="New Issue"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">New Issue</span>
+            </button>
             <ThemeToggle />
             <NotificationCenter activityLog={[]} />
             <ConnectionIndicator status="connected" />
@@ -58,6 +69,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Page content */}
         <main className="p-4 lg:p-6">{children}</main>
       </div>
+
+      <CreateIssueDialog
+        open={createIssueOpen}
+        onClose={() => setCreateIssueOpen(false)}
+      />
+      <ToastContainer />
     </div>
   );
 }

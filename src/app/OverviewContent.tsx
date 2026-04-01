@@ -4,6 +4,7 @@ import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import AgentStatusCards from "@/components/AgentStatusCards";
 import ActivityLog from "@/components/ActivityLog";
 import FleetActivityTimeline from "@/components/FleetActivityTimeline";
+import FleetActivityHeatmap from "@/components/FleetActivityHeatmap";
 import MergeQueue from "@/components/MergeQueue";
 import RecentPRs from "@/components/RecentPRs";
 import PRTrendChart from "@/components/PRTrendChart";
@@ -206,6 +207,14 @@ export default function OverviewContent() {
                 activityLog={data.activityLog}
                 prs={data.prs}
               />
+            </SectionErrorBoundary>
+          </Card>
+
+          {/* Fleet Activity Heatmap */}
+          <Card>
+            <SectionHeader icon={Activity} title="Fleet Activity Heatmap" />
+            <SectionErrorBoundary sectionName="Fleet Activity Heatmap">
+              <FleetActivityHeatmap />
             </SectionErrorBoundary>
           </Card>
 

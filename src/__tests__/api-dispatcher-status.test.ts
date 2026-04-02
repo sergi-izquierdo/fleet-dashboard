@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
 import * as apiCache from "@/lib/apiCache";
 import { GET } from "@/app/api/dispatcher-status/route";
 
@@ -8,10 +7,6 @@ vi.mock("fs/promises", () => ({
   default: { readFile: mockReadFile },
   readFile: mockReadFile,
 }));
-
-function makeRequest() {
-  return new NextRequest("http://localhost/api/dispatcher-status");
-}
 
 describe("GET /api/dispatcher-status", () => {
   beforeEach(() => {
@@ -24,7 +19,7 @@ describe("GET /api/dispatcher-status", () => {
       Object.assign(new Error("ENOENT"), { code: "ENOENT" })
     );
 
-    const response = await GET(makeRequest());
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -59,7 +54,7 @@ describe("GET /api/dispatcher-status", () => {
 
     mockReadFile.mockResolvedValue(JSON.stringify(mockStatus));
 
-    const response = await GET(makeRequest());
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -98,7 +93,7 @@ describe("GET /api/dispatcher-status", () => {
 
     mockReadFile.mockResolvedValue(JSON.stringify(mockStatus));
 
-    const response = await GET(makeRequest());
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -130,7 +125,7 @@ describe("GET /api/dispatcher-status", () => {
 
     mockReadFile.mockResolvedValue(JSON.stringify(mockStatus));
 
-    const response = await GET(makeRequest());
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(200);

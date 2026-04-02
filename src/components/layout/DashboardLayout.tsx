@@ -9,6 +9,7 @@ import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
 import { CreateIssueDialog } from "@/components/CreateIssueDialog";
 import { ToastContainer } from "@/components/Toast";
+import { FleetNotifications } from "@/components/FleetNotifications";
 import { DispatcherToggle } from "@/components/DispatcherToggle";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -94,6 +95,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         open={shortcutsHelpOpen}
         onClose={() => setShortcutsHelpOpen(false)}
       />
+      <FleetNotifications />
       <ToastContainer />
     </div>
   );

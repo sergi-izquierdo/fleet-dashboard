@@ -22,16 +22,14 @@ const mockData: CostsByProjectResponse = {
   projects: [
     {
       name: "fleet-dashboard",
-      totalCost: 3.5,
-      totalTokens: 50000,
       sessionCount: 5,
+      transcriptLines: 500,
       lastActive: "2026-04-01T10:00:00Z",
     },
     {
       name: "cardmarket",
-      totalCost: 1.2,
-      totalTokens: 20000,
       sessionCount: 2,
+      transcriptLines: 150,
       lastActive: "2026-03-30T08:00:00Z",
     },
   ],
@@ -97,7 +95,7 @@ describe("CostByProject", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("No project cost data available")
+        screen.getByText("No project activity data available")
       ).toBeInTheDocument();
     });
   });
@@ -151,8 +149,7 @@ describe("CostByProject", () => {
       const table = screen.getByTestId("cost-by-project-table");
       expect(table.textContent).toContain("Project");
       expect(table.textContent).toContain("Sessions");
-      expect(table.textContent).toContain("Tokens");
-      expect(table.textContent).toContain("Cost");
+      expect(table.textContent).toContain("Transcript Lines");
       expect(table.textContent).toContain("Last Active");
     });
   });

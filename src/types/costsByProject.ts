@@ -1,16 +1,17 @@
 export interface AgentCostEntry {
-  agent: string;
-  model: string;
-  tokens: number;
-  cost: number;
   timestamp: string;
+  session_id: string;
+  agent_name: string;
+  model: string;
+  cwd: string;
+  transcript_path: string;
+  transcript_lines: number;
 }
 
 export interface ProjectCost {
   name: string;
-  totalCost: number;
-  totalTokens: number;
   sessionCount: number;
+  transcriptLines: number;
   lastActive: string;
 }
 

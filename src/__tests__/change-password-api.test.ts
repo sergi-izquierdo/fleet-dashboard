@@ -14,7 +14,7 @@ describe("POST /api/auth/change-password", () => {
   const originalEnv = process.env.FLEET_ADMIN_PASSWORD;
 
   beforeEach(() => {
-    process.env.FLEET_ADMIN_PASSWORD = "fleet-admin-2024";
+    process.env.FLEET_ADMIN_PASSWORD = "test-admin-password";
   });
 
   afterEach(() => {
@@ -26,8 +26,21 @@ describe("POST /api/auth/change-password", () => {
     vi.restoreAllMocks();
   });
 
+  it("returns 500 when FLEET_ADMIN_PASSWORD env var is not set", async () => {
+    delete process.env.FLEET_ADMIN_PASSWORD;
+    const req = makeRequest({
+      currentPassword: "test-admin-password",
+      newPassword: "mynewpassword",
+      confirmPassword: "mynewpassword",
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe("Server configuration error");
+  });
+
   it("returns 400 when body is missing fields", async () => {
-    const req = makeRequest({ currentPassword: "fleet-admin-2024" });
+    const req = makeRequest({ currentPassword: "test-admin-password" });
     const res = await POST(req);
     expect(res.status).toBe(400);
     const data = await res.json();
@@ -36,7 +49,7 @@ describe("POST /api/auth/change-password", () => {
 
   it("returns 400 when new password is too short", async () => {
     const req = makeRequest({
-      currentPassword: "fleet-admin-2024",
+      currentPassword: "test-admin-password",
       newPassword: "short",
       confirmPassword: "short",
     });
@@ -48,7 +61,7 @@ describe("POST /api/auth/change-password", () => {
 
   it("returns 400 when passwords do not match", async () => {
     const req = makeRequest({
-      currentPassword: "fleet-admin-2024",
+      currentPassword: "test-admin-password",
       newPassword: "newpassword1",
       confirmPassword: "newpassword2",
     });
@@ -70,9 +83,9 @@ describe("POST /api/auth/change-password", () => {
     expect(data.error).toBe("Current password is incorrect");
   });
 
-  it("returns 200 with env line when all inputs are valid", async () => {
+  it("returns 200 on success with message but no envLine in response", async () => {
     const req = makeRequest({
-      currentPassword: "fleet-admin-2024",
+      currentPassword: "test-admin-password",
       newPassword: "mynewpassword",
       confirmPassword: "mynewpassword",
     });
@@ -80,7 +93,7 @@ describe("POST /api/auth/change-password", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.success).toBe(true);
-    expect(data.envLine).toBe("FLEET_ADMIN_PASSWORD=mynewpassword");
+    expect(data.envLine).toBeUndefined();
     expect(data.message).toContain("FLEET_ADMIN_PASSWORD=mynewpassword");
   });
 

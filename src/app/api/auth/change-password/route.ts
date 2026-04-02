@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const ADMIN_PASSWORD = process.env.FLEET_ADMIN_PASSWORD ?? "fleet-admin-2024";
+import { timingSafeEqual, createHash } from "crypto";
 
 export async function POST(request: NextRequest) {
+  const adminPassword = process.env.FLEET_ADMIN_PASSWORD;
+  if (!adminPassword) {
+    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+  }
+
   let body: { currentPassword?: string; newPassword?: string; confirmPassword?: string };
 
   try {
@@ -28,13 +32,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "New passwords do not match" }, { status: 400 });
   }
 
-  if (currentPassword !== ADMIN_PASSWORD) {
+  const adminHash = createHash("sha256").update(adminPassword).digest();
+  const inputHash = createHash("sha256").update(currentPassword).digest();
+  if (!timingSafeEqual(adminHash, inputHash)) {
     return NextResponse.json({ error: "Current password is incorrect" }, { status: 401 });
   }
 
   return NextResponse.json({
     success: true,
     message: `To apply the new password, set FLEET_ADMIN_PASSWORD=${newPassword} in your .env.local file and restart the server.`,
-    envLine: `FLEET_ADMIN_PASSWORD=${newPassword}`,
   });
 }

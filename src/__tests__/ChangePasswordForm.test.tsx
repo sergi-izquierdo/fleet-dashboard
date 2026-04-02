@@ -51,7 +51,7 @@ describe("ChangePasswordForm", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it("shows success message with env line on successful response", async () => {
+  it("shows success message on successful response", async () => {
     const user = userEvent.setup();
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
@@ -59,7 +59,6 @@ describe("ChangePasswordForm", () => {
         success: true,
         message:
           "To apply the new password, set FLEET_ADMIN_PASSWORD=mynewpassword in your .env.local file and restart the server.",
-        envLine: "FLEET_ADMIN_PASSWORD=mynewpassword",
       }),
     });
 
@@ -73,9 +72,7 @@ describe("ChangePasswordForm", () => {
     await waitFor(() => {
       expect(screen.getByTestId("success-message")).toBeInTheDocument();
     });
-    expect(screen.getByTestId("env-line")).toHaveTextContent(
-      "FLEET_ADMIN_PASSWORD=mynewpassword"
-    );
+    expect(screen.queryByTestId("env-line")).not.toBeInTheDocument();
   });
 
   it("clears form fields after success", async () => {
@@ -85,7 +82,6 @@ describe("ChangePasswordForm", () => {
       json: async () => ({
         success: true,
         message: "Password change requested.",
-        envLine: "FLEET_ADMIN_PASSWORD=mynewpassword",
       }),
     });
 
@@ -150,7 +146,6 @@ describe("ChangePasswordForm", () => {
       json: async () => ({
         success: true,
         message: "Done",
-        envLine: "FLEET_ADMIN_PASSWORD=mynewpassword",
       }),
     });
 

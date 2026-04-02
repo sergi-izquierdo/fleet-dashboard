@@ -11,7 +11,6 @@ interface FormState {
 interface ApiSuccess {
   success: true;
   message: string;
-  envLine: string;
 }
 
 interface ApiError {
@@ -33,7 +32,6 @@ export default function ChangePasswordForm() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [envLine, setEnvLine] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -42,7 +40,6 @@ export default function ChangePasswordForm() {
     setValidationError(null);
     setApiError(null);
     setSuccessMessage(null);
-    setEnvLine(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -50,7 +47,6 @@ export default function ChangePasswordForm() {
     setValidationError(null);
     setApiError(null);
     setSuccessMessage(null);
-    setEnvLine(null);
 
     if (form.newPassword.length < 8) {
       setValidationError("New password must be at least 8 characters.");
@@ -83,7 +79,6 @@ export default function ChangePasswordForm() {
       }
 
       setSuccessMessage(data.message);
-      setEnvLine(data.envLine);
       setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch {
       setApiError("Something went wrong. Please try again.");
@@ -184,14 +179,6 @@ export default function ChangePasswordForm() {
           className="space-y-2 rounded-lg border border-green-500/20 bg-green-500/10 px-3.5 py-2.5 text-sm text-green-700 dark:border-green-400/20 dark:text-green-400"
         >
           <p>{successMessage}</p>
-          {envLine && (
-            <code
-              data-testid="env-line"
-              className="block rounded bg-green-900/10 px-2 py-1 font-mono text-xs dark:bg-green-400/10"
-            >
-              {envLine}
-            </code>
-          )}
         </div>
       )}
 

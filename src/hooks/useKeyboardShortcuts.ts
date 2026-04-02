@@ -1,48 +1,97 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
-interface KeyboardShortcutHandlers {
-  onToggleCommandPalette: () => void;
-  onRefresh: () => void;
-  onToggleTheme: () => void;
+export interface KeyboardShortcutHandlers {
+  onCreateIssue: () => void;
+  onShowHelp: () => void;
+  onCloseModal: () => void;
 }
 
+export const NAVIGATION_SHORTCUTS: Record<string, string> = {
+  o: "/",
+  a: "/agents",
+  p: "/prs",
+  q: "/queue",
+  c: "/costs",
+  s: "/settings",
+};
+
 export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
+  const router = useRouter();
+  const pendingKey = useRef<string | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearPending = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    pendingKey.current = null;
+  }, []);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       const isInput =
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
         target.isContentEditable;
 
-      // Cmd/Ctrl+K — always opens palette
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        handlers.onToggleCommandPalette();
+      // Escape always closes modals
+      if (e.key === "Escape") {
+        clearPending();
+        handlers.onCloseModal();
         return;
       }
 
       // Skip single-key shortcuts when typing in an input
       if (isInput) return;
 
-      switch (e.key.toLowerCase()) {
-        case "r":
+      const key = e.key.toLowerCase();
+
+      // Complete two-key sequence: g + <nav key>
+      if (pendingKey.current === "g") {
+        clearPending();
+        const path = NAVIGATION_SHORTCUTS[key];
+        if (path !== undefined) {
           e.preventDefault();
-          handlers.onRefresh();
-          break;
-        case "t":
-          e.preventDefault();
-          handlers.onToggleTheme();
-          break;
+          router.push(path);
+        }
+        return;
+      }
+
+      // Start two-key sequence with 'g'
+      if (key === "g") {
+        e.preventDefault();
+        pendingKey.current = "g";
+        timeoutRef.current = setTimeout(clearPending, 500);
+        return;
+      }
+
+      // Single-key shortcuts
+      if (key === "n") {
+        e.preventDefault();
+        handlers.onCreateIssue();
+        return;
+      }
+
+      if (e.key === "?") {
+        e.preventDefault();
+        handlers.onShowHelp();
+        return;
       }
     },
-    [handlers],
+    [handlers, router, clearPending],
   );
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      clearPending();
+    };
+  }, [handleKeyDown, clearPending]);
 }

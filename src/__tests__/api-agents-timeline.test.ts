@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
-import { buildTimelineResponse } from "@/lib/agentTimeline";
+import { buildTimelineResponse, parseAgentCostsAsCompleted } from "@/lib/agentTimeline";
 
 const { mockReadFile } = vi.hoisted(() => ({ mockReadFile: vi.fn() }));
 vi.mock("fs/promises", () => ({
@@ -229,5 +229,167 @@ describe("buildTimelineResponse", () => {
     expect(result.agents).toHaveLength(2);
     // recent-agent should be first (sorted by startedAt desc)
     expect(result.agents[0].name).toBe("recent-agent");
+  });
+
+  it("merges cost entries as fallback when state completed is empty", () => {
+    const state = { active: {}, completed: {} };
+    const costCompleted = {
+      "agent-fle-255": {
+        repo: "sergi/fleet-dashboard",
+        issue: 255,
+        status: "success",
+        completedAt: "2026-04-01T14:27:00Z",
+        startedAt: "2026-04-01T14:27:00Z",
+      },
+    };
+
+    const result = buildTimelineResponse(state, costCompleted);
+    expect(result.agents).toHaveLength(1);
+    expect(result.agents[0].name).toBe("agent-fle-255");
+    expect(result.agents[0].project).toBe("fleet-dashboard");
+    expect(result.agents[0].issue).toBe(255);
+    expect(result.agents[0].status).toBe("success");
+  });
+
+  it("state.completed entries take precedence over cost entries for same agent", () => {
+    const state = {
+      active: {},
+      completed: {
+        "agent-fle-255": {
+          repo: "sergi/fleet-dashboard",
+          issue: 255,
+          status: "pr_merged",
+          pr: "https://github.com/sergi/fleet-dashboard/pull/99",
+          startedAt: "2026-04-01T10:00:00Z",
+          completedAt: "2026-04-01T11:00:00Z",
+        },
+      },
+    };
+    const costCompleted = {
+      "agent-fle-255": {
+        repo: "sergi/fleet-dashboard",
+        issue: 255,
+        status: "success",
+        completedAt: "2026-04-01T14:27:00Z",
+        startedAt: "2026-04-01T14:27:00Z",
+      },
+    };
+
+    const result = buildTimelineResponse(state, costCompleted);
+    expect(result.agents).toHaveLength(1);
+    // state.json entry should win (has pr URL)
+    expect(result.agents[0].prUrl).toBe("https://github.com/sergi/fleet-dashboard/pull/99");
+    expect(result.agents[0].status).toBe("success"); // pr_merged → success
+  });
+});
+
+describe("parseAgentCostsAsCompleted", () => {
+  it("parses agent name and cwd from valid entries", () => {
+    const content = JSON.stringify({
+      timestamp: "2026-04-01T14:27:00Z",
+      agent_name: "agent-fle-255",
+      cwd: "/home/sergi/projects/fleet-dashboard/.worktrees/issue-255",
+    });
+
+    const result = parseAgentCostsAsCompleted(content);
+    expect(result["agent-fle-255"]).toBeDefined();
+    expect(result["agent-fle-255"].repo).toBe("sergi/fleet-dashboard");
+    expect(result["agent-fle-255"].issue).toBe(255);
+    expect(result["agent-fle-255"].status).toBe("success");
+    expect(result["agent-fle-255"].startedAt).toBe("2026-04-01T14:27:00Z");
+    expect(result["agent-fle-255"].completedAt).toBe("2026-04-01T14:27:00Z");
+  });
+
+  it("skips entries missing agent_name", () => {
+    const content = JSON.stringify({ timestamp: "2026-04-01T14:27:00Z" });
+    const result = parseAgentCostsAsCompleted(content);
+    expect(Object.keys(result)).toHaveLength(0);
+  });
+
+  it("skips entries missing timestamp", () => {
+    const content = JSON.stringify({ agent_name: "agent-fle-255" });
+    const result = parseAgentCostsAsCompleted(content);
+    expect(Object.keys(result)).toHaveLength(0);
+  });
+
+  it("skips invalid JSON lines", () => {
+    const content = "not-json\n" + JSON.stringify({
+      timestamp: "2026-04-01T14:27:00Z",
+      agent_name: "agent-fle-256",
+      cwd: "/home/sergi/projects/fleet-dashboard/.worktrees/issue-256",
+    });
+    const result = parseAgentCostsAsCompleted(content);
+    expect(Object.keys(result)).toHaveLength(1);
+    expect(result["agent-fle-256"]).toBeDefined();
+  });
+
+  it("returns empty object for empty content", () => {
+    const result = parseAgentCostsAsCompleted("");
+    expect(Object.keys(result)).toHaveLength(0);
+  });
+
+  it("uses 'unknown' project when cwd has no .worktrees segment", () => {
+    const content = JSON.stringify({
+      timestamp: "2026-04-01T14:27:00Z",
+      agent_name: "agent-test-123",
+      cwd: "/some/other/path",
+    });
+    const result = parseAgentCostsAsCompleted(content);
+    expect(result["agent-test-123"].repo).toBe("sergi/unknown");
+  });
+
+  it("sets issue to 0 when agent_name has no trailing number", () => {
+    const content = JSON.stringify({
+      timestamp: "2026-04-01T14:27:00Z",
+      agent_name: "agent-no-number",
+      cwd: "/home/sergi/projects/project/.worktrees/branch",
+    });
+    const result = parseAgentCostsAsCompleted(content);
+    expect(result["agent-no-number"].issue).toBe(0);
+  });
+});
+
+describe("GET /api/agents/timeline — cost fallback", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    mockReadFile.mockReset();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("falls back to cost entries when state.json completed is empty", async () => {
+    const emptyState = JSON.stringify({ active: {}, completed: {} });
+    const costLine = JSON.stringify({
+      timestamp: "2026-04-01T14:27:00Z",
+      agent_name: "agent-fle-255",
+      cwd: "/home/sergi/projects/fleet-dashboard/.worktrees/issue-255",
+    });
+
+    // First call → state.json, second call → agent-costs.jsonl
+    mockReadFile
+      .mockResolvedValueOnce(emptyState)
+      .mockResolvedValueOnce(costLine);
+
+    const { GET } = await import("@/app/api/agents/timeline/route");
+    const response = await GET(makeRequest("?fresh=true"));
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.agents).toHaveLength(1);
+    expect(data.agents[0].name).toBe("agent-fle-255");
+    expect(data.agents[0].project).toBe("fleet-dashboard");
+  });
+
+  it("returns empty array when both state.json and costs file are missing", async () => {
+    mockReadFile.mockRejectedValue(new Error("ENOENT"));
+
+    const { GET } = await import("@/app/api/agents/timeline/route");
+    const response = await GET(makeRequest("?fresh=true"));
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.agents).toHaveLength(0);
   });
 });

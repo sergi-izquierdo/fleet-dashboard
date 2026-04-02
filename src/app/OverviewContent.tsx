@@ -15,6 +15,7 @@ import SystemHealthCard from "@/components/SystemHealthCard";
 import DispatcherPipelinePanel from "@/components/DispatcherPipelinePanel";
 import ProgressTracker from "@/components/ProgressTracker";
 import FleetStatusBanner from "@/components/FleetStatusBanner";
+import MetricsCard from "@/components/MetricsCard";
 import AutoRefreshIndicator from "@/components/AutoRefreshIndicator";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
@@ -196,6 +197,11 @@ export default function OverviewContent() {
               <AgentStatusCards />
             </SectionErrorBoundary>
           </Card>
+
+          {/* Fleet Metrics */}
+          <SectionErrorBoundary sectionName="Fleet Metrics">
+            <MetricsCard activityLog={data.activityLog} />
+          </SectionErrorBoundary>
 
           {/* Fleet Activity Timeline */}
           <Card>

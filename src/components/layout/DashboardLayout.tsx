@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Menu, Plus } from "lucide-react";
 import { Sidebar, MobileSidebar } from "./Sidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -10,6 +10,8 @@ import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
 import { CreateIssueDialog } from "@/components/CreateIssueDialog";
 import { ToastContainer } from "@/components/Toast";
 import { DispatcherToggle } from "@/components/DispatcherToggle";
+import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -19,6 +21,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [createIssueOpen, setCreateIssueOpen] = useState(false);
+  const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
+
+  const handleCloseModal = useCallback(() => {
+    setCreateIssueOpen(false);
+    setShortcutsHelpOpen(false);
+  }, []);
+
+  useKeyboardShortcuts({
+    onCreateIssue: () => setCreateIssueOpen(true),
+    onShowHelp: () => setShortcutsHelpOpen(true),
+    onCloseModal: handleCloseModal,
+  });
 
   return (
     <div className="flex min-h-screen bg-[#0a0b0f] text-white">
@@ -75,6 +89,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <CreateIssueDialog
         open={createIssueOpen}
         onClose={() => setCreateIssueOpen(false)}
+      />
+      <KeyboardShortcutsModal
+        open={shortcutsHelpOpen}
+        onClose={() => setShortcutsHelpOpen(false)}
       />
       <ToastContainer />
     </div>

@@ -2,8 +2,11 @@ export type NotificationSeverity = "info" | "warning" | "error" | "success";
 
 export type NotificationEventType =
   | "pr_merged"
+  | "pr_created"
   | "ci_failed"
   | "ci_passed"
+  | "agent_started"
+  | "agent_completed"
   | "agent_stuck"
   | "review_requested"
   | "deploy"
@@ -48,18 +51,24 @@ export const severityConfig: Record<
 
 export const eventTypeToSeverity: Record<NotificationEventType, NotificationSeverity> = {
   pr_merged: "success",
+  pr_created: "info",
   ci_passed: "success",
   deploy: "info",
   review_requested: "info",
   ci_failed: "error",
+  agent_started: "info",
+  agent_completed: "success",
   agent_stuck: "warning",
   error: "error",
 };
 
 export const eventTypeLabels: Record<NotificationEventType, string> = {
   pr_merged: "PR Merged",
+  pr_created: "PR Created",
   ci_failed: "CI Failed",
   ci_passed: "CI Passed",
+  agent_started: "Agent Started",
+  agent_completed: "Agent Completed",
   agent_stuck: "Agent Stuck",
   review_requested: "Review Requested",
   deploy: "Deploy",

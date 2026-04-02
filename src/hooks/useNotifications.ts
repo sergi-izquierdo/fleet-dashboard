@@ -1,11 +1,24 @@
 "use client";
 
-import { useState, useCallback, useSyncExternalStore } from "react";
+import { useState, useCallback, useEffect, useSyncExternalStore } from "react";
 import type { Notification, NotificationEventType } from "@/types/notifications";
 import { eventTypeToSeverity } from "@/types/notifications";
 
 const STORAGE_KEY = "fleet-dashboard-notifications";
 const MAX_NOTIFICATIONS = 50;
+
+export interface AddNotificationParams {
+  title: string;
+  description: string;
+  eventType: NotificationEventType;
+  agentName?: string;
+}
+
+let globalAddListeners: Array<(params: AddNotificationParams) => void> = [];
+
+export function addNotificationGlobally(params: AddNotificationParams) {
+  globalAddListeners.forEach((l) => l(params));
+}
 
 function loadNotifications(): Notification[] {
   if (typeof window === "undefined") return [];
@@ -80,6 +93,13 @@ export function useNotifications() {
   const clearAll = useCallback(() => {
     updateNotifications(() => []);
   }, [updateNotifications]);
+
+  useEffect(() => {
+    globalAddListeners.push(addNotification);
+    return () => {
+      globalAddListeners = globalAddListeners.filter((l) => l !== addNotification);
+    };
+  }, [addNotification]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 

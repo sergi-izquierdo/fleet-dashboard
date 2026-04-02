@@ -10,6 +10,7 @@ import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
 import { CreateIssueDialog } from "@/components/CreateIssueDialog";
 import { ToastContainer } from "@/components/Toast";
 import { DispatcherToggle } from "@/components/DispatcherToggle";
+import { FleetNotifications } from "@/components/FleetNotifications";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -77,6 +78,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         onClose={() => setCreateIssueOpen(false)}
       />
       <ToastContainer />
+      <FleetNotifications />
     </div>
   );
 }

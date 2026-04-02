@@ -20,16 +20,6 @@ const PERIOD_OPTIONS: { value: Period; label: string }[] = [
   { value: "all", label: "All time" },
 ];
 
-function formatCost(n: number): string {
-  return `$${n.toFixed(2)}`;
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
-
 function formatDate(ts: string): string {
   try {
     return new Date(ts).toLocaleDateString(undefined, {
@@ -84,7 +74,7 @@ export default function CostByProject() {
     <div data-testid="cost-by-project" className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-          Cost by Project
+          Activity by Project
         </h2>
         <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-white/10 p-0.5">
           {PERIOD_OPTIONS.map((opt) => (
@@ -120,12 +110,12 @@ export default function CostByProject() {
         </div>
       ) : isEmpty ? (
         <EmptyState
-          title="No project cost data available"
-          description="Cost data from agent-costs.jsonl will appear here once agents have run."
+          title="No project activity data available"
+          description="Session metadata from agent-costs.jsonl will appear here once agents have run."
         />
       ) : (
         <>
-          {/* Horizontal bar chart */}
+          {/* Horizontal bar chart — sessions per project */}
           <div
             data-testid="cost-by-project-chart"
             style={{ height: Math.max(120, projects.length * 40) }}
@@ -139,7 +129,7 @@ export default function CostByProject() {
                 />
                 <XAxis
                   type="number"
-                  tickFormatter={formatCost}
+                  allowDecimals={false}
                   tick={{ fontSize: 11 }}
                   stroke="currentColor"
                   className="text-gray-400 dark:text-white/40"
@@ -153,7 +143,7 @@ export default function CostByProject() {
                   className="text-gray-400 dark:text-white/40"
                 />
                 <Tooltip
-                  formatter={(value) => [formatCost(Number(value)), "Cost"]}
+                  formatter={(value) => [value, "Sessions"]}
                   contentStyle={{
                     backgroundColor: "var(--background)",
                     border: "1px solid rgba(128,128,128,0.2)",
@@ -161,7 +151,7 @@ export default function CostByProject() {
                     fontSize: "12px",
                   }}
                 />
-                <Bar dataKey="totalCost" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="sessionCount" fill="#3b82f6" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -176,8 +166,7 @@ export default function CostByProject() {
                 <tr className="border-b border-gray-200 dark:border-white/10 text-xs text-gray-500 dark:text-white/50">
                   <th className="pb-2 pr-4 font-medium">Project</th>
                   <th className="pb-2 pr-4 font-medium text-right">Sessions</th>
-                  <th className="pb-2 pr-4 font-medium text-right">Tokens</th>
-                  <th className="pb-2 pr-4 font-medium text-right">Cost</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Transcript Lines</th>
                   <th className="pb-2 font-medium text-right">Last Active</th>
                 </tr>
               </thead>
@@ -195,10 +184,7 @@ export default function CostByProject() {
                       {project.sessionCount}
                     </td>
                     <td className="py-2 pr-4 text-right text-gray-600 dark:text-white/60">
-                      {formatTokens(project.totalTokens)}
-                    </td>
-                    <td className="py-2 pr-4 text-right font-medium text-green-600 dark:text-green-400">
-                      {formatCost(project.totalCost)}
+                      {project.transcriptLines}
                     </td>
                     <td className="py-2 text-right text-gray-500 dark:text-white/40">
                       {formatDate(project.lastActive)}

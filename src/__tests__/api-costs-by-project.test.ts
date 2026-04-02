@@ -43,24 +43,24 @@ describe("extractProjectName", () => {
 describe("parseJSONLEntries", () => {
   it("parses valid JSONL lines", () => {
     const content =
-      '{"agent":"agent-fleet-1","model":"claude-sonnet","tokens":1000,"cost":0.05,"timestamp":"2026-03-25T10:00:00Z"}\n' +
-      '{"agent":"agent-fleet-2","model":"claude-haiku","tokens":500,"cost":0.02,"timestamp":"2026-03-26T12:00:00Z"}';
+      '{"timestamp":"2026-03-25T10:00:00Z","session_id":"abc-1","agent_name":"agent-fleet-1","model":"sonnet","cwd":"/tmp","transcript_path":"/tmp/a.jsonl","transcript_lines":99}\n' +
+      '{"timestamp":"2026-03-26T12:00:00Z","session_id":"abc-2","agent_name":"agent-fleet-2","model":"haiku","cwd":"/tmp","transcript_path":"/tmp/b.jsonl","transcript_lines":50}';
 
     const entries = parseJSONLEntries(content);
     expect(entries).toHaveLength(2);
-    expect(entries[0].agent).toBe("agent-fleet-1");
-    expect(entries[1].cost).toBe(0.02);
+    expect(entries[0].agent_name).toBe("agent-fleet-1");
+    expect(entries[1].transcript_lines).toBe(50);
   });
 
   it("skips empty lines", () => {
     const content =
-      '{"agent":"agent-a-1","model":"m","tokens":100,"cost":0.01,"timestamp":"2026-03-01T00:00:00Z"}\n\n\n';
+      '{"timestamp":"2026-03-01T00:00:00Z","session_id":"abc","agent_name":"agent-a-1","model":"m","cwd":"/tmp","transcript_path":"/tmp/a.jsonl","transcript_lines":10}\n\n\n';
     expect(parseJSONLEntries(content)).toHaveLength(1);
   });
 
   it("skips invalid JSON lines", () => {
     const content =
-      '{"agent":"agent-a-1","model":"m","tokens":100,"cost":0.01,"timestamp":"2026-03-01T00:00:00Z"}\nnot-json\n{"agent":"agent-b-2","model":"m","tokens":200,"cost":0.02,"timestamp":"2026-03-02T00:00:00Z"}';
+      '{"timestamp":"2026-03-01T00:00:00Z","session_id":"abc","agent_name":"agent-a-1","model":"m","cwd":"/tmp","transcript_path":"/tmp/a.jsonl","transcript_lines":10}\nnot-json\n{"timestamp":"2026-03-02T00:00:00Z","session_id":"def","agent_name":"agent-b-2","model":"m","cwd":"/tmp","transcript_path":"/tmp/b.jsonl","transcript_lines":20}';
     expect(parseJSONLEntries(content)).toHaveLength(2);
   });
 
@@ -76,25 +76,31 @@ describe("parseJSONLEntries", () => {
 describe("groupByProject", () => {
   const entries = [
     {
-      agent: "agent-fleet-dashboard-1",
-      model: "claude-sonnet",
-      tokens: 1000,
-      cost: 0.05,
       timestamp: "2026-03-25T10:00:00Z",
+      session_id: "s1",
+      agent_name: "agent-fleet-dashboard-1",
+      model: "sonnet",
+      cwd: "/tmp",
+      transcript_path: "/tmp/a.jsonl",
+      transcript_lines: 100,
     },
     {
-      agent: "agent-fleet-dashboard-2",
-      model: "claude-sonnet",
-      tokens: 2000,
-      cost: 0.1,
       timestamp: "2026-03-26T12:00:00Z",
+      session_id: "s2",
+      agent_name: "agent-fleet-dashboard-2",
+      model: "sonnet",
+      cwd: "/tmp",
+      transcript_path: "/tmp/b.jsonl",
+      transcript_lines: 200,
     },
     {
-      agent: "agent-cardmarket-1",
-      model: "claude-haiku",
-      tokens: 500,
-      cost: 0.02,
       timestamp: "2026-03-24T08:00:00Z",
+      session_id: "s3",
+      agent_name: "agent-cardmarket-1",
+      model: "haiku",
+      cwd: "/tmp",
+      transcript_path: "/tmp/c.jsonl",
+      transcript_lines: 50,
     },
   ];
 
@@ -104,8 +110,7 @@ describe("groupByProject", () => {
     const fleetProject = projects.find((p) => p.name === "fleet-dashboard");
     expect(fleetProject).toBeDefined();
     expect(fleetProject?.sessionCount).toBe(2);
-    expect(fleetProject?.totalTokens).toBe(3000);
-    expect(fleetProject?.totalCost).toBeCloseTo(0.15);
+    expect(fleetProject?.transcriptLines).toBe(300);
   });
 
   it("tracks lastActive as the most recent timestamp", () => {
@@ -114,7 +119,7 @@ describe("groupByProject", () => {
     expect(fleetProject?.lastActive).toBe("2026-03-26T12:00:00Z");
   });
 
-  it("sorts projects by totalCost descending", () => {
+  it("sorts projects by sessionCount descending", () => {
     const projects = groupByProject(entries);
     expect(projects[0].name).toBe("fleet-dashboard");
     expect(projects[1].name).toBe("cardmarket");
@@ -130,6 +135,23 @@ describe("groupByProject", () => {
 
   it("returns empty array for empty input", () => {
     expect(groupByProject([])).toHaveLength(0);
+  });
+
+  it("skips entries with missing agent_name", () => {
+    const withMissing = [
+      ...entries,
+      {
+        timestamp: "2026-03-27T00:00:00Z",
+        session_id: "s4",
+        agent_name: "",
+        model: "sonnet",
+        cwd: "/tmp",
+        transcript_path: "/tmp/d.jsonl",
+        transcript_lines: 10,
+      },
+    ];
+    const projects = groupByProject(withMissing);
+    expect(projects).toHaveLength(2);
   });
 });
 
@@ -165,8 +187,8 @@ describe("GET /api/costs/by-project", () => {
 
   it("returns grouped projects from JSONL file", async () => {
     const jsonl =
-      '{"agent":"agent-fleet-1","model":"claude-sonnet","tokens":1000,"cost":0.05,"timestamp":"2026-04-01T10:00:00Z"}\n' +
-      '{"agent":"agent-fleet-2","model":"claude-sonnet","tokens":2000,"cost":0.10,"timestamp":"2026-04-01T11:00:00Z"}';
+      '{"timestamp":"2026-04-01T10:00:00Z","session_id":"s1","agent_name":"agent-fleet-1","model":"sonnet","cwd":"/tmp","transcript_path":"/tmp/a.jsonl","transcript_lines":99}\n' +
+      '{"timestamp":"2026-04-01T11:00:00Z","session_id":"s2","agent_name":"agent-fleet-2","model":"sonnet","cwd":"/tmp","transcript_path":"/tmp/b.jsonl","transcript_lines":148}';
 
     (fs.readFileSync as ReturnType<typeof vi.fn>).mockReturnValue(jsonl);
 
@@ -179,6 +201,7 @@ describe("GET /api/costs/by-project", () => {
     expect(body.projects).toHaveLength(1);
     expect(body.projects[0].name).toBe("fleet");
     expect(body.projects[0].sessionCount).toBe(2);
+    expect(body.projects[0].transcriptLines).toBe(247);
   });
 
   it("defaults to 7d period", async () => {
@@ -194,7 +217,7 @@ describe("GET /api/costs/by-project", () => {
   it("returns all entries when period=all", async () => {
     // Old entry that would be filtered out in 7d mode
     const jsonl =
-      '{"agent":"agent-oldproject-1","model":"claude-haiku","tokens":100,"cost":0.01,"timestamp":"2020-01-01T00:00:00Z"}';
+      '{"timestamp":"2020-01-01T00:00:00Z","session_id":"s1","agent_name":"agent-oldproject-1","model":"haiku","cwd":"/tmp","transcript_path":"/tmp/a.jsonl","transcript_lines":10}';
 
     (fs.readFileSync as ReturnType<typeof vi.fn>).mockReturnValue(jsonl);
 

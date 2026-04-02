@@ -29,24 +29,22 @@ export function groupByProject(
   const groups = new Map<
     string,
     {
-      totalCost: number;
-      totalTokens: number;
       sessionCount: number;
+      transcriptLines: number;
       lastActive: string;
     }
   >();
 
   for (const entry of filtered) {
-    const project = extractProjectName(entry.agent);
+    if (!entry.agent_name) continue;
+    const project = extractProjectName(entry.agent_name);
     const existing = groups.get(project) ?? {
-      totalCost: 0,
-      totalTokens: 0,
       sessionCount: 0,
+      transcriptLines: 0,
       lastActive: entry.timestamp,
     };
-    existing.totalCost += entry.cost;
-    existing.totalTokens += entry.tokens;
     existing.sessionCount += 1;
+    existing.transcriptLines += entry.transcript_lines ?? 0;
     if (entry.timestamp > existing.lastActive) {
       existing.lastActive = entry.timestamp;
     }
@@ -55,5 +53,5 @@ export function groupByProject(
 
   return Array.from(groups.entries())
     .map(([name, data]) => ({ name, ...data }))
-    .sort((a, b) => b.totalCost - a.totalCost);
+    .sort((a, b) => b.sessionCount - a.sessionCount);
 }

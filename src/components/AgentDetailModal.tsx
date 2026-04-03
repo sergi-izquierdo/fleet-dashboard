@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { Agent } from "@/types/dashboard";
+import { AnimatePresence, motion } from "framer-motion";
+import type { Agent, PR } from "@/types/dashboard";
 import { AgentLifecycleTimeline } from "@/components/AgentLifecycleTimeline";
 import { AgentLogViewer } from "@/components/AgentLogViewer";
 
@@ -61,6 +62,27 @@ function extractProject(branch: string): string {
   return parts.length > 1 ? parts[0] : branch;
 }
 
+const CI_STATUS_STYLES: Record<
+  PR["ciStatus"],
+  { label: string; className: string }
+> = {
+  passing: {
+    label: "CI Passing",
+    className:
+      "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
+  },
+  failing: {
+    label: "CI Failing",
+    className:
+      "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+  },
+  pending: {
+    label: "CI Pending",
+    className:
+      "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20",
+  },
+};
+
 export function AgentDetailModal({
   sessionName,
   onClose,
@@ -68,11 +90,17 @@ export function AgentDetailModal({
   onKilled,
 }: AgentDetailModalProps) {
   const [agent, setAgent] = useState<Agent | null>(null);
+  const [prs, setPrs] = useState<PR[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showKillConfirm, setShowKillConfirm] = useState(false);
   const [isKilling, setIsKilling] = useState(false);
   const [killError, setKillError] = useState<string | null>(null);
+  const [isVisible, setIsVisible] = useState(true);
+
+  const handleClose = useCallback(() => {
+    setIsVisible(false);
+  }, []);
 
   async function handleKillConfirm() {
     setIsKilling(true);
@@ -85,7 +113,7 @@ export function AgentDetailModal({
       if (res.ok) {
         setShowKillConfirm(false);
         onKilled?.();
-        onClose();
+        handleClose();
       } else {
         const data = await res.json();
         setKillError(
@@ -101,9 +129,9 @@ export function AgentDetailModal({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     },
-    [onClose]
+    [handleClose]
   );
 
   useEffect(() => {
@@ -130,6 +158,9 @@ export function AgentDetailModal({
         } else {
           setError("Agent not found in dashboard data");
         }
+        if (Array.isArray(data.prs)) {
+          setPrs(data.prs as PR[]);
+        }
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load agent details"
@@ -141,14 +172,28 @@ export function AgentDetailModal({
     fetchAgentData();
   }, [sessionName]);
 
+  const matchedPr = agent?.pr
+    ? prs.find((p) => p.number === agent.pr?.number)
+    : undefined;
+
   return (
-    <div
+    <AnimatePresence onExitComplete={onClose}>
+      {isVisible && (
+    <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      onClick={handleClose}
       data-testid="agent-detail-modal"
     >
-      <div
-        className="mx-4 w-full max-w-lg rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-6 shadow-2xl animate-slide-up"
+      <motion.div
+        className="mx-4 w-full max-w-lg rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -160,7 +205,7 @@ export function AgentDetailModal({
             {sessionName}
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="ml-3 shrink-0 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/10 dark:hover:text-white"
             aria-label="Close agent detail"
             data-testid="close-agent-detail-modal"
@@ -284,15 +329,25 @@ export function AgentDetailModal({
                 <span className="text-sm text-gray-500 dark:text-white/50">
                   Pull Request
                 </span>
-                <a
-                  href={agent.pr.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="agent-detail-pr-link"
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  PR #{agent.pr.number}
-                </a>
+                <div className="flex items-center gap-2">
+                  {matchedPr && (
+                    <span
+                      data-testid="agent-detail-ci-status"
+                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${CI_STATUS_STYLES[matchedPr.ciStatus].className}`}
+                    >
+                      {CI_STATUS_STYLES[matchedPr.ciStatus].label}
+                    </span>
+                  )}
+                  <a
+                    href={agent.pr.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="agent-detail-pr-link"
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    PR #{agent.pr.number}
+                  </a>
+                </div>
               </div>
             )}
 
@@ -385,7 +440,9 @@ export function AgentDetailModal({
             )}
           </div>
         ) : null}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

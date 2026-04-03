@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -10,8 +10,10 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import { Download } from "lucide-react";
 import type { CostsByProjectResponse, ProjectCost } from "@/types/costsByProject";
 import EmptyState from "@/components/EmptyState";
+import { buildCSV, downloadCSV, todayDateString } from "@/lib/csvExport";
 
 type Period = "7d" | "all";
 
@@ -67,8 +69,15 @@ export default function CostByProject() {
     fetchData();
   }, [fetchData]);
 
-  const projects: ProjectCost[] = data?.projects ?? [];
+  const projects: ProjectCost[] = useMemo(() => data?.projects ?? [], [data]);
   const isEmpty = !isLoading && projects.length === 0;
+
+  const handleExport = useCallback(() => {
+    const headers = ["Project", "Sessions", "Transcript Lines", "Model", "Last Active"];
+    const rows = projects.map((p) => [p.name, p.sessionCount, p.transcriptLines, "", p.lastActive]);
+    const csv = buildCSV(headers, rows);
+    downloadCSV(`fleet-costs-${todayDateString()}.csv`, csv);
+  }, [projects]);
 
   return (
     <div data-testid="cost-by-project" className="space-y-4">
@@ -76,7 +85,17 @@ export default function CostByProject() {
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
           Activity by Project
         </h2>
-        <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-white/10 p-0.5">
+        <div className="flex items-center gap-2">
+          <button
+            data-testid="export-costs-csv"
+            onClick={handleExport}
+            disabled={projects.length === 0}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export CSV
+          </button>
+          <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-white/10 p-0.5">
           {PERIOD_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -91,6 +110,7 @@ export default function CostByProject() {
               {opt.label}
             </button>
           ))}
+          </div>
         </div>
       </div>
 

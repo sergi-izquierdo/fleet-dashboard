@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { AgentDetailModal } from "@/components/AgentDetailModal";
+import { FilterBar } from "@/components/FilterBar";
 
 interface CompletedAgentEntry {
   key: string;
@@ -32,6 +34,7 @@ interface NormalizedAgent {
   name: string;
   project: string;
   issueNumber: number | null;
+  issueTitle: string | null;
   status: string;
   duration: string;
   prUrl: string | null;
@@ -112,6 +115,7 @@ function normalizeActiveAgents(
       name: key,
       project: extractProject(repo),
       issueNumber: issue,
+      issueTitle: null,
       status,
       duration: formatDuration(startedAt, nowIso),
       prUrl: null,
@@ -131,6 +135,7 @@ function normalizeCompletedAgents(
       name: agent.key,
       project: extractProject(agent.repo),
       issueNumber: agent.issue ?? null,
+      issueTitle: agent.title ?? null,
       status: agent.status,
       duration: "—",
       prUrl: agent.pr || null,
@@ -152,13 +157,66 @@ function matchesStatusFilter(agent: NormalizedAgent, filter: string): boolean {
   return true;
 }
 
+function matchesSearch(agent: NormalizedAgent, query: string): boolean {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  return (
+    agent.name.toLowerCase().includes(q) ||
+    agent.project.toLowerCase().includes(q) ||
+    (agent.issueNumber !== null && String(agent.issueNumber).includes(q)) ||
+    (agent.issueTitle !== null && agent.issueTitle.toLowerCase().includes(q))
+  );
+}
+
 export default function AgentListTable() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [agents, setAgents] = useState<NormalizedAgent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [projectFilter, setProjectFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+
+  // Filter state — initialized from URL params
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "");
+  const [projectFilter, setProjectFilter] = useState(searchParams.get("project") ?? "all");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "all");
+
+  const updateUrlParams = useCallback(
+    (q: string, project: string, status: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (q) params.set("q", q); else params.delete("q");
+      if (project !== "all") params.set("project", project); else params.delete("project");
+      if (status !== "all") params.set("status", status); else params.delete("status");
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams]
+  );
+
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchQuery(value);
+      updateUrlParams(value, projectFilter, statusFilter);
+    },
+    [updateUrlParams, projectFilter, statusFilter]
+  );
+
+  const handleProjectChange = useCallback(
+    (value: string) => {
+      setProjectFilter(value);
+      updateUrlParams(searchQuery, value, statusFilter);
+    },
+    [updateUrlParams, searchQuery, statusFilter]
+  );
+
+  const handleStatusChange = useCallback(
+    (value: string) => {
+      setStatusFilter(value);
+      updateUrlParams(searchQuery, projectFilter, value);
+    },
+    [updateUrlParams, searchQuery, projectFilter]
+  );
 
   const fetchFleetState = useCallback(async () => {
     try {
@@ -198,7 +256,8 @@ export default function AgentListTable() {
   const filtered = agents.filter(
     (a) =>
       (projectFilter === "all" || a.project === projectFilter) &&
-      matchesStatusFilter(a, statusFilter)
+      matchesStatusFilter(a, statusFilter) &&
+      matchesSearch(a, searchQuery)
   );
 
   return (
@@ -207,38 +266,41 @@ export default function AgentListTable() {
         All Agents
       </h2>
 
-      {/* Filters */}
-      <div
-        data-testid="agent-list-filters"
-        className="mb-4 flex flex-wrap gap-3"
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={handleSearchChange}
+        placeholder="Search by name, repo, or issue..."
+        resultCount={{ shown: filtered.length, total: agents.length }}
       >
-        <select
-          data-testid="project-filter"
-          value={projectFilter}
-          onChange={(e) => setProjectFilter(e.target.value)}
-          className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-sm text-gray-700 dark:text-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-          aria-label="Filter by project"
-        >
-          {projects.map((p) => (
-            <option key={p} value={p}>
-              {p === "all" ? "All Projects" : p}
-            </option>
-          ))}
-        </select>
+        <div data-testid="agent-list-filters" className="flex flex-wrap gap-3">
+          <select
+            data-testid="project-filter"
+            value={projectFilter}
+            onChange={(e) => handleProjectChange(e.target.value)}
+            className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-sm text-gray-700 dark:text-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            aria-label="Filter by project"
+          >
+            {projects.map((p) => (
+              <option key={p} value={p}>
+                {p === "all" ? "All Projects" : p}
+              </option>
+            ))}
+          </select>
 
-        <select
-          data-testid="status-filter"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-sm text-gray-700 dark:text-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-          aria-label="Filter by status"
-        >
-          <option value="all">All Statuses</option>
-          <option value="active">Active</option>
-          <option value="completed">Completed</option>
-          <option value="error">Error</option>
-        </select>
-      </div>
+          <select
+            data-testid="status-filter"
+            value={statusFilter}
+            onChange={(e) => handleStatusChange(e.target.value)}
+            className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-sm text-gray-700 dark:text-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            aria-label="Filter by status"
+          >
+            <option value="all">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="error">Error</option>
+          </select>
+        </div>
+      </FilterBar>
 
       {isLoading ? (
         <div data-testid="agent-list-loading" className="space-y-2">

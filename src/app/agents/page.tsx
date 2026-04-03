@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import AgentStatusCards from "@/components/AgentStatusCards";
 import AgentListTable from "@/components/AgentListTable";
@@ -18,7 +19,9 @@ export default function AgentsPage() {
         </SectionErrorBoundary>
       </div>
       <SectionErrorBoundary sectionName="Agent List">
-        <AgentListTable />
+        <Suspense>
+          <AgentListTable />
+        </Suspense>
       </SectionErrorBoundary>
       <SectionErrorBoundary sectionName="Agent Timeline">
         <AgentTimeline />

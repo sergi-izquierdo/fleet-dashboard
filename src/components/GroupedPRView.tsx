@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { RecentPR, PRGroup, PRGroupKey } from "@/types/prs";
 import { timeAgo } from "@/components/RecentPRs";
 import { PRActionMenu } from "@/components/PRActionMenu";
 import { ToastContainer, showToast } from "@/components/Toast";
+import { FilterBar } from "@/components/FilterBar";
 
 const REFRESH_INTERVAL_MS = 30_000;
 
@@ -209,11 +211,75 @@ async function closePR(repo: string, prNumber: number): Promise<{ success: boole
   return res.json() as Promise<{ success: boolean; message?: string; error?: string }>;
 }
 
+function matchesPRSearch(pr: RecentPR, query: string): boolean {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  return (
+    pr.title.toLowerCase().includes(q) ||
+    String(pr.number).includes(q) ||
+    pr.repo.toLowerCase().includes(q)
+  );
+}
+
+function matchesPRStateFilter(pr: RecentPR, state: string): boolean {
+  if (state === "all") return true;
+  return pr.status === state;
+}
+
+function matchesPRCiFilter(pr: RecentPR, ci: string): boolean {
+  if (ci === "all") return true;
+  return pr.ciStatus === ci;
+}
+
 export default function GroupedPRView() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [prs, setPrs] = useState<RecentPR[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionInProgress, setActionInProgress] = useState(false);
+
+  // Filter state — initialized from URL params
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "");
+  const [stateFilter, setStateFilter] = useState(searchParams.get("state") ?? "all");
+  const [ciFilter, setCiFilter] = useState(searchParams.get("ci") ?? "all");
+
+  const updateUrlParams = useCallback(
+    (q: string, state: string, ci: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (q) params.set("q", q); else params.delete("q");
+      if (state !== "all") params.set("state", state); else params.delete("state");
+      if (ci !== "all") params.set("ci", ci); else params.delete("ci");
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams]
+  );
+
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchQuery(value);
+      updateUrlParams(value, stateFilter, ciFilter);
+    },
+    [updateUrlParams, stateFilter, ciFilter]
+  );
+
+  const handleStateChange = useCallback(
+    (value: string) => {
+      setStateFilter(value);
+      updateUrlParams(searchQuery, value, ciFilter);
+    },
+    [updateUrlParams, searchQuery, ciFilter]
+  );
+
+  const handleCiChange = useCallback(
+    (value: string) => {
+      setCiFilter(value);
+      updateUrlParams(searchQuery, stateFilter, value);
+    },
+    [updateUrlParams, searchQuery, stateFilter]
+  );
 
   const fetchPRs = useCallback(async () => {
     try {
@@ -271,12 +337,56 @@ export default function GroupedPRView() {
     return () => clearInterval(interval);
   }, [fetchPRs]);
 
-  const groups = groupPRs(prs);
+  // Apply filters before grouping
+  const filteredPrs = prs.filter(
+    (pr) =>
+      matchesPRSearch(pr, searchQuery) &&
+      matchesPRStateFilter(pr, stateFilter) &&
+      matchesPRCiFilter(pr, ciFilter)
+  );
+
+  const groups = groupPRs(filteredPrs);
   const mergedTodayCount = groups.find((g) => g.key === "merged-today")?.prs.length ?? 0;
 
   return (
     <div className="space-y-5 animate-fade-in">
       <ToastContainer />
+
+      <FilterBar
+        searchValue={searchQuery}
+        onSearchChange={handleSearchChange}
+        placeholder="Search by title, number, or repo..."
+        resultCount={{ shown: filteredPrs.length, total: prs.length }}
+      >
+        <div data-testid="prs-filters" className="flex flex-wrap gap-3">
+          <select
+            data-testid="pr-state-filter"
+            value={stateFilter}
+            onChange={(e) => handleStateChange(e.target.value)}
+            className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-sm text-gray-700 dark:text-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            aria-label="Filter by state"
+          >
+            <option value="all">All States</option>
+            <option value="open">Open</option>
+            <option value="merged">Merged</option>
+            <option value="closed">Closed</option>
+          </select>
+
+          <select
+            data-testid="pr-ci-filter"
+            value={ciFilter}
+            onChange={(e) => handleCiChange(e.target.value)}
+            className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-sm text-gray-700 dark:text-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            aria-label="Filter by CI status"
+          >
+            <option value="all">All CI</option>
+            <option value="passing">Passing</option>
+            <option value="failing">Failing</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
+      </FilterBar>
+
       {/* Merged today counter */}
       <div
         className="inline-flex items-center gap-2 rounded-full border border-purple-600/30 bg-purple-600/10 px-4 py-1.5 text-sm font-medium text-purple-600 dark:text-purple-400"

@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { Download } from "lucide-react";
 import { AgentDetailModal } from "@/components/AgentDetailModal";
 import { FilterBar } from "@/components/FilterBar";
+import { buildCSV, downloadCSV, todayDateString } from "@/lib/csvExport";
 
 interface CompletedAgentEntry {
   key: string;
@@ -260,11 +262,39 @@ export default function AgentListTable() {
       matchesSearch(a, searchQuery)
   );
 
+  const handleExport = useCallback(() => {
+    const headers = ["Agent Name", "Repo", "Issue", "Status", "Started", "Completed", "Duration", "PR URL", "Files Modified"];
+    const rows = agents.map((a) => [
+      a.name,
+      a.project,
+      a.issueNumber ?? "",
+      a.status,
+      "",
+      a.completedAt ?? "",
+      a.duration,
+      a.prUrl ?? "",
+      "",
+    ]);
+    const csv = buildCSV(headers, rows);
+    downloadCSV(`fleet-agents-${todayDateString()}.csv`, csv);
+  }, [agents]);
+
   return (
     <section aria-label="All agents" className="mt-6">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-        All Agents
-      </h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          All Agents
+        </h2>
+        <button
+          data-testid="export-agents-csv"
+          onClick={handleExport}
+          disabled={agents.length === 0}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </button>
+      </div>
 
       <FilterBar
         searchValue={searchQuery}

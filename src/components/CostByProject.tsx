@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Download } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -12,6 +13,27 @@ import {
 } from "recharts";
 import type { CostsByProjectResponse, ProjectCost } from "@/types/costsByProject";
 import EmptyState from "@/components/EmptyState";
+import { buildCsvString, downloadCsv, todayDateString } from "@/lib/csvExport";
+
+const COSTS_CSV_HEADERS = [
+  "Project",
+  "Sessions",
+  "Transcript Lines",
+  "Model",
+  "Last Active",
+];
+
+function exportCostsCsv(projects: ProjectCost[]): void {
+  const rows = projects.map((p) => [
+    p.name,
+    String(p.sessionCount),
+    String(p.transcriptLines),
+    "",
+    p.lastActive,
+  ]);
+  const csv = buildCsvString(COSTS_CSV_HEADERS, rows);
+  downloadCsv(`fleet-costs-${todayDateString()}.csv`, csv);
+}
 
 type Period = "7d" | "all";
 
@@ -76,7 +98,18 @@ export default function CostByProject() {
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
           Activity by Project
         </h2>
-        <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-white/10 p-0.5">
+        <div className="flex items-center gap-2">
+          <button
+            data-testid="export-costs-csv"
+            onClick={() => exportCostsCsv(projects)}
+            disabled={projects.length === 0}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            aria-label="Export costs as CSV"
+          >
+            <Download className="h-3 w-3" />
+            Export CSV
+          </button>
+          <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-white/10 p-0.5">
           {PERIOD_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -91,6 +124,7 @@ export default function CostByProject() {
               {opt.label}
             </button>
           ))}
+          </div>
         </div>
       </div>
 

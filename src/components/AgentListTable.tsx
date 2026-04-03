@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { Download } from "lucide-react";
 import { AgentDetailModal } from "@/components/AgentDetailModal";
+import { buildCsvString, downloadCsv, todayDateString } from "@/lib/csvExport";
 
 interface CompletedAgentEntry {
   key: string;
@@ -144,6 +146,34 @@ const ACTIVE_STATUSES = new Set(["working", "pr_open", "review_pending", "approv
 const COMPLETED_STATUSES = new Set(["merged", "pr_merged"]);
 const ERROR_STATUSES = new Set(["error"]);
 
+const AGENTS_CSV_HEADERS = [
+  "Agent Name",
+  "Repo",
+  "Issue",
+  "Status",
+  "Started",
+  "Completed",
+  "Duration",
+  "PR URL",
+  "Files Modified",
+];
+
+function exportAgentsCsv(agents: NormalizedAgent[]): void {
+  const rows = agents.map((a) => [
+    a.name,
+    a.project,
+    a.issueNumber != null ? String(a.issueNumber) : "",
+    a.status,
+    "",
+    a.completedAt ?? "",
+    a.duration,
+    a.prUrl ?? "",
+    "",
+  ]);
+  const csv = buildCsvString(AGENTS_CSV_HEADERS, rows);
+  downloadCsv(`fleet-agents-${todayDateString()}.csv`, csv);
+}
+
 function matchesStatusFilter(agent: NormalizedAgent, filter: string): boolean {
   if (filter === "all") return true;
   if (filter === "active") return ACTIVE_STATUSES.has(agent.status);
@@ -203,9 +233,21 @@ export default function AgentListTable() {
 
   return (
     <section aria-label="All agents" className="mt-6">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-        All Agents
-      </h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          All Agents
+        </h2>
+        <button
+          data-testid="export-agents-csv"
+          onClick={() => exportAgentsCsv(filtered)}
+          disabled={filtered.length === 0}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          aria-label="Export agents as CSV"
+        >
+          <Download className="h-3.5 w-3.5" />
+          Export CSV
+        </button>
+      </div>
 
       {/* Filters */}
       <div

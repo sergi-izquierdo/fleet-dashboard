@@ -199,7 +199,7 @@ describe("AgentDetailModal", () => {
     });
   });
 
-  it("calls onClose when backdrop is clicked", () => {
+  it("calls onClose when backdrop is clicked", async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockReturnValue(
       new Promise(() => {})
     );
@@ -208,10 +208,12 @@ describe("AgentDetailModal", () => {
       <AgentDetailModal sessionName="agent-42" onClose={onClose} />
     );
     fireEvent.click(screen.getByTestId("agent-detail-modal"));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it("calls onClose when close button is clicked", () => {
+  it("calls onClose when close button is clicked", async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockReturnValue(
       new Promise(() => {})
     );
@@ -220,10 +222,12 @@ describe("AgentDetailModal", () => {
       <AgentDetailModal sessionName="agent-42" onClose={onClose} />
     );
     fireEvent.click(screen.getByTestId("close-agent-detail-modal"));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it("calls onClose when Escape key is pressed", () => {
+  it("calls onClose when Escape key is pressed", async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockReturnValue(
       new Promise(() => {})
     );
@@ -232,7 +236,9 @@ describe("AgentDetailModal", () => {
       <AgentDetailModal sessionName="agent-42" onClose={onClose} />
     );
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("renders terminal button when onViewTerminal is provided", async () => {
@@ -424,6 +430,64 @@ describe("AgentDetailModal", () => {
     );
     await waitFor(() => {
       expect(screen.getByTestId("agent-detail-content")).toBeInTheDocument();
+    });
+  });
+
+  it("renders CI status badge when PR has CI status", async () => {
+    const mockPr = {
+      number: 99,
+      url: "https://github.com/org/repo/pull/99",
+      title: "Fix feature X",
+      ciStatus: "passing" as const,
+      reviewStatus: "pending" as const,
+      mergeState: "open" as const,
+      author: "bot",
+      branch: "feat/issue-42-feature-x",
+    };
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ ...mockDashboardData, prs: [mockPr] }),
+    });
+    render(<AgentDetailModal sessionName="agent-42" onClose={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByTestId("agent-detail-ci-status")).toHaveTextContent(
+        "CI Passing"
+      );
+    });
+  });
+
+  it("does not render CI status badge when no matching PR found", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ ...mockDashboardData, prs: [] }),
+    });
+    render(<AgentDetailModal sessionName="agent-42" onClose={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByTestId("agent-detail-content")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("agent-detail-ci-status")).toBeNull();
+  });
+
+  it("renders CI failing badge for failing CI status", async () => {
+    const mockPr = {
+      number: 99,
+      url: "https://github.com/org/repo/pull/99",
+      title: "Fix feature X",
+      ciStatus: "failing" as const,
+      reviewStatus: "pending" as const,
+      mergeState: "open" as const,
+      author: "bot",
+      branch: "feat/issue-42-feature-x",
+    };
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ ...mockDashboardData, prs: [mockPr] }),
+    });
+    render(<AgentDetailModal sessionName="agent-42" onClose={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByTestId("agent-detail-ci-status")).toHaveTextContent(
+        "CI Failing"
+      );
     });
   });
 });

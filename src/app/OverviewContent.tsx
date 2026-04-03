@@ -24,11 +24,31 @@ import { BottomNav, type MobileTab } from "@/components/BottomNav";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useFleetState } from "@/hooks/useFleetState";
 import { useFleetEvents } from "@/hooks/useFleetEvents";
+import { useDashboardLayout, type SectionId } from "@/hooks/useDashboardLayout";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   Bot,
   Server,
   Activity,
   TrendingUp,
+  GripVertical,
+  RotateCcw,
 } from "lucide-react";
 
 const SECTION_IDS: Record<MobileTab, string> = {
@@ -72,10 +92,158 @@ function Card({
   );
 }
 
+function DragHandle({
+  attributes,
+  listeners,
+}: {
+  attributes: ReturnType<typeof useSortable>["attributes"];
+  listeners: ReturnType<typeof useSortable>["listeners"];
+}) {
+  return (
+    <button
+      {...attributes}
+      {...listeners}
+      className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded text-white/30 hover:text-white/60 focus:opacity-100 focus:outline-none"
+      aria-label="Drag to reorder"
+      data-testid="drag-handle"
+    >
+      <GripVertical className="h-4 w-4" />
+    </button>
+  );
+}
+
+function SortableSection({
+  id,
+  children,
+}: {
+  id: SectionId;
+  children: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative group"
+      data-section-id={id}
+    >
+      <DragHandle attributes={attributes} listeners={listeners} />
+      {children}
+    </div>
+  );
+}
+
+interface SectionContentProps {
+  sectionId: SectionId;
+  data: NonNullable<ReturnType<typeof useDashboardData>["data"]>;
+  activityEvents: {
+    id: string;
+    timestamp: string;
+    agentName: string;
+    eventType: import("@/components/ActivityLog").EventType;
+    description: string;
+    project?: string;
+  }[];
+}
+
+function SectionContent({ sectionId, data, activityEvents }: SectionContentProps) {
+  switch (sectionId) {
+    case "agents":
+      return (
+        <Card id="section-agents">
+          <SectionHeader icon={Bot} title="Active Agents" />
+          <SectionErrorBoundary sectionName="Agents">
+            <AgentStatusCards />
+          </SectionErrorBoundary>
+        </Card>
+      );
+    case "metrics":
+      return (
+        <SectionErrorBoundary sectionName="Fleet Metrics">
+          <MetricsCard activityLog={data.activityLog} />
+        </SectionErrorBoundary>
+      );
+    case "timeline":
+      return (
+        <Card>
+          <SectionHeader icon={Activity} title="Fleet Activity" />
+          <SectionErrorBoundary sectionName="Fleet Activity Timeline">
+            <FleetActivityTimeline
+              activityLog={data.activityLog}
+              prs={data.prs}
+            />
+          </SectionErrorBoundary>
+        </Card>
+      );
+    case "heatmap":
+      return (
+        <Card>
+          <SectionHeader icon={Activity} title="Fleet Activity Heatmap" />
+          <SectionErrorBoundary sectionName="Fleet Activity Heatmap">
+            <FleetActivityHeatmap />
+          </SectionErrorBoundary>
+        </Card>
+      );
+    case "prs":
+      return (
+        <div id="section-prs" className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <SectionErrorBoundary sectionName="Merge Queue">
+            <MergeQueue />
+          </SectionErrorBoundary>
+          <SectionErrorBoundary sectionName="Recent PRs">
+            <RecentPRs />
+          </SectionErrorBoundary>
+        </div>
+      );
+    case "trends":
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <SectionErrorBoundary sectionName="PR Merge Trends">
+            <PRTrendChart />
+          </SectionErrorBoundary>
+          <Card>
+            <SectionHeader icon={TrendingUp} title="PR Velocity" />
+            <SectionErrorBoundary sectionName="PR Velocity">
+              <PRVelocityChart />
+            </SectionErrorBoundary>
+          </Card>
+          <SectionErrorBoundary sectionName="Token Usage">
+            <TokenUsageDashboard />
+          </SectionErrorBoundary>
+        </div>
+      );
+    case "activity":
+      return (
+        <div id="section-activity">
+          <SectionErrorBoundary sectionName="Activity Log">
+            <ActivityLog events={activityEvents} maxHeight="max-h-80" />
+          </SectionErrorBoundary>
+        </div>
+      );
+    default:
+      return null;
+  }
+}
+
 export default function OverviewContent() {
   const { data, isLoading, error, refresh } = useDashboardData();
   useFleetState();
   const prevAgentsRef = useRef<Map<string, string>>(new Map());
+  const { order, reorder, resetLayout } = useDashboardLayout();
 
   // SSE: trigger immediate refresh on fleet events (polling stays as fallback)
   useFleetEvents(refresh, {
@@ -90,6 +258,25 @@ export default function OverviewContent() {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, []);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (over && active.id !== over.id) {
+        const oldIndex = order.indexOf(active.id as SectionId);
+        const newIndex = order.indexOf(over.id as SectionId);
+        reorder(arrayMove(order, oldIndex, newIndex));
+      }
+    },
+    [order, reorder],
+  );
 
   // Toast notifications for agent status changes
   useEffect(() => {
@@ -183,6 +370,15 @@ export default function OverviewContent() {
         <div className="flex-1 min-w-0">
           <FleetStatusBanner agents={data.agents} prs={data.prs} />
         </div>
+        <button
+          onClick={resetLayout}
+          className="flex items-center gap-1 px-2 py-1 text-xs text-white/40 hover:text-white/70 border border-white/[0.06] rounded-lg transition-colors"
+          title="Reset dashboard layout to default"
+          data-testid="reset-layout-button"
+        >
+          <RotateCcw className="h-3 w-3" />
+          Reset Layout
+        </button>
         <AutoRefreshIndicator onRefresh={refresh} />
       </div>
 
@@ -190,70 +386,23 @@ export default function OverviewContent() {
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 pb-16 md:pb-0">
         {/* ── Left column (8 cols) ── */}
         <div className="xl:col-span-8 space-y-5">
-          {/* Agent Sessions */}
-          <Card id="section-agents">
-            <SectionHeader icon={Bot} title="Active Agents" />
-            <SectionErrorBoundary sectionName="Agents">
-              <AgentStatusCards />
-            </SectionErrorBoundary>
-          </Card>
-
-          {/* Fleet Metrics */}
-          <SectionErrorBoundary sectionName="Fleet Metrics">
-            <MetricsCard activityLog={data.activityLog} />
-          </SectionErrorBoundary>
-
-          {/* Fleet Activity Timeline */}
-          <Card>
-            <SectionHeader icon={Activity} title="Fleet Activity" />
-            <SectionErrorBoundary sectionName="Fleet Activity Timeline">
-              <FleetActivityTimeline
-                activityLog={data.activityLog}
-                prs={data.prs}
-              />
-            </SectionErrorBoundary>
-          </Card>
-
-          {/* Fleet Activity Heatmap */}
-          <Card>
-            <SectionHeader icon={Activity} title="Fleet Activity Heatmap" />
-            <SectionErrorBoundary sectionName="Fleet Activity Heatmap">
-              <FleetActivityHeatmap />
-            </SectionErrorBoundary>
-          </Card>
-
-          {/* PRs row — 2 columns */}
-          <div id="section-prs" className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <SectionErrorBoundary sectionName="Merge Queue">
-              <MergeQueue />
-            </SectionErrorBoundary>
-            <SectionErrorBoundary sectionName="Recent PRs">
-              <RecentPRs />
-            </SectionErrorBoundary>
-          </div>
-
-          {/* Trends row — responsive columns */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            <SectionErrorBoundary sectionName="PR Merge Trends">
-              <PRTrendChart />
-            </SectionErrorBoundary>
-            <Card>
-              <SectionHeader icon={TrendingUp} title="PR Velocity" />
-              <SectionErrorBoundary sectionName="PR Velocity">
-                <PRVelocityChart />
-              </SectionErrorBoundary>
-            </Card>
-            <SectionErrorBoundary sectionName="Token Usage">
-              <TokenUsageDashboard />
-            </SectionErrorBoundary>
-          </div>
-
-          {/* Activity Log */}
-          <div id="section-activity">
-            <SectionErrorBoundary sectionName="Activity Log">
-              <ActivityLog events={activityEvents} maxHeight="max-h-80" />
-            </SectionErrorBoundary>
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={order} strategy={verticalListSortingStrategy}>
+              {order.map((sectionId) => (
+                <SortableSection key={sectionId} id={sectionId}>
+                  <SectionContent
+                    sectionId={sectionId}
+                    data={data}
+                    activityEvents={activityEvents}
+                  />
+                </SortableSection>
+              ))}
+            </SortableContext>
+          </DndContext>
 
           {/* Mobile-only sidebar content */}
           <div className="xl:hidden space-y-5">

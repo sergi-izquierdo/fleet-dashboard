@@ -1,7 +1,15 @@
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor, fireEvent, act } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import GroupedPRView from "@/components/GroupedPRView";
 import type { RecentPR } from "@/types/prs";
+
+// Mock next/navigation
+const mockReplace = vi.fn();
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ replace: mockReplace }),
+  usePathname: () => "/prs",
+}));
 
 const today = new Date().toISOString();
 const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -66,11 +74,13 @@ const mockPRs: RecentPR[] = [
 describe("GroupedPRView", () => {
   beforeEach(() => {
     global.fetch = vi.fn();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it("shows loading state initially", () => {
@@ -265,5 +275,170 @@ describe("GroupedPRView", () => {
       // because awaiting-ci is only pending/unknown
       expect(screen.getByTestId("pr-group-count-awaiting-review").textContent).toBe("1");
     });
+  });
+
+  it("renders filter bar with search, state, and CI dropdowns", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPRs,
+    });
+    render(<GroupedPRView />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("filter-bar-search")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("pr-state-filter")).toBeInTheDocument();
+    expect(screen.getByTestId("pr-ci-filter")).toBeInTheDocument();
+  });
+
+  it("shows result count", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPRs,
+    });
+    render(<GroupedPRView />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("filter-bar-result-count")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("filter-bar-result-count")).toHaveTextContent(
+      "Showing 5 of 5"
+    );
+  });
+
+  it("filters PRs by state: open", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPRs,
+    });
+    render(<GroupedPRView />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("pr-state-filter")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByTestId("pr-state-filter"), {
+      target: { value: "open" },
+    });
+
+    // 3 open PRs (awaiting-ci + awaiting-review + ready-to-merge)
+    expect(screen.getByTestId("filter-bar-result-count")).toHaveTextContent(
+      "Showing 3 of 5"
+    );
+  });
+
+  it("filters PRs by CI status: passing", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPRs,
+    });
+    render(<GroupedPRView />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("pr-ci-filter")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByTestId("pr-ci-filter"), {
+      target: { value: "passing" },
+    });
+
+    // 4 PRs with passing CI (prs 2, 3, 4, 5)
+    expect(screen.getByTestId("filter-bar-result-count")).toHaveTextContent(
+      "Showing 4 of 5"
+    );
+  });
+
+  it("filters PRs by search query matching title", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPRs,
+    });
+    render(<GroupedPRView />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("filter-bar-search")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByTestId("filter-bar-search"), {
+      target: { value: "merged today" },
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(screen.getByTestId("filter-bar-result-count")).toHaveTextContent(
+      "Showing 1 of 5"
+    );
+  });
+
+  it("filters PRs by search query matching PR number", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPRs,
+    });
+    render(<GroupedPRView />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("filter-bar-search")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByTestId("filter-bar-search"), {
+      target: { value: "3" },
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    // PR number 3 matches
+    expect(screen.getByTestId("filter-bar-result-count")).toHaveTextContent(
+      "Showing 1 of 5"
+    );
+  });
+
+  it("combines state and CI filters", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPRs,
+    });
+    render(<GroupedPRView />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("pr-state-filter")).toBeInTheDocument();
+    });
+
+    // open + pending CI = 1 PR (pr #1)
+    fireEvent.change(screen.getByTestId("pr-state-filter"), {
+      target: { value: "open" },
+    });
+    fireEvent.change(screen.getByTestId("pr-ci-filter"), {
+      target: { value: "pending" },
+    });
+
+    expect(screen.getByTestId("filter-bar-result-count")).toHaveTextContent(
+      "Showing 1 of 5"
+    );
+  });
+
+  it("updates merged today count to reflect filtered results", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPRs,
+    });
+    render(<GroupedPRView />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("merged-today-count").textContent).toBe("1");
+    });
+
+    // Filter to open only — merged today drops to 0
+    fireEvent.change(screen.getByTestId("pr-state-filter"), {
+      target: { value: "open" },
+    });
+
+    expect(screen.getByTestId("merged-today-count").textContent).toBe("0");
   });
 });

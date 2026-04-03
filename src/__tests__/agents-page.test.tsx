@@ -1,6 +1,14 @@
-import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { render, screen, cleanup, waitFor, fireEvent, act } from "@testing-library/react";
+import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import AgentListTable from "@/components/AgentListTable";
+
+// Mock next/navigation
+const mockReplace = vi.fn();
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ replace: mockReplace }),
+  usePathname: () => "/agents",
+}));
 
 const mockFleetState = {
   active: {
@@ -55,9 +63,14 @@ function mockFetchError(message = "Network error") {
 }
 
 describe("AgentListTable", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it("shows loading state initially", () => {
@@ -136,7 +149,7 @@ describe("AgentListTable", () => {
     );
   });
 
-  it("renders filter controls", async () => {
+  it("renders filter controls and search bar", async () => {
     mockFetchSuccess();
     render(<AgentListTable />);
 
@@ -144,6 +157,7 @@ describe("AgentListTable", () => {
       expect(screen.getByTestId("agent-list-filters")).toBeInTheDocument();
     });
 
+    expect(screen.getByTestId("filter-bar-search")).toBeInTheDocument();
     expect(screen.getByTestId("project-filter")).toBeInTheDocument();
     expect(screen.getByTestId("status-filter")).toBeInTheDocument();
   });
@@ -229,6 +243,97 @@ describe("AgentListTable", () => {
     await waitFor(() => {
       expect(screen.getByTestId("agent-list-empty")).toBeInTheDocument();
     });
+  });
+
+  it("filters by search query matching agent name", async () => {
+    mockFetchSuccess();
+    render(<AgentListTable />);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId("agent-list-row")).toHaveLength(3);
+    });
+
+    fireEvent.change(screen.getByTestId("filter-bar-search"), {
+      target: { value: "other" },
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    const rows = screen.getAllByTestId("agent-list-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent("agent-other/issue-3");
+  });
+
+  it("filters by search query matching issue title", async () => {
+    mockFetchSuccess();
+    render(<AgentListTable />);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId("agent-list-row")).toHaveLength(3);
+    });
+
+    fireEvent.change(screen.getByTestId("filter-bar-search"), {
+      target: { value: "dark mode" },
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    const rows = screen.getAllByTestId("agent-list-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent("agent-fleet/issue-5");
+  });
+
+  it("shows result count", async () => {
+    mockFetchSuccess();
+    render(<AgentListTable />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("filter-bar-result-count")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("filter-bar-result-count")).toHaveTextContent(
+      "Showing 3 of 3"
+    );
+  });
+
+  it("updates result count after filtering", async () => {
+    mockFetchSuccess();
+    render(<AgentListTable />);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId("agent-list-row")).toHaveLength(3);
+    });
+
+    fireEvent.change(screen.getByTestId("status-filter"), {
+      target: { value: "active" },
+    });
+
+    expect(screen.getByTestId("filter-bar-result-count")).toHaveTextContent(
+      "Showing 1 of 3"
+    );
+  });
+
+  it("combines search and status filters", async () => {
+    mockFetchSuccess();
+    render(<AgentListTable />);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId("agent-list-row")).toHaveLength(3);
+    });
+
+    // Filter to fleet-dashboard project and error status — should yield 0 results
+    fireEvent.change(screen.getByTestId("project-filter"), {
+      target: { value: "fleet-dashboard" },
+    });
+    fireEvent.change(screen.getByTestId("status-filter"), {
+      target: { value: "error" },
+    });
+
+    expect(screen.getByTestId("agent-list-empty")).toBeInTheDocument();
   });
 
   it("opens AgentDetailModal on row click", async () => {

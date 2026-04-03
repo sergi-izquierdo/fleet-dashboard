@@ -5,6 +5,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { Agent, PR } from "@/types/dashboard";
 import { AgentLifecycleTimeline } from "@/components/AgentLifecycleTimeline";
 import { AgentLogViewer } from "@/components/AgentLogViewer";
+import { AgentTerminalView } from "@/components/AgentTerminalView";
+
+type ModalTab = "details" | "terminal";
 
 interface AgentDetailModalProps {
   sessionName: string;
@@ -97,6 +100,7 @@ export function AgentDetailModal({
   const [isKilling, setIsKilling] = useState(false);
   const [killError, setKillError] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(true);
+  const [activeTab, setActiveTab] = useState<ModalTab>("details");
 
   const handleClose = useCallback(() => {
     setIsVisible(false);
@@ -220,7 +224,33 @@ export function AgentDetailModal({
           </button>
         </div>
 
-        {isLoading ? (
+        {/* Tabs */}
+        <div className="mb-4 flex gap-1 border-b border-gray-200 dark:border-white/10">
+          <button
+            onClick={() => setActiveTab("details")}
+            data-testid="tab-details"
+            className={`px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === "details" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-gray-500 hover:text-gray-700 dark:text-white/50 dark:hover:text-white/80"}`}
+          >
+            Details
+          </button>
+          <button
+            onClick={() => setActiveTab("terminal")}
+            data-testid="tab-terminal"
+            className={`px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === "terminal" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-gray-500 hover:text-gray-700 dark:text-white/50 dark:hover:text-white/80"}`}
+          >
+            Live Terminal
+          </button>
+        </div>
+
+        {activeTab === "terminal" ? (
+          <div className="rounded-lg overflow-hidden -mx-2">
+            <AgentTerminalView
+              sessionName={sessionName}
+              agentStatus={agent?.status}
+              timeElapsed={agent?.timeElapsed}
+            />
+          </div>
+        ) : isLoading ? (
           <div data-testid="agent-detail-loading" className="space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
               <div

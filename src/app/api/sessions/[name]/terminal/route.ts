@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { execFileAsync } from "@/lib/execFileAsync";
+import { isValidSessionName } from "@/lib/sessionValidation";
 
 interface TerminalResponse {
   sessionName: string;
-  output: string;
+  lines: string[];
+  active: boolean;
   error?: string;
 }
 
@@ -13,6 +15,18 @@ export async function GET(
 ) {
   const { name: sessionName } = await params;
 
+  if (!isValidSessionName(sessionName)) {
+    return NextResponse.json(
+      {
+        sessionName,
+        lines: [],
+        active: false,
+        error: "Invalid session name",
+      } satisfies TerminalResponse,
+      { status: 400 }
+    );
+  }
+
   try {
     const { stdout } = await execFileAsync("tmux", [
       "capture-pane",
@@ -20,12 +34,20 @@ export async function GET(
       sessionName,
       "-p",
       "-S",
-      "-500",
+      "-200",
     ]);
+
+    const lines = stdout
+      .split("\n")
+      .filter((line, idx, arr) => {
+        const isTrailing = arr.slice(idx).every((l) => l.trim() === "");
+        return !isTrailing;
+      });
 
     const response: TerminalResponse = {
       sessionName,
-      output: stdout,
+      lines,
+      active: true,
     };
     return NextResponse.json(response, { status: 200 });
   } catch (error) {
@@ -39,7 +61,8 @@ export async function GET(
 
     const response: TerminalResponse = {
       sessionName,
-      output: "",
+      lines: [],
+      active: false,
       error: isNotFound
         ? `Session "${sessionName}" not found`
         : `Failed to read terminal: ${message}`,

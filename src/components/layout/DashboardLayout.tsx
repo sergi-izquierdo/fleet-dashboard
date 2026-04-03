@@ -36,7 +36,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   });
 
   return (
-    <div className="flex min-h-screen bg-[#0a0b0f] text-white">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-[#0a0b0f] text-gray-900 dark:text-white">
       {/* Desktop sidebar */}
       <div className="hidden lg:block">
         <Sidebar
@@ -58,10 +58,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         }`}
       >
         {/* Top bar — mobile hamburger + quick actions */}
-        <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-white/[0.06] bg-[#0a0b0f]/80 px-4 backdrop-blur-md">
+        <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-[#0a0b0f]/80 px-4 backdrop-blur-md">
           <button
             onClick={() => setMobileMenuOpen(true)}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-white/40 hover:bg-white/[0.06] hover:text-white/60 lg:hidden"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 dark:text-white/40 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-700 dark:hover:text-white/60 lg:hidden"
             aria-label="Open menu"
           >
             <Menu className="h-4.5 w-4.5" />
@@ -71,7 +71,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <DispatcherToggle />
             <button
               onClick={() => setCreateIssueOpen(true)}
-              className="flex h-8 items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.04] px-2.5 text-xs font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition-colors"
+              className="flex h-8 items-center gap-1.5 rounded-md border border-gray-200 dark:border-white/[0.08] bg-transparent dark:bg-white/[0.04] px-2.5 text-xs font-medium text-gray-600 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-white/80 transition-colors"
               aria-label="New Issue"
             >
               <Plus className="h-3.5 w-3.5" />

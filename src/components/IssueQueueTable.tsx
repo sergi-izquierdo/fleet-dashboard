@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Zap, X, ExternalLink, Inbox } from "lucide-react";
 import type { QueueIssue } from "@/app/api/issues/queue/route";
+import { showToast } from "@/components/Toast";
 
 const REFRESH_INTERVAL_MS = 30_000;
 
@@ -45,7 +46,6 @@ export default function IssueQueueTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const fetchQueue = useCallback(async () => {
     try {
@@ -67,11 +67,6 @@ export default function IssueQueueTable() {
     return () => clearInterval(interval);
   }, [fetchQueue]);
 
-  function showToast(message: string) {
-    setToastMessage(message);
-    setTimeout(() => setToastMessage(null), 3000);
-  }
-
   async function handleRemove(issue: QueueIssue) {
     const key = `remove-${issue.repo}-${issue.number}`;
     setActionLoading((prev) => ({ ...prev, [key]: true }));
@@ -84,9 +79,9 @@ export default function IssueQueueTable() {
       const data: { success: boolean; error?: string } = await res.json();
       if (!data.success) throw new Error(data.error ?? "Failed to remove from queue");
       setIssues((prev) => prev.filter((i) => !(i.repo === issue.repo && i.number === issue.number)));
-      showToast(`Removed #${issue.number} from queue`);
+      showToast({ type: "success", title: `Removed #${issue.number} from queue` });
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Action failed");
+      showToast({ type: "error", title: err instanceof Error ? err.message : "Action failed" });
     } finally {
       setActionLoading((prev) => ({ ...prev, [key]: false }));
     }
@@ -103,9 +98,9 @@ export default function IssueQueueTable() {
       });
       const data: { success: boolean; error?: string } = await res.json();
       if (!data.success) throw new Error(data.error ?? "Failed to boost priority");
-      showToast(`Boosted priority for #${issue.number}`);
+      showToast({ type: "success", title: `Boosted priority for #${issue.number}` });
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Action failed");
+      showToast({ type: "error", title: err instanceof Error ? err.message : "Action failed" });
     } finally {
       setActionLoading((prev) => ({ ...prev, [key]: false }));
     }
@@ -129,13 +124,6 @@ export default function IssueQueueTable() {
 
   return (
     <div className="relative">
-      {/* Toast */}
-      {toastMessage && (
-        <div className="fixed bottom-4 right-4 z-50 rounded-lg bg-gray-800 px-4 py-2 text-sm text-white shadow-lg ring-1 ring-white/10">
-          {toastMessage}
-        </div>
-      )}
-
       {issues.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <Inbox className="h-10 w-10 text-white/10" />

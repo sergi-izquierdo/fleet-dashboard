@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
+  <rect width="180" height="180" rx="40" fill="#0a0a0a"/>
+  <!-- 2x2 grid of agent squares -->
+  <rect x="34" y="34" width="46" height="46" rx="10" fill="#3b82f6"/>
+  <rect x="100" y="34" width="46" height="46" rx="10" fill="#3b82f6" opacity="0.85"/>
+  <rect x="34" y="100" width="46" height="46" rx="10" fill="#3b82f6" opacity="0.85"/>
+  <rect x="100" y="100" width="46" height="46" rx="10" fill="#22d3ee"/>
+</svg>

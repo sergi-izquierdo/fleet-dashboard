@@ -9,11 +9,11 @@ export const metadata: Metadata = {
     template: "%s | Fleet Dashboard",
     default: "Fleet Dashboard",
   },
-  description: "Real-time fleet monitoring dashboard",
+  description: "AI agent fleet monitoring dashboard",
   manifest: "/manifest.json",
   icons: {
     icon: ["/favicon.svg", "/icon.svg"],
-    apple: "/icons/icon-192x192.svg",
+    apple: "/apple-icon.svg",
   },
   appleWebApp: {
     capable: true,
@@ -23,7 +23,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
   viewportFit: "cover",
 };
 

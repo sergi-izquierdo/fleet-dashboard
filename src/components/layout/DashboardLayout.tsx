@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Menu, Plus } from "lucide-react";
 import { AnimatePresence, motion, type Transition } from "framer-motion";
+import { useTheme } from "next-themes";
 import { Sidebar, MobileSidebar } from "./Sidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationCenter } from "@/components/NotificationCenter";
@@ -15,6 +16,7 @@ import { FleetNotifications } from "@/components/FleetNotifications";
 import { DispatcherToggle } from "@/components/DispatcherToggle";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { SkipLink } from "@/components/SkipLink";
 
 const ROUTE_TITLES: Record<string, string> = {
@@ -67,11 +69,15 @@ const pageTransition: Transition = {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { setTheme, theme } = useTheme();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [createIssueOpen, setCreateIssueOpen] = useState(false);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const dispatcherPausedRef = useRef(false);
+  const { data: dashboardData } = useDashboardData();
 
   useEffect(() => {
     fetch("/api/dispatcher/status")
@@ -101,13 +107,37 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const handleCloseModal = useCallback(() => {
     setCreateIssueOpen(false);
     setShortcutsHelpOpen(false);
+    setCommandPaletteOpen(false);
   }, []);
+
+  const handleToggleTheme = useCallback(() => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  }, [theme, setTheme]);
+
+  const handleScrollToSection = useCallback((id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  const commandItems = useMemo(
+    () =>
+      buildCommandItems(dashboardData, {
+        refresh: () => window.location.reload(),
+        toggleTheme: handleToggleTheme,
+        scrollToSection: handleScrollToSection,
+        createIssue: () => setCreateIssueOpen(true),
+        toggleDispatcher: () => { void handleToggleDispatcher(); },
+        dispatcherPaused: dispatcherPausedRef.current,
+        navigate: (path: string) => router.push(path),
+      }),
+    [dashboardData, handleToggleTheme, handleScrollToSection, handleToggleDispatcher, router],
+  );
 
   useKeyboardShortcuts({
     onCreateIssue: () => setCreateIssueOpen(true),
     onShowHelp: () => setShortcutsHelpOpen(true),
     onCloseModal: handleCloseModal,
     onToggleDispatcher: () => { void handleToggleDispatcher(); },
+    onOpenCommandPalette: () => setCommandPaletteOpen(true),
   });
 
   return (
@@ -186,6 +216,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <KeyboardShortcutsModal
         open={shortcutsHelpOpen}
         onClose={() => setShortcutsHelpOpen(false)}
+      />
+      <CommandPalette
+        open={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        items={commandItems}
       />
       <FleetNotifications />
       <ToastContainer />

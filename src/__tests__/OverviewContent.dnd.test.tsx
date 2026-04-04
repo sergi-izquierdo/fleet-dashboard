@@ -43,11 +43,11 @@ vi.mock("@/hooks/useFleetEvents", () => ({
 
 vi.mock("@/hooks/useDashboardLayout", () => ({
   useDashboardLayout: () => ({
-    order: ["agents", "metrics", "timeline", "heatmap", "prs", "trends", "activity"],
+    order: ["agents", "prs", "timeline", "activity", "trends", "heatmap"],
     reorder: mockReorder,
     resetLayout: vi.fn(),
   }),
-  DEFAULT_ORDER: ["agents", "metrics", "timeline", "heatmap", "prs", "trends", "activity"],
+  DEFAULT_ORDER: ["agents", "prs", "timeline", "activity", "trends", "heatmap"],
 }));
 
 // Mock all child components to keep renders fast
@@ -65,6 +65,7 @@ vi.mock("@/components/SystemHealthCard", () => ({ default: () => <div>SystemHeal
 vi.mock("@/components/DispatcherPipelinePanel", () => ({ default: () => <div>DispatcherPipelinePanel</div> }));
 vi.mock("@/components/ProgressTracker", () => ({ default: () => <div>ProgressTracker</div> }));
 vi.mock("@/components/FleetStatusBanner", () => ({ default: () => <div>FleetStatusBanner</div> }));
+vi.mock("@/components/FleetHealthCard", () => ({ default: () => <div>FleetHealthCard</div> }));
 vi.mock("@/components/MetricsCard", () => ({ default: () => <div>MetricsCard</div> }));
 vi.mock("@/components/AutoRefreshIndicator", () => ({ default: () => <div>AutoRefreshIndicator</div> }));
 vi.mock("@/components/SectionErrorBoundary", () => ({
@@ -76,7 +77,7 @@ vi.mock("@/components/BottomNav", () => ({ BottomNav: () => <div>BottomNav</div>
 
 import OverviewContent from "@/app/OverviewContent";
 
-const ORDER_LENGTH = 7; // agents, metrics, timeline, heatmap, prs, trends, activity
+const ORDER_LENGTH = 6; // agents, prs, timeline, activity, trends, heatmap
 
 // ── Tests ─────────────────────────────────────────────────────────────────
 

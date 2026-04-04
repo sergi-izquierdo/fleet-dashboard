@@ -35,6 +35,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -267,13 +268,29 @@ export default function OverviewContent() {
   const prevAgentsRef = useRef<Map<string, string>>(new Map());
   const { order, reorder, resetLayout } = useDashboardLayout();
 
-  const refreshAll = useCallback(() => {
-    refresh();
-    refreshPRs();
+  // Ref to track active drag — prevents data refreshes from disrupting DnD state
+  const isDraggingRef = useRef(false);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced refresh: 300ms delay, skips entirely when a drag is active
+  const debouncedRefreshAll = useCallback(() => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    refreshTimerRef.current = setTimeout(() => {
+      if (!isDraggingRef.current) {
+        refresh();
+        refreshPRs();
+      }
+    }, 300);
   }, [refresh, refreshPRs]);
 
-  // SSE: trigger immediate refresh on fleet events (polling stays as fallback)
-  useFleetEvents(refreshAll, {
+  useEffect(() => {
+    return () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    };
+  }, []);
+
+  // SSE: trigger debounced refresh on fleet events (polling stays as fallback)
+  useFleetEvents(debouncedRefreshAll, {
     eventTypes: ["cycle", "agent-started", "agent-completed", "pr-created", "pr-merged"],
   });
   const [activeTab, setActiveTab] = useState<MobileTab>("agents");
@@ -293,8 +310,13 @@ export default function OverviewContent() {
     }),
   );
 
+  const handleDragStart = useCallback((_event: DragStartEvent) => {
+    isDraggingRef.current = true;
+  }, []);
+
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
+      isDraggingRef.current = false;
       const { active, over } = event;
       if (over && active.id !== over.id) {
         const oldIndex = order.indexOf(active.id as SectionId);
@@ -421,6 +443,7 @@ export default function OverviewContent() {
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={order} strategy={verticalListSortingStrategy}>

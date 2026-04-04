@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import ConfigViewer from "@/components/ConfigViewer";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
+import SystemInfoCard from "@/components/SystemInfoCard";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 
 export const metadata: Metadata = {
@@ -18,6 +19,15 @@ export default function SettingsPage() {
         </h2>
         <SectionErrorBoundary sectionName="Dispatcher Config">
           <ConfigViewer />
+        </SectionErrorBoundary>
+      </div>
+
+      <div className="rounded-xl border border-gray-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] p-4">
+        <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-white/70">
+          System Info
+        </h2>
+        <SectionErrorBoundary sectionName="System Info">
+          <SystemInfoCard />
         </SectionErrorBoundary>
       </div>
 

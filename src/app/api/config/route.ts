@@ -3,7 +3,10 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 export interface DispatcherProject {
+  name: string;
   repo: string;
+  path: string;
+  defaultBranch: string;
   url: string;
 }
 
@@ -57,7 +60,10 @@ function transformConfig(raw: RawConfig): DispatcherConfig {
     plannerEnabled: raw.planner?.enabled ?? false,
     reviewBeforeMerge: raw.reviewBeforeMerge ?? false,
     projects: (raw.projects ?? []).map((p) => ({
+      name: p.name,
       repo: p.repo,
+      path: p.path,
+      defaultBranch: p.defaultBranch,
       url: `https://github.com/${p.repo}`,
     })),
     labels: raw.labels

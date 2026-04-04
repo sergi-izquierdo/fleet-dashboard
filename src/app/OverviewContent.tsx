@@ -103,7 +103,7 @@ function Card({
   return (
     <div
       id={id}
-      className={`rounded-xl border border-white/[0.06] hover:border-white/[0.12] bg-white/[0.02] p-4 transition-colors duration-200 ${className}`}
+      className={`rounded-xl border border-gray-200 bg-white dark:border-white/[0.06] dark:hover:border-white/[0.12] dark:bg-white/[0.02] p-4 transition-colors duration-200 ${className}`}
     >
       {children}
     </div>

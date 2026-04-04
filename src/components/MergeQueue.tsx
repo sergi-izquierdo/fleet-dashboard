@@ -131,7 +131,7 @@ export default function MergeQueue({ prs: prsProp }: MergeQueueProps = {}) {
 
   return (
     <div
-      className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4"
+      className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.06] dark:bg-white/[0.02] p-4"
       data-testid="merge-queue"
     >
       {/* Header */}

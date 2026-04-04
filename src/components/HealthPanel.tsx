@@ -69,7 +69,7 @@ export default function HealthPanel() {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-white/5">
+      <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.06] dark:bg-white/[0.02] p-4">
         <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
           Service Health
         </h2>
@@ -84,7 +84,7 @@ export default function HealthPanel() {
 
   if (error && !health) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-white/5">
+      <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.06] dark:bg-white/[0.02] p-4">
         <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
           Service Health
         </h2>
@@ -103,7 +103,7 @@ export default function HealthPanel() {
   const overallStyle = STATUS_STYLES[health.status];
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+    <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.06] dark:bg-white/[0.02] p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Service Health

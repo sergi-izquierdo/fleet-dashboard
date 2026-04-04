@@ -1,7 +1,8 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, useEffect } from "react";
 import { useTokenUsage } from "@/hooks/useTokenUsage";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import type { TimeRange } from "@/types/tokenUsage";
 import EmptyState from "@/components/EmptyState";
 import {
@@ -44,7 +45,18 @@ const getServerSnapshot = () => false;
 
 export default function CostAnalytics() {
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const { data, isLoading, error, range, setRange } = useTokenUsage("7d");
+  const [persistedRange, setPersistedRange] = useLocalStorage<TimeRange>("fleet-cost-range", "7d");
+  const { data, isLoading, error, range, setRange } = useTokenUsage(persistedRange);
+
+  // Sync persisted range into token usage hook after localStorage hydrates
+  useEffect(() => {
+    setRange(persistedRange);
+  }, [persistedRange, setRange]);
+
+  const handleRangeChange = (r: TimeRange) => {
+    setRange(r);
+    setPersistedRange(r);
+  };
 
   if (!mounted) {
     return (
@@ -65,7 +77,7 @@ export default function CostAnalytics() {
         {RANGE_OPTIONS.map((opt) => (
           <button
             key={opt.value}
-            onClick={() => setRange(opt.value)}
+            onClick={() => handleRangeChange(opt.value)}
             data-testid={`range-${opt.value}`}
             className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
               range === opt.value

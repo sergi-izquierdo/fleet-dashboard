@@ -15,6 +15,7 @@ import { FleetNotifications } from "@/components/FleetNotifications";
 import { DispatcherToggle } from "@/components/DispatcherToggle";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { SkipLink } from "@/components/SkipLink";
 
 const ROUTE_TITLES: Record<string, string> = {
@@ -67,7 +68,7 @@ const pageTransition: Transition = {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useLocalStorage("fleet-sidebar-collapsed", false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [createIssueOpen, setCreateIssueOpen] = useState(false);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
@@ -117,7 +118,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="hidden lg:block">
         <Sidebar
           collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed((c) => !c)}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
       </div>
 

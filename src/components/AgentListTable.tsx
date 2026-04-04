@@ -6,6 +6,7 @@ import { Download } from "lucide-react";
 import { AgentDetailModal } from "@/components/AgentDetailModal";
 import { FilterBar } from "@/components/FilterBar";
 import { buildCSV, downloadCSV, todayDateString } from "@/lib/csvExport";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 interface CompletedAgentEntry {
   key: string;
@@ -48,6 +49,22 @@ interface NormalizedAgent {
 
 type SortBy = "startTime" | "duration" | "status";
 type SortDir = "asc" | "desc";
+
+interface AgentFilters {
+  searchQuery: string;
+  statusFilter: string;
+  projectFilter: string;
+  sortBy: SortBy;
+  sortDir: SortDir;
+}
+
+const DEFAULT_FILTERS: AgentFilters = {
+  searchQuery: "",
+  statusFilter: "all",
+  projectFilter: "all",
+  sortBy: "startTime",
+  sortDir: "desc",
+};
 
 const STATUS_STYLES: Record<string, string> = {
   working: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
@@ -241,12 +258,27 @@ export default function AgentListTable() {
   const [error, setError] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
 
-  // Filter state — initialized from URL params
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "");
-  const [projectFilter, setProjectFilter] = useState(searchParams.get("project") ?? "all");
-  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "all");
-  const [sortBy, setSortBy] = useState<SortBy>((searchParams.get("sort") as SortBy) ?? "startTime");
-  const [sortDir, setSortDir] = useState<SortDir>((searchParams.get("dir") as SortDir) ?? "desc");
+  const [persistedFilters, setPersistedFilters] = useLocalStorage<AgentFilters>(
+    "fleet-agent-filters",
+    DEFAULT_FILTERS
+  );
+
+  // Filter state — URL params take precedence over localStorage
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get("q") ?? persistedFilters.searchQuery
+  );
+  const [projectFilter, setProjectFilter] = useState(
+    searchParams.get("project") ?? persistedFilters.projectFilter
+  );
+  const [statusFilter, setStatusFilter] = useState(
+    searchParams.get("status") ?? persistedFilters.statusFilter
+  );
+  const [sortBy, setSortBy] = useState<SortBy>(
+    (searchParams.get("sort") as SortBy) ?? persistedFilters.sortBy
+  );
+  const [sortDir, setSortDir] = useState<SortDir>(
+    (searchParams.get("dir") as SortDir) ?? persistedFilters.sortDir
+  );
 
   const updateUrlParams = useCallback(
     (q: string, project: string, status: string, sort: SortBy, dir: SortDir) => {
@@ -261,43 +293,65 @@ export default function AgentListTable() {
     [router, pathname, searchParams]
   );
 
+  const persistFilters = useCallback(
+    (q: string, project: string, status: string, sort: SortBy, dir: SortDir) => {
+      setPersistedFilters({ searchQuery: q, projectFilter: project, statusFilter: status, sortBy: sort, sortDir: dir });
+    },
+    [setPersistedFilters]
+  );
+
   const handleSearchChange = useCallback(
     (value: string) => {
       setSearchQuery(value);
       updateUrlParams(value, projectFilter, statusFilter, sortBy, sortDir);
+      persistFilters(value, projectFilter, statusFilter, sortBy, sortDir);
     },
-    [updateUrlParams, projectFilter, statusFilter, sortBy, sortDir]
+    [updateUrlParams, persistFilters, projectFilter, statusFilter, sortBy, sortDir]
   );
 
   const handleProjectChange = useCallback(
     (value: string) => {
       setProjectFilter(value);
       updateUrlParams(searchQuery, value, statusFilter, sortBy, sortDir);
+      persistFilters(searchQuery, value, statusFilter, sortBy, sortDir);
     },
-    [updateUrlParams, searchQuery, statusFilter, sortBy, sortDir]
+    [updateUrlParams, persistFilters, searchQuery, statusFilter, sortBy, sortDir]
   );
 
   const handleStatusChange = useCallback(
     (value: string) => {
       setStatusFilter(value);
       updateUrlParams(searchQuery, projectFilter, value, sortBy, sortDir);
+      persistFilters(searchQuery, projectFilter, value, sortBy, sortDir);
     },
-    [updateUrlParams, searchQuery, projectFilter, sortBy, sortDir]
+    [updateUrlParams, persistFilters, searchQuery, projectFilter, sortBy, sortDir]
   );
 
   const handleSortByChange = useCallback(
     (value: SortBy) => {
       setSortBy(value);
       updateUrlParams(searchQuery, projectFilter, statusFilter, value, sortDir);
+      persistFilters(searchQuery, projectFilter, statusFilter, value, sortDir);
     },
-    [updateUrlParams, searchQuery, projectFilter, statusFilter, sortDir]
+    [updateUrlParams, persistFilters, searchQuery, projectFilter, statusFilter, sortDir]
   );
 
   const handleSortDirToggle = useCallback(() => {
     const newDir: SortDir = sortDir === "asc" ? "desc" : "asc";
     setSortDir(newDir);
     updateUrlParams(searchQuery, projectFilter, statusFilter, sortBy, newDir);
-  }, [updateUrlParams, searchQuery, projectFilter, statusFilter, sortBy, sortDir]);
+    persistFilters(searchQuery, projectFilter, statusFilter, sortBy, newDir);
+  }, [updateUrlParams, persistFilters, searchQuery, projectFilter, statusFilter, sortBy, sortDir]);
+
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery(DEFAULT_FILTERS.searchQuery);
+    setProjectFilter(DEFAULT_FILTERS.projectFilter);
+    setStatusFilter(DEFAULT_FILTERS.statusFilter);
+    setSortBy(DEFAULT_FILTERS.sortBy);
+    setSortDir(DEFAULT_FILTERS.sortDir);
+    updateUrlParams("", "all", "all", "startTime", "desc");
+    setPersistedFilters(DEFAULT_FILTERS);
+  }, [updateUrlParams, setPersistedFilters]);
 
   const fetchFleetState = useCallback(async () => {
     try {
@@ -464,7 +518,7 @@ export default function AgentListTable() {
       {activeFilterChips.length > 0 && (
         <div
           data-testid="active-filter-chips"
-          className="mb-3 flex flex-wrap gap-2"
+          className="mb-3 flex flex-wrap items-center gap-2"
         >
           {activeFilterChips.map((chip) => (
             <button
@@ -479,6 +533,13 @@ export default function AgentListTable() {
               </svg>
             </button>
           ))}
+          <button
+            data-testid="clear-filters"
+            onClick={handleClearFilters}
+            className="text-xs text-gray-500 dark:text-white/40 hover:text-gray-700 dark:hover:text-white/60 underline underline-offset-2 transition-colors"
+          >
+            Clear filters
+          </button>
         </div>
       )}
 

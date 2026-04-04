@@ -6,6 +6,27 @@ function Pulse({ className }: { className?: string }) {
   );
 }
 
+export function Skeleton({
+  width,
+  height,
+  className = "",
+}: {
+  width?: string | number;
+  height?: string | number;
+  className?: string;
+}) {
+  const style: React.CSSProperties = {};
+  if (width !== undefined) style.width = typeof width === "number" ? `${width}px` : width;
+  if (height !== undefined) style.height = typeof height === "number" ? `${height}px` : height;
+  return (
+    <div
+      className={`animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-white/10 ${className}`}
+      style={style}
+      data-testid="skeleton"
+    />
+  );
+}
+
 export function LoadingSkeleton() {
   return (
     <div

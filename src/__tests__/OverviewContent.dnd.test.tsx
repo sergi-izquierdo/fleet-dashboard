@@ -71,7 +71,10 @@ vi.mock("@/components/AutoRefreshIndicator", () => ({ default: () => <div>AutoRe
 vi.mock("@/components/SectionErrorBoundary", () => ({
   SectionErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
-vi.mock("@/components/LoadingSkeleton", () => ({ LoadingSkeleton: () => <div>Loading...</div> }));
+vi.mock("@/components/LoadingSkeleton", () => ({
+  LoadingSkeleton: () => <div>Loading...</div>,
+  Skeleton: () => <div data-testid="skeleton" />,
+}));
 vi.mock("@/components/Toast", () => ({ ToastContainer: () => <div />, showToast: vi.fn() }));
 vi.mock("@/components/BottomNav", () => ({ BottomNav: () => <div>BottomNav</div> }));
 

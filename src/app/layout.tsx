@@ -37,7 +37,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
+      <head>
+        <link rel="dns-prefetch" href="//api.github.com" />
+        <link rel="preconnect" href="https://api.github.com" crossOrigin="anonymous" />
+      </head>
       <body className="antialiased">
         <ThemeProvider>
           <DashboardLayout>{children}</DashboardLayout>

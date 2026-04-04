@@ -8,9 +8,11 @@ import FleetActivityTimeline from "@/components/FleetActivityTimeline";
 import FleetActivityHeatmap from "@/components/FleetActivityHeatmap";
 import MergeQueue from "@/components/MergeQueue";
 import RecentPRs from "@/components/RecentPRs";
-import PRTrendChart from "@/components/PRTrendChart";
-import PRVelocityChart from "@/components/PRVelocityChart";
-import TokenUsageDashboard from "@/components/TokenUsageDashboard";
+import {
+  DynamicPRTrendChart as PRTrendChart,
+  DynamicPRVelocityChart as PRVelocityChart,
+  DynamicTokenUsageDashboard as TokenUsageDashboard,
+} from "@/components/DynamicCharts";
 import ServiceHealth from "@/components/ServiceHealth";
 import SystemHealthCard from "@/components/SystemHealthCard";
 import DispatcherPipelinePanel from "@/components/DispatcherPipelinePanel";

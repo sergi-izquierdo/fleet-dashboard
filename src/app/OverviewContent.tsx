@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useMemo, useState, useCallback } from "react";
+import { motion } from "framer-motion";
 import AgentStatusCards from "@/components/AgentStatusCards";
 import ActivityLog from "@/components/ActivityLog";
 import FleetActivityTimeline from "@/components/FleetActivityTimeline";
@@ -73,6 +74,20 @@ function SectionHeader({
   );
 }
 
+const cardVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const staggerContainer = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
 function Card({
   children,
   className = "",
@@ -85,7 +100,7 @@ function Card({
   return (
     <div
       id={id}
-      className={`rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 ${className}`}
+      className={`rounded-xl border border-white/[0.06] hover:border-white/[0.12] bg-white/[0.02] p-4 transition-colors duration-200 ${className}`}
     >
       {children}
     </div>
@@ -132,18 +147,21 @@ function SortableSection({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    willChange: "transform" as const,
   };
 
   return (
-    <div
+    <motion.div
       ref={setNodeRef}
       style={style}
       className="relative group"
       data-section-id={id}
+      variants={cardVariants}
+      transition={{ duration: 0.18, ease: "easeOut" }}
     >
       <DragHandle attributes={attributes} listeners={listeners} />
       {children}
-    </div>
+    </motion.div>
   );
 }
 
@@ -383,7 +401,12 @@ export default function OverviewContent() {
       </div>
 
       {/* Main grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 pb-16 md:pb-0">
+      <motion.div
+        className="grid grid-cols-1 xl:grid-cols-12 gap-5 pb-16 md:pb-0"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+      >
         {/* ── Left column (8 cols) ── */}
         <div className="xl:col-span-8 space-y-5">
           <DndContext
@@ -437,36 +460,47 @@ export default function OverviewContent() {
         </div>
 
         {/* ── Right sidebar (4 cols) — desktop only ── */}
-        <div className="hidden xl:block xl:col-span-4 space-y-5">
+        <motion.div
+          className="hidden xl:block xl:col-span-4 space-y-5"
+          variants={staggerContainer}
+        >
           {/* Dispatcher Pipeline */}
-          <Card>
-            <SectionErrorBoundary sectionName="Dispatcher Pipeline">
-              <DispatcherPipelinePanel />
-            </SectionErrorBoundary>
-          </Card>
+          <motion.div variants={cardVariants} transition={{ duration: 0.18, ease: "easeOut" }}>
+            <Card>
+              <SectionErrorBoundary sectionName="Dispatcher Pipeline">
+                <DispatcherPipelinePanel />
+              </SectionErrorBoundary>
+            </Card>
+          </motion.div>
 
           {/* System Health */}
-          <Card>
-            <SectionHeader icon={Server} title="System Health" />
-            <SectionErrorBoundary sectionName="System Health">
-              <SystemHealthCard />
-            </SectionErrorBoundary>
-          </Card>
+          <motion.div variants={cardVariants} transition={{ duration: 0.18, ease: "easeOut" }}>
+            <Card>
+              <SectionHeader icon={Server} title="System Health" />
+              <SectionErrorBoundary sectionName="System Health">
+                <SystemHealthCard />
+              </SectionErrorBoundary>
+            </Card>
+          </motion.div>
 
           {/* Service Health */}
-          <Card id="section-health">
-            <SectionHeader icon={Server} title="Services" />
-            <SectionErrorBoundary sectionName="Service Health">
-              <ServiceHealth />
-            </SectionErrorBoundary>
-          </Card>
+          <motion.div variants={cardVariants} transition={{ duration: 0.18, ease: "easeOut" }}>
+            <Card id="section-health">
+              <SectionHeader icon={Server} title="Services" />
+              <SectionErrorBoundary sectionName="Service Health">
+                <ServiceHealth />
+              </SectionErrorBoundary>
+            </Card>
+          </motion.div>
 
           {/* Issue Progress */}
-          <SectionErrorBoundary sectionName="Issue Progress">
-            <ProgressTracker />
-          </SectionErrorBoundary>
-        </div>
-      </div>
+          <motion.div variants={cardVariants} transition={{ duration: 0.18, ease: "easeOut" }}>
+            <SectionErrorBoundary sectionName="Issue Progress">
+              <ProgressTracker />
+            </SectionErrorBoundary>
+          </motion.div>
+        </motion.div>
+      </motion.div>
 
       {/* Mobile bottom navigation */}
       <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />

@@ -269,6 +269,50 @@ body {
   overflow-y: auto;
 }
 
+/* ── Micro-animations ── */
+
+/* Button scale on hover/press */
+.btn-animated {
+  transition: transform 0.1s ease, opacity 0.1s ease;
+  will-change: transform;
+}
+.btn-animated:hover {
+  transform: scale(1.02);
+}
+.btn-animated:active {
+  transform: scale(0.98);
+}
+
+/* Status badge pulse on state change */
+@keyframes badge-pulse {
+  0% { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
+  70% { box-shadow: 0 0 0 4px transparent; opacity: 0.8; }
+  100% { box-shadow: 0 0 0 0 transparent; opacity: 1; }
+}
+.badge-pulse {
+  animation: badge-pulse 0.6s ease-out;
+}
+
+/* Sidebar nav link smooth transition */
+.nav-link-animated {
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* ── Prefers reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .btn-animated:hover,
+  .btn-animated:active {
+    transform: none;
+  }
+}
+
 /* Improve scrollbar appearance in dark mode */
 .dark ::-webkit-scrollbar {
   width: 6px;

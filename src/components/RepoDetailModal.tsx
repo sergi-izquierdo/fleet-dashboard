@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import type { RepoDetailData } from "@/types/issues";
+import { Modal } from "@/components/ui/Modal";
 
 interface RepoDetailModalProps {
   repo: string;
@@ -46,18 +47,6 @@ export function RepoDetailModal({ repo, onClose }: RepoDetailModalProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    },
-    [onClose]
-  );
-
-  useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
-
   useEffect(() => {
     async function fetchDetails() {
       try {
@@ -83,9 +72,8 @@ export function RepoDetailModal({ repo, onClose }: RepoDetailModalProps) {
   const repoShort = repo.split("/").pop() ?? repo;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={onClose}
+    <Modal
+      onClose={onClose}
       data-testid="repo-detail-modal"
     >
       <div
@@ -291,6 +279,6 @@ export function RepoDetailModal({ repo, onClose }: RepoDetailModalProps) {
           </div>
         ) : null}
       </div>
-    </div>
+    </Modal>
   );
 }

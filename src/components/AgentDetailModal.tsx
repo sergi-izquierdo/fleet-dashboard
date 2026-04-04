@@ -6,6 +6,7 @@ import type { Agent, PR } from "@/types/dashboard";
 import { AgentLifecycleTimeline } from "@/components/AgentLifecycleTimeline";
 import { AgentLogViewer } from "@/components/AgentLogViewer";
 import { AgentTerminalView } from "@/components/AgentTerminalView";
+import { Modal } from "@/components/ui/Modal";
 
 type ModalTab = "details" | "terminal";
 
@@ -131,18 +132,6 @@ export function AgentDetailModal({
     }
   }
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") handleClose();
-    },
-    [handleClose]
-  );
-
-  useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
-
   useEffect(() => {
     async function fetchAgentData() {
       try {
@@ -183,13 +172,9 @@ export function AgentDetailModal({
   return (
     <AnimatePresence onExitComplete={onClose}>
       {isVisible && (
-    <motion.div
+    <Modal
+      onClose={handleClose}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      onClick={handleClose}
       data-testid="agent-detail-modal"
     >
       <motion.div
@@ -470,7 +455,7 @@ export function AgentDetailModal({
           </div>
         ) : null}
       </motion.div>
-    </motion.div>
+    </Modal>
       )}
     </AnimatePresence>
   );

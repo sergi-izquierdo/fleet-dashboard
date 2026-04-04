@@ -12,17 +12,37 @@ const mockConfig = {
   plannerEnabled: true,
   reviewBeforeMerge: false,
   projects: [
-    { repo: "org/repo-one", url: "https://github.com/org/repo-one" },
-    { repo: "org/repo-two", url: "https://github.com/org/repo-two" },
+    {
+      name: "Repo One",
+      repo: "org/repo-one",
+      path: "/home/user/repo-one",
+      defaultBranch: "main",
+      url: "https://github.com/org/repo-one",
+    },
+    {
+      name: "Repo Two",
+      repo: "org/repo-two",
+      path: "/home/user/repo-two",
+      defaultBranch: "master",
+      url: "https://github.com/org/repo-two",
+    },
   ],
 };
 
+const mockRepos = { repos: ["org/repo-one"] };
+
+function mockFetch(config = mockConfig, repos = mockRepos) {
+  global.fetch = vi.fn().mockImplementation((url: string) => {
+    if (url === "/api/repos") {
+      return Promise.resolve({ ok: true, json: async () => repos });
+    }
+    return Promise.resolve({ ok: true, json: async () => config });
+  });
+}
+
 describe("ConfigViewer", () => {
   beforeEach(() => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockConfig,
-    });
+    mockFetch();
   });
 
   afterEach(() => {
@@ -60,6 +80,19 @@ describe("ConfigViewer", () => {
     expect(screen.getByText("7d")).toBeInTheDocument();
   });
 
+  it("displays setting descriptions", async () => {
+    render(<ConfigViewer />);
+    await waitFor(() => {
+      expect(screen.getByText("Max Concurrent Agents")).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText("Maximum number of agents running across all projects at once")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("How often the dispatcher checks for new issues to process")
+    ).toBeInTheDocument();
+  });
+
   it("displays feature flags with correct badge states", async () => {
     render(<ConfigViewer />);
     await waitFor(() => {
@@ -82,6 +115,30 @@ describe("ConfigViewer", () => {
     expect(links).toHaveLength(2);
     expect(links[0]).toHaveAttribute("href", "https://github.com/org/repo-one");
     expect(links[1]).toHaveAttribute("href", "https://github.com/org/repo-two");
+  });
+
+  it("shows project names and branch info", async () => {
+    render(<ConfigViewer />);
+    await waitFor(() => {
+      expect(screen.getByText("Repo One")).toBeInTheDocument();
+    });
+    expect(screen.getByText("main")).toBeInTheDocument();
+    expect(screen.getByText("master")).toBeInTheDocument();
+  });
+
+  it("marks accessible projects with green badge", async () => {
+    render(<ConfigViewer />);
+    await waitFor(() => {
+      expect(screen.getByTestId("projects-section")).toBeInTheDocument();
+    });
+    // org/repo-one is in mockRepos, so it should be Accessible
+    expect(screen.getByTestId("project-status-org/repo-one")).toHaveTextContent(
+      "Accessible"
+    );
+    // org/repo-two is NOT in mockRepos, so it should be Inaccessible
+    expect(screen.getByTestId("project-status-org/repo-two")).toHaveTextContent(
+      "Inaccessible"
+    );
   });
 
   it("shows error when fetch fails", async () => {

@@ -12,8 +12,20 @@ const mockConfig = {
   plannerEnabled: true,
   reviewBeforeMerge: false,
   projects: [
-    { repo: "org/repo-one", url: "https://github.com/org/repo-one" },
-    { repo: "org/repo-two", url: "https://github.com/org/repo-two" },
+    {
+      name: "Repo One",
+      repo: "org/repo-one",
+      path: "/home/user/repo-one",
+      defaultBranch: "main",
+      url: "https://github.com/org/repo-one",
+    },
+    {
+      name: "Repo Two",
+      repo: "org/repo-two",
+      path: "/home/user/repo-two",
+      defaultBranch: "master",
+      url: "https://github.com/org/repo-two",
+    },
   ],
   labels: [
     { name: "bug", color: "#d73a4a" },
@@ -29,9 +41,14 @@ const mockConfig = {
 
 describe("Settings page — fleet config viewer", () => {
   beforeEach(() => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockConfig,
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/repos") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ repos: ["org/repo-one"] }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => mockConfig });
     });
   });
 

@@ -3,7 +3,9 @@
 import { Clock } from "lucide-react";
 import { useDispatcherStatus } from "@/hooks/useDispatcherStatus";
 import { useStatsTrends } from "@/hooks/useStatsTrends";
+import { useStatsComparison } from "@/hooks/useStatsComparison";
 import { Sparkline } from "@/components/ui/Sparkline";
+import TrendIndicator from "@/components/TrendIndicator";
 import type { Agent, PR } from "@/types/dashboard";
 
 export function formatUptime(startedAt: string): string {
@@ -37,6 +39,7 @@ function RateLimitGauge({ remaining }: { remaining: number }) {
 export default function FleetStatusBanner({ agents, prs }: FleetStatusBannerProps) {
   const { data, connectionStatus, countdown } = useDispatcherStatus();
   const trends = useStatsTrends();
+  const comparison = useStatsComparison("7d");
 
   const isOnline = connectionStatus === "connected" && !data?.offline;
   const uptimeText = data?.cycle?.startedAt ? formatUptime(data.cycle.startedAt) : "";
@@ -83,33 +86,61 @@ export default function FleetStatusBanner({ agents, prs }: FleetStatusBannerProp
       <div className="hidden sm:block sm:flex-1" />
 
       {/* Stats */}
-      <div className="flex items-center gap-1.5 text-xs">
-        <span className="text-gray-500 dark:text-white/50">Active:</span>
-        <span className="font-semibold text-blue-600 dark:text-blue-400">{activeAgents}</span>
-        <Sparkline
-          data={trends?.agents24h ?? []}
-          width={80}
-          height={24}
-          color="#3b82f6"
-        />
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="text-gray-500 dark:text-white/50">Active:</span>
+          <span className="font-semibold text-blue-600 dark:text-blue-400">{activeAgents}</span>
+          <Sparkline
+            data={trends?.agents24h ?? []}
+            width={80}
+            height={24}
+            color="#3b82f6"
+          />
+        </div>
+        {comparison && (
+          <TrendIndicator
+            current={comparison.current.sessions}
+            previous={comparison.previous.sessions}
+            periodLabel="last week"
+          />
+        )}
       </div>
-      <div className="flex items-center gap-1.5 text-xs">
-        <span className="text-gray-500 dark:text-white/50">PRs:</span>
-        <span className="font-semibold text-yellow-600 dark:text-yellow-400">{openPRs}</span>
-        <Sparkline
-          data={trends?.prsMerged7d ?? []}
-          width={80}
-          height={24}
-          color="#eab308"
-        />
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="text-gray-500 dark:text-white/50">PRs:</span>
+          <span className="font-semibold text-yellow-600 dark:text-yellow-400">{openPRs}</span>
+          <Sparkline
+            data={trends?.prsMerged7d ?? []}
+            width={80}
+            height={24}
+            color="#eab308"
+          />
+        </div>
+        {comparison && (
+          <TrendIndicator
+            current={comparison.current.merged}
+            previous={comparison.previous.merged}
+            periodLabel="last week"
+          />
+        )}
       </div>
-      <div className="flex items-center gap-1 text-xs">
-        <span className="text-gray-500 dark:text-white/50">CI Fail:</span>
-        <span
-          className={`font-semibold ${ciFailingCount > 0 ? "text-red-600 dark:text-red-400" : "text-gray-700 dark:text-white/80"}`}
-        >
-          {ciFailingCount}
-        </span>
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-1 text-xs">
+          <span className="text-gray-500 dark:text-white/50">CI Fail:</span>
+          <span
+            className={`font-semibold ${ciFailingCount > 0 ? "text-red-600 dark:text-red-400" : "text-gray-700 dark:text-white/80"}`}
+          >
+            {ciFailingCount}
+          </span>
+        </div>
+        {comparison && (
+          <TrendIndicator
+            current={comparison.current.failed}
+            previous={comparison.previous.failed}
+            invertColor
+            periodLabel="last week"
+          />
+        )}
       </div>
     </div>
   );

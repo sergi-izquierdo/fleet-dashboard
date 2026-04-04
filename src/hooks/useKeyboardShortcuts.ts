@@ -7,6 +7,7 @@ export interface KeyboardShortcutHandlers {
   onCreateIssue: () => void;
   onShowHelp: () => void;
   onCloseModal: () => void;
+  onToggleDispatcher: () => void;
 }
 
 export const NAVIGATION_SHORTCUTS: Record<string, string> = {
@@ -44,6 +45,13 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
       if (e.key === "Escape") {
         clearPending();
         handlers.onCloseModal();
+        return;
+      }
+
+      // Ctrl+Shift+P — toggle dispatcher (works even in inputs)
+      if (e.ctrlKey && e.shiftKey && e.key === "P") {
+        e.preventDefault();
+        handlers.onToggleDispatcher();
         return;
       }
 

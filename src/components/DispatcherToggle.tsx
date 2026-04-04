@@ -91,7 +91,7 @@ export function DispatcherToggle() {
           aria-label="Dispatcher running — click to pause"
           title="Dispatcher running — click to pause"
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+          <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
           <span className="hidden sm:inline">Running</span>
         </button>
       )}

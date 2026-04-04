@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { Menu, Plus } from "lucide-react";
+import { AnimatePresence, motion, type Transition } from "framer-motion";
 import { Sidebar, MobileSidebar } from "./Sidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationCenter } from "@/components/NotificationCenter";
@@ -18,7 +20,19 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+const pageVariants = {
+  initial: { opacity: 0, y: 6 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -4 },
+};
+
+const pageTransition: Transition = {
+  duration: 0.15,
+  ease: "easeOut",
+};
+
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [createIssueOpen, setCreateIssueOpen] = useState(false);
@@ -84,7 +98,21 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Page content */}
-        <main className="overflow-x-hidden p-4 lg:p-6">{children}</main>
+        <main className="overflow-x-hidden p-4 lg:p-6">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={pathname}
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={pageTransition}
+              style={{ willChange: "transform, opacity" }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </main>
       </div>
 
       <CreateIssueDialog

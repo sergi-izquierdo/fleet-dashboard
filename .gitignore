@@ -26,3 +26,7 @@ npm-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# worktrees (prevent stale worktree test files from polluting Jest/Vitest discovery)
+.worktrees/
+.claude/worktrees/

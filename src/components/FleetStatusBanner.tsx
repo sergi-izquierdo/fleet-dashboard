@@ -2,6 +2,8 @@
 
 import { Clock } from "lucide-react";
 import { useDispatcherStatus } from "@/hooks/useDispatcherStatus";
+import { useStatsTrends } from "@/hooks/useStatsTrends";
+import { Sparkline } from "@/components/ui/Sparkline";
 import type { Agent, PR } from "@/types/dashboard";
 
 export function formatUptime(startedAt: string): string {
@@ -34,6 +36,7 @@ function RateLimitGauge({ remaining }: { remaining: number }) {
 
 export default function FleetStatusBanner({ agents, prs }: FleetStatusBannerProps) {
   const { data, connectionStatus, countdown } = useDispatcherStatus();
+  const trends = useStatsTrends();
 
   const isOnline = connectionStatus === "connected" && !data?.offline;
   const uptimeText = data?.cycle?.startedAt ? formatUptime(data.cycle.startedAt) : "";
@@ -80,13 +83,25 @@ export default function FleetStatusBanner({ agents, prs }: FleetStatusBannerProp
       <div className="hidden sm:block sm:flex-1" />
 
       {/* Stats */}
-      <div className="flex items-center gap-1 text-xs">
+      <div className="flex items-center gap-1.5 text-xs">
         <span className="text-gray-500 dark:text-white/50">Active:</span>
         <span className="font-semibold text-blue-600 dark:text-blue-400">{activeAgents}</span>
+        <Sparkline
+          data={trends?.agents24h ?? []}
+          width={80}
+          height={24}
+          color="#3b82f6"
+        />
       </div>
-      <div className="flex items-center gap-1 text-xs">
+      <div className="flex items-center gap-1.5 text-xs">
         <span className="text-gray-500 dark:text-white/50">PRs:</span>
         <span className="font-semibold text-yellow-600 dark:text-yellow-400">{openPRs}</span>
+        <Sparkline
+          data={trends?.prsMerged7d ?? []}
+          width={80}
+          height={24}
+          color="#eab308"
+        />
       </div>
       <div className="flex items-center gap-1 text-xs">
         <span className="text-gray-500 dark:text-white/50">CI Fail:</span>

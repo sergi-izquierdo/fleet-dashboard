@@ -363,3 +363,33 @@ describe("MergeQueue", () => {
     expect(screen.queryByTestId("conflict-count")).not.toBeInTheDocument();
   });
 });
+
+describe("MergeQueue with prs prop", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("renders items from prop without fetching", () => {
+    const fetchMock = vi.fn();
+    global.fetch = fetchMock;
+    render(<MergeQueue prs={mockPRs} />);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getAllByTestId("merge-queue-item")).toHaveLength(3);
+  });
+
+  it("does not show loading state when prs prop is provided", () => {
+    render(<MergeQueue prs={mockPRs} />);
+    expect(screen.queryByTestId("merge-queue-loading")).not.toBeInTheDocument();
+  });
+
+  it("shows empty state when prs prop is empty array after filtering", () => {
+    render(<MergeQueue prs={[]} />);
+    expect(screen.getByTestId("merge-queue-empty")).toBeInTheDocument();
+  });
+
+  it("groups PRs by repo from prop data", () => {
+    render(<MergeQueue prs={mockPRs} />);
+    const groups = screen.getAllByTestId("repo-group");
+    expect(groups).toHaveLength(2);
+  });
+});

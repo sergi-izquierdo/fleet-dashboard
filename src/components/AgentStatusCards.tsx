@@ -158,7 +158,7 @@ export default function AgentStatusCards() {
   }
 
   return (
-    <section aria-label="Agent sessions" className="animate-fade-in">
+    <section aria-label="Agent sessions" aria-live="polite" aria-relevant="additions removals" className="animate-fade-in">
       <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
         Agent Sessions
       </h2>

@@ -15,6 +15,7 @@ import { FleetNotifications } from "@/components/FleetNotifications";
 import { DispatcherToggle } from "@/components/DispatcherToggle";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { SkipLink } from "@/components/SkipLink";
 
 const ROUTE_TITLES: Record<string, string> = {
   "/": "Overview",
@@ -41,7 +42,7 @@ function PageTitle({ pathname }: { pathname: string }) {
   const title = getPageTitle(pathname);
   return (
     <span
-      className="text-sm font-medium text-gray-400 dark:text-white/30"
+      className="text-sm font-medium text-gray-500 dark:text-white/50"
       data-testid="page-title"
     >
       {title}
@@ -111,6 +112,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-[#0a0b0f] text-gray-900 dark:text-white">
+      <SkipLink />
       {/* Desktop sidebar */}
       <div className="hidden lg:block">
         <Sidebar
@@ -132,10 +134,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         }`}
       >
         {/* Top bar — mobile hamburger + quick actions */}
-        <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-[#0a0b0f]/80 px-4 backdrop-blur-md">
+        <header role="banner" className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-[#0a0b0f]/80 px-4 backdrop-blur-md">
           <button
             onClick={() => setMobileMenuOpen(true)}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 dark:text-white/40 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-700 dark:hover:text-white/60 lg:hidden"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-gray-600 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-800 dark:hover:text-white/80 lg:hidden"
             aria-label="Open menu"
           >
             <Menu className="h-4.5 w-4.5" />
@@ -160,7 +162,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Page content */}
-        <main className="overflow-x-hidden p-4 lg:p-6">
+        <main id="main-content" role="main" className="overflow-x-hidden p-4 lg:p-6">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={pathname}

@@ -106,6 +106,15 @@ describe("AgentStatusCards", () => {
     expect(screen.getByText("Network error")).toBeInTheDocument();
   });
 
+  it("shows retry button in error state", async () => {
+    mockFetchError("Network error");
+    render(<AgentStatusCards />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("sessions-retry")).toBeInTheDocument();
+    });
+  });
+
   it("shows empty state when no sessions", async () => {
     mockFetchSuccess({ sessions: [] });
     render(<AgentStatusCards />);

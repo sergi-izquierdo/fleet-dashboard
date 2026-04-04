@@ -77,7 +77,7 @@ describe("FleetActivityHeatmap", () => {
     });
   });
 
-  it("handles fetch error gracefully by showing empty state", async () => {
+  it("handles fetch error gracefully by showing error state", async () => {
     (global.fetch as MockFetch).mockResolvedValueOnce({
       json: async () => {
         throw new Error("parse error");
@@ -85,7 +85,23 @@ describe("FleetActivityHeatmap", () => {
     });
     render(<FleetActivityHeatmap />);
     await waitFor(() => {
-      expect(screen.getByTestId("heatmap-empty")).toBeInTheDocument();
+      expect(screen.getByTestId("heatmap-error")).toBeInTheDocument();
+    });
+  });
+
+  it("shows retry button on error", async () => {
+    (global.fetch as MockFetch)
+      .mockResolvedValueOnce({
+        json: async () => {
+          throw new Error("network error");
+        },
+      })
+      .mockResolvedValueOnce({
+        json: async () => ({ days: [] }),
+      });
+    render(<FleetActivityHeatmap />);
+    await waitFor(() => {
+      expect(screen.getByTestId("heatmap-retry")).toBeInTheDocument();
     });
   });
 });

@@ -252,12 +252,11 @@ export function AgentDetailModal({
           </div>
         ) : isLoading ? (
           <div data-testid="agent-detail-loading" className="space-y-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-10 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-800"
-              />
-            ))}
+            <div className="h-6 w-3/4 animate-shimmer rounded bg-gray-200 dark:bg-gray-800" />
+            <div className="h-10 animate-shimmer rounded-lg bg-gray-200 dark:bg-gray-800" />
+            <div className="h-10 animate-shimmer rounded-lg bg-gray-200 dark:bg-gray-800" />
+            <div className="h-10 animate-shimmer rounded-lg bg-gray-200 dark:bg-gray-800" />
+            <div className="h-16 animate-shimmer rounded-lg bg-gray-200 dark:bg-gray-800" />
           </div>
         ) : error ? (
           <div

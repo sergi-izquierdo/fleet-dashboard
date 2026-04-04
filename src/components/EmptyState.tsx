@@ -4,6 +4,7 @@ interface EmptyStateProps {
   icon?: ReactNode;
   title: string;
   description: string | ReactNode;
+  action?: ReactNode;
 }
 
 function DefaultIcon() {
@@ -25,7 +26,7 @@ function DefaultIcon() {
   );
 }
 
-export default function EmptyState({ icon, title, description }: EmptyStateProps) {
+export default function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
     <div
       data-testid="empty-state"
@@ -36,6 +37,7 @@ export default function EmptyState({ icon, title, description }: EmptyStateProps
       </div>
       <p className="text-sm font-medium text-gray-900 dark:text-white">{title}</p>
       <p className="mt-1 text-xs text-gray-500 dark:text-white/50">{description}</p>
+      {action && <div className="mt-4">{action}</div>}
     </div>
   );
 }

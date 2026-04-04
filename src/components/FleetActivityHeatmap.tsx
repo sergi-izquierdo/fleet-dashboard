@@ -105,17 +105,37 @@ export default function FleetActivityHeatmap() {
   const isDark = resolvedTheme === "dark";
   const [days, setDays] = useState<HeatmapDay[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
+  const [fetchKey, setFetchKey] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
     fetch("/api/activity/heatmap")
       .then((r) => r.json())
       .then((data: { days: HeatmapDay[] }) => {
-        setDays(data.days ?? []);
-        setLoading(false);
+        if (!cancelled) {
+          setDays(data.days ?? []);
+          setError(null);
+          setLoading(false);
+        }
       })
-      .catch(() => setLoading(false));
-  }, []);
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load activity data");
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchKey]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    setFetchKey((k) => k + 1);
+  };
 
   const weeks = groupIntoWeeks(days);
   const monthLabels = getMonthLabels(weeks);
@@ -131,8 +151,27 @@ export default function FleetActivityHeatmap() {
     return (
       <div
         data-testid="heatmap-loading"
-        className="animate-pulse h-32 rounded bg-white/[0.04]"
+        className="animate-shimmer h-32 rounded bg-white/[0.04]"
       />
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        data-testid="heatmap-error"
+        className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-4 text-sm text-red-500 dark:text-red-400"
+        role="alert"
+      >
+        <p>{error}</p>
+        <button
+          onClick={handleRetry}
+          data-testid="heatmap-retry"
+          className="mt-2 text-xs underline hover:no-underline"
+        >
+          Retry
+        </button>
+      </div>
     );
   }
 

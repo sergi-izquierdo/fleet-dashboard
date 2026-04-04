@@ -107,7 +107,7 @@ describe("PRTrendChart", () => {
     });
   });
 
-  it("handles empty trends array", async () => {
+  it("shows empty state when no trends data", async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
       json: async () => [],
@@ -116,7 +116,20 @@ describe("PRTrendChart", () => {
     render(<PRTrendChart />);
 
     await waitFor(() => {
-      expect(screen.getByTestId("pr-trend-chart-container")).toBeInTheDocument();
+      expect(screen.getByTestId("pr-trend-empty")).toBeInTheDocument();
+    });
+    expect(screen.getByText("No PRs in this period")).toBeInTheDocument();
+  });
+
+  it("shows retry button on error", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ ok: false, status: 500 })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] });
+
+    render(<PRTrendChart />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("pr-trend-retry")).toBeInTheDocument();
     });
   });
 

@@ -121,7 +121,14 @@ export default function AgentStatusCards() {
           className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-6 text-center text-sm text-red-500 dark:text-red-400"
           role="alert"
         >
-          {error}
+          <p>{error}</p>
+          <button
+            onClick={fetchSessions}
+            data-testid="sessions-retry"
+            className="mt-3 rounded-lg border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-500 dark:text-red-400 hover:bg-red-500/10 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </section>
     );

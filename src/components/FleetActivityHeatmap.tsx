@@ -230,7 +230,7 @@ export default function FleetActivityHeatmap() {
       {tooltip && (
         <div
           role="tooltip"
-          className="absolute z-10 rounded border border-white/10 bg-gray-900 px-2 py-1.5 text-xs text-white shadow-lg pointer-events-none"
+          className="absolute z-10 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 px-2 py-1.5 text-xs text-gray-900 dark:text-white shadow-lg pointer-events-none"
           style={{
             left: tooltip.x,
             top: tooltip.y - 60,
@@ -238,7 +238,7 @@ export default function FleetActivityHeatmap() {
           }}
         >
           <div className="font-medium">{formatDate(tooltip.day.date)}</div>
-          <div className="text-white/60 mt-0.5">
+          <div className="text-gray-500 dark:text-white/60 mt-0.5">
             {tooltip.day.count} event{tooltip.day.count !== 1 ? "s" : ""}
             {tooltip.day.prs > 0 && ` · ${tooltip.day.prs} PR${tooltip.day.prs !== 1 ? "s" : ""}`}
             {tooltip.day.agents > 0 &&
@@ -248,7 +248,7 @@ export default function FleetActivityHeatmap() {
       )}
 
       {/* Legend */}
-      <div className="mt-2 flex items-center gap-2 text-xs text-white/40">
+      <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-white/40">
         <span>Less</span>
         {[0, 1, 3, 6].map((n) => (
           <svg key={n} width={CELL_SIZE} height={CELL_SIZE}>

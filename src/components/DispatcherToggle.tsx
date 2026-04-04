@@ -103,20 +103,20 @@ export function DispatcherToggle() {
           aria-modal="true"
           aria-labelledby="pause-dialog-title"
         >
-          <div className="mx-4 w-full max-w-sm rounded-xl border border-white/[0.08] bg-[#12131a] p-6 shadow-2xl">
+          <div className="mx-4 w-full max-w-sm rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-gray-900 p-6 shadow-2xl">
             <h2
               id="pause-dialog-title"
-              className="text-sm font-semibold text-white/90"
+              className="text-sm font-semibold text-gray-900 dark:text-white/90"
             >
               Pause Dispatcher?
             </h2>
-            <p className="mt-2 text-xs text-white/50">
+            <p className="mt-2 text-xs text-gray-500 dark:text-white/50">
               Agents in progress will finish, but no new agents will spawn.
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button
                 onClick={() => setConfirmOpen(false)}
-                className="rounded-md border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-xs text-white/60 hover:bg-white/[0.08] transition-colors"
+                className="rounded-md border border-gray-200 dark:border-white/[0.08] bg-gray-50 dark:bg-white/[0.04] px-3 py-1.5 text-xs text-gray-600 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors"
               >
                 Cancel
               </button>

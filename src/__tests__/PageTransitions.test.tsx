@@ -4,6 +4,15 @@ import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 // Mock next/navigation before importing the component
 vi.mock("next/navigation", () => ({
   usePathname: vi.fn(() => "/"),
+  useRouter: vi.fn(() => ({ push: vi.fn() })),
+}));
+
+vi.mock("next-themes", () => ({
+  useTheme: vi.fn(() => ({ theme: "dark", setTheme: vi.fn() })),
+}));
+
+vi.mock("@/hooks/useDashboardData", () => ({
+  useDashboardData: vi.fn(() => ({ data: null, isLoading: false, error: null, connectionStatus: "disconnected", countdown: 30, refresh: vi.fn() })),
 }));
 
 // Mock framer-motion to avoid animation issues in tests

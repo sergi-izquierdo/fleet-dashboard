@@ -32,6 +32,7 @@ describe("useKeyboardShortcuts", () => {
       onCreateIssue: vi.fn(),
       onShowHelp: vi.fn(),
       onCloseModal: vi.fn(),
+      onToggleDispatcher: vi.fn(),
     };
   }
 
@@ -165,6 +166,33 @@ describe("useKeyboardShortcuts", () => {
     fireKey("n", {}, select);
     expect(handlers.onCreateIssue).not.toHaveBeenCalled();
     document.body.removeChild(select);
+    unmount();
+  });
+
+  it("calls onToggleDispatcher when pressing Ctrl+Shift+P", () => {
+    const handlers = makeHandlers();
+    const { unmount } = renderHook(() => useKeyboardShortcuts(handlers));
+    fireKey("P", { ctrlKey: true, shiftKey: true });
+    expect(handlers.onToggleDispatcher).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  it("calls onToggleDispatcher on Ctrl+Shift+P even when focused on input", () => {
+    const handlers = makeHandlers();
+    const { unmount } = renderHook(() => useKeyboardShortcuts(handlers));
+    const input = document.createElement("input");
+    document.body.appendChild(input);
+    fireKey("P", { ctrlKey: true, shiftKey: true }, input);
+    expect(handlers.onToggleDispatcher).toHaveBeenCalledTimes(1);
+    document.body.removeChild(input);
+    unmount();
+  });
+
+  it("does not call onToggleDispatcher for Shift+P without Ctrl", () => {
+    const handlers = makeHandlers();
+    const { unmount } = renderHook(() => useKeyboardShortcuts(handlers));
+    fireKey("P", { shiftKey: true });
+    expect(handlers.onToggleDispatcher).not.toHaveBeenCalled();
     unmount();
   });
 

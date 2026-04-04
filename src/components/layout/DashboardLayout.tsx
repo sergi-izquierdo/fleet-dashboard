@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, Plus } from "lucide-react";
 import { AnimatePresence, motion, type Transition } from "framer-motion";
@@ -10,7 +10,7 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 import { CommandPalette, buildCommandItems } from "@/components/CommandPalette";
 import { CreateIssueDialog } from "@/components/CreateIssueDialog";
-import { ToastContainer } from "@/components/Toast";
+import { ToastContainer, showToast } from "@/components/Toast";
 import { FleetNotifications } from "@/components/FleetNotifications";
 import { DispatcherToggle } from "@/components/DispatcherToggle";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
@@ -37,6 +37,32 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [createIssueOpen, setCreateIssueOpen] = useState(false);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
+  const dispatcherPausedRef = useRef(false);
+
+  useEffect(() => {
+    fetch("/api/dispatcher/status")
+      .then((r) => r.json())
+      .then((d: { paused: boolean }) => {
+        dispatcherPausedRef.current = d.paused;
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleToggleDispatcher = useCallback(async () => {
+    const wasPaused = dispatcherPausedRef.current;
+    const endpoint = wasPaused ? "resume" : "pause";
+    try {
+      const res = await fetch(`/api/dispatcher/${endpoint}`, { method: "POST" });
+      if (!res.ok) throw new Error("Toggle failed");
+      dispatcherPausedRef.current = !wasPaused;
+      showToast({
+        type: "success",
+        title: wasPaused ? "Dispatcher resumed" : "Dispatcher paused",
+      });
+    } catch {
+      showToast({ type: "error", title: "Failed to toggle dispatcher" });
+    }
+  }, []);
 
   const handleCloseModal = useCallback(() => {
     setCreateIssueOpen(false);
@@ -47,6 +73,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     onCreateIssue: () => setCreateIssueOpen(true),
     onShowHelp: () => setShortcutsHelpOpen(true),
     onCloseModal: handleCloseModal,
+    onToggleDispatcher: () => { void handleToggleDispatcher(); },
   });
 
   return (

@@ -5,7 +5,7 @@ import { Modal } from "@/components/ui/Modal";
 
 interface ShortcutGroup {
   label: string;
-  shortcuts: { keys: string[]; description: string }[];
+  shortcuts: { keys: string[]; description: string; separator?: string }[];
 }
 
 const SHORTCUT_GROUPS: ShortcutGroup[] = [
@@ -26,6 +26,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: ["n"], description: "New Issue" },
       { keys: ["?"], description: "Show keyboard shortcuts" },
       { keys: ["Esc"], description: "Close modal / dialog" },
+      { keys: ["Ctrl", "Shift", "P"], description: "Toggle Dispatcher pause/resume", separator: "+" },
     ],
   },
 ];
@@ -86,7 +87,7 @@ export function KeyboardShortcutsModal({
                             {key}
                           </kbd>
                           {i < shortcut.keys.length - 1 && (
-                            <span className="text-xs text-gray-400 dark:text-white/20">then</span>
+                            <span className="text-xs text-gray-400 dark:text-white/20">{shortcut.separator ?? "then"}</span>
                           )}
                         </span>
                       ))}

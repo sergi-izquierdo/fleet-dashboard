@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import OverviewContent from "./OverviewContent";
 
 export const metadata: Metadata = {
-  title: "Overview",
+  title: { absolute: "Fleet Dashboard" },
 };
 
 export default function OverviewPage() {

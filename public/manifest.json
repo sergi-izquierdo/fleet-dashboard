@@ -1,7 +1,7 @@
 {
-  "name": "Agent Fleet Dashboard",
+  "name": "Fleet Dashboard",
   "short_name": "Fleet",
-  "description": "Real-time agent fleet monitoring dashboard",
+  "description": "AI agent fleet monitoring dashboard",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",

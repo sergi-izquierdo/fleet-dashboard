@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
 import type { RecentPR } from "@/types/prs";
 import { timeAgo } from "@/components/RecentPRs";
-
-const REFRESH_INTERVAL_MS = 30_000;
+import { usePRsData } from "@/hooks/usePRsData";
 
 const ciStatusConfig: Record<
   RecentPR["ciStatus"],
@@ -57,38 +56,16 @@ interface MergeQueueProps {
 }
 
 export default function MergeQueue({ prs: prsProp }: MergeQueueProps = {}) {
-  const [fetchedPrs, setFetchedPrs] = useState<RecentPR[]>([]);
-  const [isLoading, setIsLoading] = useState(prsProp === undefined);
-  const [error, setError] = useState<string | null>(null);
+  const { prs: hookPrs, isLoading: hookLoading, error: hookError } = usePRsData();
+
+  // When parent provides data via props, use that; otherwise use the shared hook.
+  const prs = prsProp ?? hookPrs;
+  const isLoading = prsProp !== undefined ? false : hookLoading;
+  const error = prsProp !== undefined ? null : hookError;
 
   const [filterRepo, setFilterRepo] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("open");
   const [filterAuthor, setFilterAuthor] = useState<string>("all");
-
-  const fetchPRs = useCallback(async () => {
-    try {
-      const response = await fetch("/api/prs");
-      if (!response.ok) {
-        throw new Error(`Failed to fetch PRs: ${response.status}`);
-      }
-      const data = await response.json();
-      setFetchedPrs(Array.isArray(data) ? data : []);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load PRs");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (prsProp !== undefined) return;
-    fetchPRs();
-    const interval = setInterval(fetchPRs, REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fetchPRs, prsProp]);
-
-  const prs = prsProp ?? fetchedPrs;
 
   const repos = useMemo(
     () => [...new Set(prs.map((pr) => pr.repo))].sort(),

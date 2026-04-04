@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
+import * as apiCache from "@/lib/apiCache";
 import MergeQueue from "@/components/MergeQueue";
 import type { RecentPR } from "@/types/prs";
 
@@ -67,6 +68,7 @@ function mockFetchSuccess(data: RecentPR[] = mockPRs) {
 
 describe("MergeQueue", () => {
   beforeEach(() => {
+    apiCache.clear();
     global.fetch = vi.fn();
   });
 
@@ -365,15 +367,20 @@ describe("MergeQueue", () => {
 });
 
 describe("MergeQueue with prs prop", () => {
-  afterEach(() => {
-    cleanup();
+  beforeEach(() => {
+    apiCache.clear();
+    // Provide a default fetch mock so the background hook call doesn't error
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => [] });
   });
 
-  it("renders items from prop without fetching", () => {
-    const fetchMock = vi.fn();
-    global.fetch = fetchMock;
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("renders items from prop and uses prop data", async () => {
     render(<MergeQueue prs={mockPRs} />);
-    expect(fetchMock).not.toHaveBeenCalled();
+    // Prop data is shown immediately without waiting for hook fetch
     expect(screen.getAllByTestId("merge-queue-item")).toHaveLength(3);
   });
 

@@ -1,7 +1,8 @@
 import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import AgentStatusCards from "@/components/AgentStatusCards";
 import type { SessionsResponse } from "@/types/sessions";
+import * as apiCache from "@/lib/apiCache";
 
 const mockSessions: SessionsResponse = {
   sessions: [
@@ -23,6 +24,10 @@ function mockFetchError(message = "Network error") {
 }
 
 describe("AgentStatusCards", () => {
+  beforeEach(() => {
+    apiCache.clear();
+  });
+
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();

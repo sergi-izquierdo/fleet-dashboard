@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { DispatcherStatus } from "@/types/dispatcherStatus";
+import { getOrFetch } from "@/lib/apiCache";
 
 export type ConnectionStatus = "connected" | "disconnected" | "error";
 
 const REFRESH_INTERVAL = 15;
+const DEDUP_TTL_MS = 1_000;
 
 export interface UseDispatcherStatusReturn {
   data: DispatcherStatus | null;
@@ -29,11 +31,17 @@ export function useDispatcherStatus(): UseDispatcherStatusReturn {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/dispatcher-status");
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      }
-      const json: DispatcherStatus = await res.json();
+      const json = await getOrFetch<DispatcherStatus>(
+        "/api/dispatcher-status",
+        DEDUP_TTL_MS,
+        async () => {
+          const res = await fetch("/api/dispatcher-status");
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          }
+          return res.json() as Promise<DispatcherStatus>;
+        },
+      );
       setData(json);
       setError(null);
       setConnectionStatus("connected");

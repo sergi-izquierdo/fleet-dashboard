@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import type { RecentPR } from "@/types/prs";
-
-const REFRESH_INTERVAL_MS = 30_000;
+import { usePRsData } from "@/hooks/usePRsData";
 
 const statusConfig: Record<
   RecentPR["status"],
@@ -65,34 +63,12 @@ interface RecentPRsProps {
 }
 
 export default function RecentPRs({ prs: prsProp }: RecentPRsProps = {}) {
-  const [fetchedPrs, setFetchedPrs] = useState<RecentPR[]>([]);
-  const [isLoading, setIsLoading] = useState(prsProp === undefined);
-  const [error, setError] = useState<string | null>(null);
+  const { prs: hookPrs, isLoading: hookLoading, error: hookError } = usePRsData();
 
-  const fetchPRs = useCallback(async () => {
-    try {
-      const response = await fetch("/api/prs");
-      if (!response.ok) {
-        throw new Error(`Failed to fetch PRs: ${response.status}`);
-      }
-      const data = await response.json();
-      setFetchedPrs(Array.isArray(data) ? data : []);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load PRs");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (prsProp !== undefined) return;
-    fetchPRs();
-    const interval = setInterval(fetchPRs, REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fetchPRs, prsProp]);
-
-  const prs = prsProp ?? fetchedPrs;
+  // When parent provides data via props, use that; otherwise use the shared hook.
+  const prs = prsProp ?? hookPrs;
+  const isLoading = prsProp !== undefined ? false : hookLoading;
+  const error = prsProp !== undefined ? null : hookError;
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.06] dark:bg-white/[0.02] p-4 animate-fade-in">

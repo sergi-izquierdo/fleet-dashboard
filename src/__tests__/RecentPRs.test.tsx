@@ -2,6 +2,7 @@ import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import RecentPRs, { timeAgo } from "@/components/RecentPRs";
 import type { RecentPR } from "@/types/prs";
+import * as apiCache from "@/lib/apiCache";
 
 const mockPRs: RecentPR[] = [
   {
@@ -38,6 +39,7 @@ const mockPRs: RecentPR[] = [
 
 describe("RecentPRs", () => {
   beforeEach(() => {
+    apiCache.clear();
     global.fetch = vi.fn();
   });
 
@@ -243,15 +245,20 @@ describe("RecentPRs", () => {
 });
 
 describe("RecentPRs with prs prop", () => {
-  afterEach(() => {
-    cleanup();
+  beforeEach(() => {
+    apiCache.clear();
+    // Provide a default fetch mock so the background hook call doesn't error
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => [] });
   });
 
-  it("renders PR items from prop without fetching", () => {
-    const fetchMock = vi.fn();
-    global.fetch = fetchMock;
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("renders PR items from prop and uses prop data", async () => {
     render(<RecentPRs prs={mockPRs} />);
-    expect(fetchMock).not.toHaveBeenCalled();
+    // Prop data is shown immediately without waiting for hook fetch
     expect(screen.getAllByTestId("pr-item")).toHaveLength(3);
   });
 

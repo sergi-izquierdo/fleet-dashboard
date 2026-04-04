@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { RotateCw } from "lucide-react";
-import type { ServicesResponse, ServiceStatus } from "@/app/api/services/route";
-import type { DispatcherStatus } from "@/types/dispatcherStatus";
+import type { ServiceStatus } from "@/app/api/services/route";
 import SystemHealthCard from "@/components/SystemHealthCard";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { showToast, ToastContainer } from "@/components/Toast";
+import { useServices } from "@/hooks/useServices";
+import { useDispatcherStatus } from "@/hooks/useDispatcherStatus";
 
 const RESTART_COOLDOWN_MS = 3000;
 
@@ -113,23 +114,7 @@ function ServiceCard({
 }
 
 function ServiceCardsSection() {
-  const [data, setData] = useState<ServicesResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchServices = useCallback(async () => {
-    try {
-      const res = await fetch("/api/services");
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-      const json: ServicesResponse = await res.json();
-      setData(json);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch services");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const { data, isLoading, error } = useServices();
 
   const handleRestart = useCallback(async (fullServiceName: string) => {
     const shortName = fullServiceName.replace(/^fleet-/, "");
@@ -153,12 +138,6 @@ function ServiceCardsSection() {
       });
     }
   }, []);
-
-  useEffect(() => {
-    fetchServices();
-    const interval = setInterval(fetchServices, 30_000);
-    return () => clearInterval(interval);
-  }, [fetchServices]);
 
   if (isLoading) {
     return (
@@ -209,29 +188,7 @@ function ServiceCardsSection() {
 }
 
 function DispatcherCycleSection() {
-  const [data, setData] = useState<DispatcherStatus | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchDispatcher = useCallback(async () => {
-    try {
-      const res = await fetch("/api/dispatcher-status");
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-      const json: DispatcherStatus = await res.json();
-      setData(json);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch dispatcher status");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchDispatcher();
-    const interval = setInterval(fetchDispatcher, 30_000);
-    return () => clearInterval(interval);
-  }, [fetchDispatcher]);
+  const { data, isLoading, error } = useDispatcherStatus();
 
   if (isLoading) {
     return (

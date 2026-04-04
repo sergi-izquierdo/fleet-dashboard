@@ -43,7 +43,6 @@ describe("useDashboardLayout", () => {
     const customOrder: SectionId[] = [
       "activity",
       "agents",
-      "metrics",
       "timeline",
       "heatmap",
       "prs",
@@ -79,7 +78,6 @@ describe("useDashboardLayout", () => {
     const newOrder: SectionId[] = [
       "activity",
       "agents",
-      "metrics",
       "timeline",
       "heatmap",
       "prs",
@@ -101,7 +99,6 @@ describe("useDashboardLayout", () => {
     const customOrder: SectionId[] = [
       "activity",
       "agents",
-      "metrics",
       "timeline",
       "heatmap",
       "prs",

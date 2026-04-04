@@ -195,12 +195,6 @@ function SectionContent({ sectionId, data, activityEvents, prs }: SectionContent
           </SectionErrorBoundary>
         </Card>
       );
-    case "metrics":
-      return (
-        <SectionErrorBoundary sectionName="Fleet Metrics">
-          <MetricsCard activityLog={data.activityLog} />
-        </SectionErrorBoundary>
-      );
     case "timeline":
       return (
         <Card>
@@ -224,7 +218,7 @@ function SectionContent({ sectionId, data, activityEvents, prs }: SectionContent
       );
     case "prs":
       return (
-        <div id="section-prs" className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div id="section-prs" className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <SectionErrorBoundary sectionName="Merge Queue">
             <MergeQueue prs={prs} />
           </SectionErrorBoundary>
@@ -235,7 +229,7 @@ function SectionContent({ sectionId, data, activityEvents, prs }: SectionContent
       );
     case "trends":
       return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <SectionErrorBoundary sectionName="PR Merge Trends">
             <PRTrendChart />
           </SectionErrorBoundary>
@@ -433,15 +427,34 @@ export default function OverviewContent() {
         <AutoRefreshIndicator onRefresh={refresh} />
       </div>
 
+      {/* Health donut + Fleet metrics row — pinned, 2-col on desktop */}
+      <motion.div
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={cardVariants} transition={{ duration: 0.18, ease: "easeOut" }}>
+          <SectionErrorBoundary sectionName="Fleet Health">
+            <FleetHealthCard />
+          </SectionErrorBoundary>
+        </motion.div>
+        <motion.div variants={cardVariants} transition={{ duration: 0.18, ease: "easeOut" }}>
+          <SectionErrorBoundary sectionName="Fleet Metrics">
+            <MetricsCard activityLog={data.activityLog} />
+          </SectionErrorBoundary>
+        </motion.div>
+      </motion.div>
+
       {/* Main grid */}
       <motion.div
-        className="grid grid-cols-1 xl:grid-cols-12 gap-5 pb-16 md:pb-0"
+        className="grid grid-cols-1 xl:grid-cols-12 gap-6 pb-16 md:pb-0"
         variants={staggerContainer}
         initial="hidden"
         animate="visible"
       >
         {/* ── Left column (8 cols) ── */}
-        <div className="xl:col-span-8 space-y-5">
+        <div className="xl:col-span-8 space-y-6">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -463,7 +476,7 @@ export default function OverviewContent() {
           </DndContext>
 
           {/* Mobile-only sidebar content */}
-          <div className="xl:hidden space-y-5">
+          <div className="xl:hidden space-y-6">
             {/* Dispatcher Pipeline */}
             <Card>
               <SectionErrorBoundary sectionName="Dispatcher Pipeline">
@@ -492,11 +505,6 @@ export default function OverviewContent() {
               <ProgressTracker />
             </SectionErrorBoundary>
 
-            {/* Fleet Health */}
-            <SectionErrorBoundary sectionName="Fleet Health">
-              <FleetHealthCard />
-            </SectionErrorBoundary>
-
             {/* Repo Health */}
             <SectionErrorBoundary sectionName="Repo Health">
               <RepoHealthSection />
@@ -506,7 +514,7 @@ export default function OverviewContent() {
 
         {/* ── Right sidebar (4 cols) — desktop only ── */}
         <motion.div
-          className="hidden xl:block xl:col-span-4 space-y-5"
+          className="hidden xl:block xl:col-span-4 space-y-6"
           variants={staggerContainer}
         >
           {/* Dispatcher Pipeline */}
@@ -542,13 +550,6 @@ export default function OverviewContent() {
           <motion.div variants={cardVariants} transition={{ duration: 0.18, ease: "easeOut" }}>
             <SectionErrorBoundary sectionName="Issue Progress">
               <ProgressTracker />
-            </SectionErrorBoundary>
-          </motion.div>
-
-          {/* Fleet Health */}
-          <motion.div variants={cardVariants} transition={{ duration: 0.18, ease: "easeOut" }}>
-            <SectionErrorBoundary sectionName="Fleet Health">
-              <FleetHealthCard />
             </SectionErrorBoundary>
           </motion.div>
 

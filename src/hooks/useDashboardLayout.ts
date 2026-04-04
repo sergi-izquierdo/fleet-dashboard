@@ -4,7 +4,6 @@ import { useState, useCallback } from "react";
 
 export type SectionId =
   | "agents"
-  | "metrics"
   | "timeline"
   | "heatmap"
   | "prs"
@@ -13,12 +12,11 @@ export type SectionId =
 
 export const DEFAULT_ORDER: SectionId[] = [
   "agents",
-  "metrics",
-  "timeline",
-  "heatmap",
   "prs",
-  "trends",
+  "timeline",
   "activity",
+  "trends",
+  "heatmap",
 ];
 
 const STORAGE_KEY = "fleet-dashboard-layout";

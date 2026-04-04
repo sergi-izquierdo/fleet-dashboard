@@ -7,6 +7,7 @@ import { timeAgo } from "@/components/RecentPRs";
 import { PRActionMenu } from "@/components/PRActionMenu";
 import { ToastContainer, showToast } from "@/components/Toast";
 import { FilterBar } from "@/components/FilterBar";
+import PRPipelineSummary from "@/components/PRPipelineSummary";
 
 const REFRESH_INTERVAL_MS = 30_000;
 
@@ -351,6 +352,8 @@ export default function GroupedPRView() {
   return (
     <div className="space-y-5 animate-fade-in">
       <ToastContainer />
+
+      <PRPipelineSummary prs={prs} />
 
       <FilterBar
         searchValue={searchQuery}

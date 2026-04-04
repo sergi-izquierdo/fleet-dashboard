@@ -12,6 +12,7 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
+import { useTheme } from "next-themes";
 import type { PRTrendDay } from "@/app/api/pr-trends/route";
 
 const REFRESH_INTERVAL_MS = 60_000;
@@ -37,6 +38,8 @@ const getServerSnapshot = () => false;
 
 export default function PRVelocityChart() {
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const [trends, setTrends] = useState<PRTrendDay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -167,12 +170,12 @@ export default function PRVelocityChart() {
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "var(--tooltip-bg, #1f2937)",
-                    borderColor: "var(--tooltip-border, #374151)",
+                    backgroundColor: isDark ? "#1f2937" : "#ffffff",
+                    borderColor: isDark ? "#374151" : "#e5e7eb",
                     borderRadius: "0.5rem",
                     fontSize: "0.75rem",
                   }}
-                  labelStyle={{ color: "#d1d5db" }}
+                  labelStyle={{ color: isDark ? "#d1d5db" : "#374151" }}
                 />
                 <Legend
                   iconSize={8}

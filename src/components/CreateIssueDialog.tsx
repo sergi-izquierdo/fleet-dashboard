@@ -132,18 +132,18 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg rounded-xl border border-white/[0.08] bg-[#0f1117] shadow-2xl">
+      <div className="relative w-full max-w-lg rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-gray-900 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+        <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/[0.06] px-5 py-4">
           <h2
             id="create-issue-title"
-            className="text-sm font-semibold text-white/90"
+            className="text-sm font-semibold text-gray-900 dark:text-white/90"
           >
             New Issue
           </h2>
           <button
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-white/40 hover:bg-white/[0.06] hover:text-white/70 transition-colors"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-gray-400 dark:text-white/40 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-600 dark:hover:text-white/70 transition-colors"
             aria-label="Close dialog"
           >
             <X className="h-4 w-4" />
@@ -156,7 +156,7 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
           <div>
             <label
               htmlFor="issue-repo"
-              className="block text-xs font-medium text-white/60 mb-1.5"
+              className="block text-xs font-medium text-gray-600 dark:text-white/60 mb-1.5"
             >
               Repository
             </label>
@@ -164,11 +164,11 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
               id="issue-repo"
               value={repo}
               onChange={(e) => setRepo(e.target.value)}
-              className="w-full rounded-md border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white/90 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+              className="w-full rounded-md border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.04] px-3 py-2 text-sm text-gray-900 dark:text-white/90 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
               required
             >
               {repos.map((r) => (
-                <option key={r} value={r} className="bg-[#0f1117]">
+                <option key={r} value={r}>
                   {r}
                 </option>
               ))}
@@ -179,9 +179,9 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
           <div>
             <label
               htmlFor="issue-title"
-              className="block text-xs font-medium text-white/60 mb-1.5"
+              className="block text-xs font-medium text-gray-600 dark:text-white/60 mb-1.5"
             >
-              Title <span className="text-white/30">({title.length}/200)</span>
+              Title <span className="text-gray-400 dark:text-white/30">({title.length}/200)</span>
             </label>
             <input
               id="issue-title"
@@ -193,7 +193,7 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
               }}
               placeholder="Brief description of the issue"
               maxLength={200}
-              className="w-full rounded-md border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+              className="w-full rounded-md border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.04] px-3 py-2 text-sm text-gray-900 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
               required
             />
             {titleError && (
@@ -205,9 +205,9 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
           <div>
             <label
               htmlFor="issue-body"
-              className="block text-xs font-medium text-white/60 mb-1.5"
+              className="block text-xs font-medium text-gray-600 dark:text-white/60 mb-1.5"
             >
-              Body <span className="text-white/30">(markdown)</span>
+              Body <span className="text-gray-400 dark:text-white/30">(markdown)</span>
             </label>
             <textarea
               id="issue-body"
@@ -215,13 +215,13 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
               onChange={(e) => setBody(e.target.value)}
               placeholder="Detailed description, steps to reproduce, etc."
               rows={5}
-              className="w-full resize-y rounded-md border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+              className="w-full resize-y rounded-md border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.04] px-3 py-2 text-sm text-gray-900 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
             />
           </div>
 
           {/* Labels */}
           <div>
-            <p className="block text-xs font-medium text-white/60 mb-2">
+            <p className="block text-xs font-medium text-gray-600 dark:text-white/60 mb-2">
               Labels
             </p>
             <div className="flex flex-wrap gap-2">
@@ -235,8 +235,8 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
                     onClick={() => !isRequired && toggleLabel(label)}
                     className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
                       active
-                        ? "border-blue-500/50 bg-blue-500/15 text-blue-300"
-                        : "border-white/[0.08] bg-white/[0.03] text-white/40 hover:border-white/20 hover:text-white/60"
+                        ? "border-blue-500/50 bg-blue-500/15 text-blue-600 dark:text-blue-300"
+                        : "border-gray-300 dark:border-white/[0.08] bg-gray-50 dark:bg-white/[0.03] text-gray-500 dark:text-white/40 hover:border-gray-400 dark:hover:border-white/20 hover:text-gray-700 dark:hover:text-white/60"
                     } ${isRequired ? "cursor-default opacity-80" : "cursor-pointer"}`}
                     aria-pressed={active}
                     title={isRequired ? "Required label" : undefined}
@@ -256,7 +256,7 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md px-3 py-1.5 text-sm text-white/50 hover:bg-white/[0.06] hover:text-white/80 transition-colors"
+              className="rounded-md px-3 py-1.5 text-sm text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-700 dark:hover:text-white/80 transition-colors"
             >
               Cancel
             </button>

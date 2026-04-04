@@ -3,6 +3,11 @@ import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import PRVelocityChart from "@/components/PRVelocityChart";
 import type { PRTrendDay } from "@/app/api/pr-trends/route";
 
+// Mock next-themes
+vi.mock("next-themes", () => ({
+  useTheme: () => ({ resolvedTheme: "dark" }),
+}));
+
 // Mock recharts to avoid canvas/SVG issues in JSDOM
 vi.mock("recharts", () => ({
   ComposedChart: ({ children }: { children: React.ReactNode }) => (

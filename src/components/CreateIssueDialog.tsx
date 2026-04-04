@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Plus, Loader2 } from "lucide-react";
 import { showToast } from "@/components/Toast";
+import { Modal } from "@/components/ui/Modal";
 
 interface Project {
   repo: string;
@@ -118,21 +119,16 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
+    <Modal
+      onClose={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
       aria-labelledby="create-issue-title"
     >
-      {/* Backdrop */}
+      {/* Modal panel */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      {/* Modal */}
-      <div className="relative w-full max-w-lg rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#0f1117] shadow-2xl">
+        className="relative w-full max-w-lg rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#0f1117] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/[0.06] px-5 py-4">
           <h2
@@ -275,6 +271,6 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
           </div>
         </form>
       </div>
-    </div>
+    </Modal>
   );
 }

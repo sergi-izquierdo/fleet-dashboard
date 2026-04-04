@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
 import { X } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
 
 interface ShortcutGroup {
   label: string;
@@ -39,23 +39,12 @@ export function KeyboardShortcutsModal({
   open,
   onClose,
 }: KeyboardShortcutsModalProps) {
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [open, onClose]);
-
   if (!open) return null;
 
   return (
-    <div
+    <Modal
+      onClose={onClose}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
       aria-label="Keyboard shortcuts"
     >
       <div
@@ -109,6 +98,6 @@ export function KeyboardShortcutsModal({
           ))}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

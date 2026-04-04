@@ -31,11 +31,20 @@ describe("CreateIssueDialog theme colors", () => {
     });
   });
 
-  it("does not use hardcoded dark bg-[#0f1117] class", () => {
+  it("does not use non-standard hardcoded dark background classes", () => {
     render(<CreateIssueDialog open={true} onClose={vi.fn()} />);
     const container = document.body;
-    const hardcoded = container.querySelector("[class*='bg-\\[#0f1117\\]']");
-    expect(hardcoded).toBeNull();
+    // #12141a and #12131a are the old non-standard variants — should not appear
+    expect(container.querySelector("[class*='bg-\\[#12141a\\]']")).toBeNull();
+    expect(container.querySelector("[class*='bg-\\[#12131a\\]']")).toBeNull();
+  });
+
+  it("uses the standardized dark:bg-[#0f1117] modal background", () => {
+    render(<CreateIssueDialog open={true} onClose={vi.fn()} />);
+    const container = document.body;
+    // #0f1117 is the ONE approved dark modal background per issue #313
+    const standardModal = container.querySelector("[class*='bg-\\[#0f1117\\]']");
+    expect(standardModal).not.toBeNull();
   });
 
   it("renders the modal with theme-aware background", () => {

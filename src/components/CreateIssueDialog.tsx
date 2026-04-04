@@ -132,7 +132,7 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-gray-900 shadow-2xl">
+      <div className="relative w-full max-w-lg rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#0f1117] shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/[0.06] px-5 py-4">
           <h2

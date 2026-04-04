@@ -95,7 +95,7 @@ export default function RecentPRs({ prs: prsProp }: RecentPRsProps = {}) {
   const prs = prsProp ?? fetchedPrs;
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 animate-fade-in">
+    <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.06] dark:bg-white/[0.02] p-4 animate-fade-in">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent PRs</h2>
         <span className="text-xs text-gray-400 dark:text-gray-500">Auto-refreshes every 30s</span>

@@ -103,7 +103,7 @@ export function DispatcherToggle() {
           aria-modal="true"
           aria-labelledby="pause-dialog-title"
         >
-          <div className="mx-4 w-full max-w-sm rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-gray-900 p-6 shadow-2xl">
+          <div className="mx-4 w-full max-w-sm rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#0f1117] p-6 shadow-2xl">
             <h2
               id="pause-dialog-title"
               className="text-sm font-semibold text-gray-900 dark:text-white/90"

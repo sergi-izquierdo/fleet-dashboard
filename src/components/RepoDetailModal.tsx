@@ -89,7 +89,7 @@ export function RepoDetailModal({ repo, onClose }: RepoDetailModalProps) {
       data-testid="repo-detail-modal"
     >
       <div
-        className="mx-4 w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-6 shadow-2xl animate-slide-up"
+        className="mx-4 w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#0f1117] p-6 shadow-2xl animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

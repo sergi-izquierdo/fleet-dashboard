@@ -59,7 +59,7 @@ export function KeyboardShortcutsModal({
       aria-label="Keyboard shortcuts"
     >
       <div
-        className="relative w-full max-w-md rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-gray-900 p-6 shadow-2xl"
+        className="relative w-full max-w-md rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#0f1117] p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-5 flex items-center justify-between">

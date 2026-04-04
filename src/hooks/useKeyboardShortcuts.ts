@@ -8,6 +8,7 @@ export interface KeyboardShortcutHandlers {
   onShowHelp: () => void;
   onCloseModal: () => void;
   onToggleDispatcher: () => void;
+  onOpenCommandPalette?: () => void;
 }
 
 export const NAVIGATION_SHORTCUTS: Record<string, string> = {
@@ -52,6 +53,13 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
       if (e.ctrlKey && e.shiftKey && e.key === "P") {
         e.preventDefault();
         handlers.onToggleDispatcher();
+        return;
+      }
+
+      // Ctrl+K — open command palette (works even in inputs)
+      if (e.ctrlKey && e.key === "k") {
+        e.preventDefault();
+        handlers.onOpenCommandPalette?.();
         return;
       }
 

@@ -154,6 +154,79 @@ describe("CommandPalette", () => {
   });
 });
 
+describe("CommandPalette — subtitle display", () => {
+  const onClose = vi.fn();
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it("renders item subtitle when provided", () => {
+    const items: CommandItem[] = [
+      {
+        id: "agent-1",
+        label: "Agent Alpha",
+        subtitle: "#10 · working",
+        category: "agent",
+        icon: "🤖",
+        onSelect: vi.fn(),
+      },
+    ];
+    render(<CommandPalette open={true} onClose={onClose} items={items} />);
+    expect(screen.getByText("#10 · working")).toBeInTheDocument();
+  });
+
+  it("does not render subtitle area when subtitle is absent", () => {
+    const items: CommandItem[] = [
+      {
+        id: "action-refresh",
+        label: "Refresh dashboard",
+        category: "action",
+        icon: "↻",
+        onSelect: vi.fn(),
+      },
+    ];
+    render(<CommandPalette open={true} onClose={onClose} items={items} />);
+    // The label should be there but no subtitle element
+    expect(screen.getByText("Refresh dashboard")).toBeInTheDocument();
+  });
+});
+
+describe("CommandPalette — action mode prefix", () => {
+  const onClose = vi.fn();
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it('shows only action items when query starts with ">"', () => {
+    render(<CommandPalette open={true} onClose={onClose} items={mockItems} />);
+    const input = screen.getByTestId("command-palette-input");
+
+    fireEvent.change(input, { target: { value: ">" } });
+
+    // Action items should be visible
+    expect(screen.getByText("Refresh dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Toggle theme")).toBeInTheDocument();
+    // Non-action items should not be visible
+    expect(screen.queryByText("Go to Agents")).not.toBeInTheDocument();
+    expect(screen.queryByText("Agent Alpha — Fix login bug")).not.toBeInTheDocument();
+    expect(screen.queryByText("#42 Add dark mode support")).not.toBeInTheDocument();
+  });
+
+  it('filters action items by text after ">"', () => {
+    render(<CommandPalette open={true} onClose={onClose} items={mockItems} />);
+    const input = screen.getByTestId("command-palette-input");
+
+    fireEvent.change(input, { target: { value: "> refresh" } });
+
+    expect(screen.getByText("Refresh dashboard")).toBeInTheDocument();
+    expect(screen.queryByText("Toggle theme")).not.toBeInTheDocument();
+  });
+});
+
 describe("buildCommandItems", () => {
   const mockData: DashboardData = {
     agents: [
@@ -233,5 +306,95 @@ describe("buildCommandItems", () => {
     const prItems = items.filter((i) => i.category === "pr");
     expect(prItems).toHaveLength(1);
     expect(prItems[0].label).toContain("#11");
+  });
+
+  it("includes subtitle for agents", () => {
+    const items = buildCommandItems(mockData, {
+      refresh: vi.fn(),
+      toggleTheme: vi.fn(),
+      scrollToSection: vi.fn(),
+    });
+
+    const agentItem = items.find((i) => i.id === "agent-s1");
+    expect(agentItem?.subtitle).toContain("#10");
+    expect(agentItem?.subtitle).toContain("working");
+  });
+
+  it("includes subtitle for PRs", () => {
+    const items = buildCommandItems(mockData, {
+      refresh: vi.fn(),
+      toggleTheme: vi.fn(),
+      scrollToSection: vi.fn(),
+    });
+
+    const prItem = items.find((i) => i.id === "pr-11");
+    expect(prItem?.subtitle).toContain("bot");
+    expect(prItem?.subtitle).toContain("passing");
+  });
+
+  it("uses page navigation when navigate is provided", () => {
+    const navigate = vi.fn();
+    const items = buildCommandItems(null, {
+      refresh: vi.fn(),
+      toggleTheme: vi.fn(),
+      scrollToSection: vi.fn(),
+      navigate,
+    });
+
+    const navItems = items.filter((i) => i.category === "navigation");
+    expect(navItems).toHaveLength(8); // 8 pages
+    expect(navItems.map((i) => i.label)).toContain("Overview");
+    expect(navItems.map((i) => i.label)).toContain("Agents");
+    expect(navItems.map((i) => i.label)).toContain("Settings");
+
+    // Clicking a nav item should call navigate
+    const overviewItem = navItems.find((i) => i.label === "Overview")!;
+    overviewItem.onSelect();
+    expect(navigate).toHaveBeenCalledWith("/");
+  });
+
+  it("adds new issue action when onNewIssue is provided", () => {
+    const onNewIssue = vi.fn();
+    const items = buildCommandItems(null, {
+      refresh: vi.fn(),
+      toggleTheme: vi.fn(),
+      scrollToSection: vi.fn(),
+      onNewIssue,
+    });
+
+    const actionItems = items.filter((i) => i.category === "action");
+    expect(actionItems.map((i) => i.label)).toContain("New Issue");
+
+    const newIssueItem = actionItems.find((i) => i.label === "New Issue")!;
+    newIssueItem.onSelect();
+    expect(onNewIssue).toHaveBeenCalledTimes(1);
+  });
+
+  it("adds pause dispatcher action when onToggleDispatcher is provided", () => {
+    const onToggleDispatcher = vi.fn();
+    const items = buildCommandItems(null, {
+      refresh: vi.fn(),
+      toggleTheme: vi.fn(),
+      scrollToSection: vi.fn(),
+      onToggleDispatcher,
+      dispatcherPaused: false,
+    });
+
+    const actionItems = items.filter((i) => i.category === "action");
+    expect(actionItems.map((i) => i.label)).toContain("Pause Dispatcher");
+  });
+
+  it("shows resume dispatcher when dispatcher is paused", () => {
+    const items = buildCommandItems(null, {
+      refresh: vi.fn(),
+      toggleTheme: vi.fn(),
+      scrollToSection: vi.fn(),
+      onToggleDispatcher: vi.fn(),
+      dispatcherPaused: true,
+    });
+
+    const actionItems = items.filter((i) => i.category === "action");
+    expect(actionItems.map((i) => i.label)).toContain("Resume Dispatcher");
+    expect(actionItems.map((i) => i.label)).not.toContain("Pause Dispatcher");
   });
 });

@@ -336,6 +336,127 @@ describe("AgentListTable", () => {
     expect(screen.getByTestId("agent-list-empty")).toBeInTheDocument();
   });
 
+  it("renders sort controls", async () => {
+    mockFetchSuccess();
+    render(<AgentListTable />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("agent-list-table")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("sort-by")).toBeInTheDocument();
+    expect(screen.getByTestId("sort-dir-toggle")).toBeInTheDocument();
+  });
+
+  it("toggles sort direction when sort dir button is clicked", async () => {
+    mockFetchSuccess();
+    render(<AgentListTable />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("sort-dir-toggle")).toBeInTheDocument();
+    });
+
+    const btn = screen.getByTestId("sort-dir-toggle");
+    expect(btn).toHaveAttribute("aria-label", "Sort ascending");
+
+    fireEvent.click(btn);
+
+    expect(btn).toHaveAttribute("aria-label", "Sort descending");
+  });
+
+  it("shows filter chips for active filters", async () => {
+    mockFetchSuccess();
+    render(<AgentListTable />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("agent-list-table")).toBeInTheDocument();
+    });
+
+    // No chips initially
+    expect(screen.queryByTestId("active-filter-chips")).not.toBeInTheDocument();
+
+    // Apply status filter
+    fireEvent.change(screen.getByTestId("status-filter"), {
+      target: { value: "active" },
+    });
+
+    expect(screen.getByTestId("active-filter-chips")).toBeInTheDocument();
+    expect(screen.getAllByTestId("filter-chip")).toHaveLength(1);
+    expect(screen.getByTestId("filter-chip")).toHaveTextContent("Active");
+  });
+
+  it("removes filter when chip is clicked", async () => {
+    mockFetchSuccess();
+    render(<AgentListTable />);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId("agent-list-row")).toHaveLength(3);
+    });
+
+    fireEvent.change(screen.getByTestId("status-filter"), {
+      target: { value: "active" },
+    });
+
+    expect(screen.getAllByTestId("agent-list-row")).toHaveLength(1);
+
+    // Click chip to remove filter
+    fireEvent.click(screen.getByTestId("filter-chip"));
+
+    expect(screen.getAllByTestId("agent-list-row")).toHaveLength(3);
+    expect(screen.queryByTestId("active-filter-chips")).not.toBeInTheDocument();
+  });
+
+  it("shows chips for project and status filters simultaneously", async () => {
+    mockFetchSuccess();
+    render(<AgentListTable />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("agent-list-table")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByTestId("status-filter"), {
+      target: { value: "active" },
+    });
+    fireEvent.change(screen.getByTestId("project-filter"), {
+      target: { value: "fleet-dashboard" },
+    });
+
+    const chips = screen.getAllByTestId("filter-chip");
+    expect(chips).toHaveLength(2);
+  });
+
+  it("sorts by status when sort-by is set to status", async () => {
+    mockFetchSuccess();
+    render(<AgentListTable />);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId("agent-list-row")).toHaveLength(3);
+    });
+
+    fireEvent.change(screen.getByTestId("sort-by"), {
+      target: { value: "status" },
+    });
+
+    // All rows still rendered after sort change
+    expect(screen.getAllByTestId("agent-list-row")).toHaveLength(3);
+  });
+
+  it("shows Failed and Timed Out options in status filter", async () => {
+    mockFetchSuccess();
+    render(<AgentListTable />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("status-filter")).toBeInTheDocument();
+    });
+
+    const options = Array.from(
+      screen.getByTestId("status-filter").querySelectorAll("option")
+    ).map((o) => o.textContent);
+
+    expect(options).toContain("Failed");
+    expect(options).toContain("Timed Out");
+  });
+
   it("opens AgentDetailModal on row click", async () => {
     // Mock the dashboard fetch for AgentDetailModal
     global.fetch = vi

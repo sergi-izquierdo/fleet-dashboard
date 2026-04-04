@@ -31,6 +31,15 @@ body {
   animation: slide-in-left 0.2s ease-out;
 }
 
+/* ── Agent list fade-in ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.15s ease-out;
+}
+
 /* ── Login page animations ── */
 
 /* Floating background orbs */

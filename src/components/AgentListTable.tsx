@@ -39,10 +39,15 @@ interface NormalizedAgent {
   issueTitle: string | null;
   status: string;
   duration: string;
+  durationMs: number;
   prUrl: string | null;
   prNumber: number | null;
+  startedAt: string | null;
   completedAt: string | null;
 }
+
+type SortBy = "startTime" | "duration" | "status";
+type SortDir = "asc" | "desc";
 
 const STATUS_STYLES: Record<string, string> = {
   working: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
@@ -52,6 +57,8 @@ const STATUS_STYLES: Record<string, string> = {
   merged: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
   pr_merged: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
   error: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+  failed: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+  timed_out: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
   idle: "bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20",
 };
 
@@ -63,6 +70,8 @@ const STATUS_LABELS: Record<string, string> = {
   merged: "Merged",
   pr_merged: "Merged",
   error: "Error",
+  failed: "Failed",
+  timed_out: "Timed Out",
   idle: "Idle",
 };
 
@@ -102,6 +111,14 @@ function formatDuration(startedAt: string | undefined, completedAt: string): str
   return remainMins > 0 ? `${hours}h ${remainMins}m` : `${hours}h`;
 }
 
+function calcDurationMs(startedAt: string | undefined, completedAt: string): number {
+  if (!startedAt) return 0;
+  const start = new Date(startedAt).getTime();
+  const end = new Date(completedAt).getTime();
+  const diffMs = end - start;
+  return isNaN(diffMs) || diffMs < 0 ? 0 : diffMs;
+}
+
 function normalizeActiveAgents(
   active: Record<string, Record<string, unknown>>
 ): NormalizedAgent[] {
@@ -120,8 +137,10 @@ function normalizeActiveAgents(
       issueTitle: null,
       status,
       duration: formatDuration(startedAt, nowIso),
+      durationMs: calcDurationMs(startedAt, nowIso),
       prUrl: null,
       prNumber: null,
+      startedAt: startedAt ?? null,
       completedAt: null,
     };
   });
@@ -140,8 +159,10 @@ function normalizeCompletedAgents(
       issueTitle: agent.title ?? null,
       status: agent.status,
       duration: "—",
+      durationMs: 0,
       prUrl: agent.pr || null,
       prNumber,
+      startedAt: null,
       completedAt: agent.completedAt,
     };
   });
@@ -150,13 +171,53 @@ function normalizeCompletedAgents(
 const ACTIVE_STATUSES = new Set(["working", "pr_open", "review_pending", "approved"]);
 const COMPLETED_STATUSES = new Set(["merged", "pr_merged"]);
 const ERROR_STATUSES = new Set(["error"]);
+const FAILED_STATUSES = new Set(["failed"]);
+const TIMED_OUT_STATUSES = new Set(["timed_out"]);
 
 function matchesStatusFilter(agent: NormalizedAgent, filter: string): boolean {
   if (filter === "all") return true;
   if (filter === "active") return ACTIVE_STATUSES.has(agent.status);
   if (filter === "completed") return COMPLETED_STATUSES.has(agent.status);
   if (filter === "error") return ERROR_STATUSES.has(agent.status);
+  if (filter === "failed") return FAILED_STATUSES.has(agent.status);
+  if (filter === "timedOut") return TIMED_OUT_STATUSES.has(agent.status);
   return true;
+}
+
+const STATUS_FILTER_LABELS: Record<string, string> = {
+  all: "All Statuses",
+  active: "Active",
+  completed: "Completed",
+  error: "Error",
+  failed: "Failed",
+  timedOut: "Timed Out",
+};
+
+const SORT_BY_LABELS: Record<SortBy, string> = {
+  startTime: "Start Time",
+  duration: "Duration",
+  status: "Status",
+};
+
+function sortAgents(agents: NormalizedAgent[], sortBy: SortBy, sortDir: SortDir): NormalizedAgent[] {
+  const multiplier = sortDir === "asc" ? 1 : -1;
+  return [...agents].sort((a, b) => {
+    if (sortBy === "startTime") {
+      const aTime = a.startedAt ?? a.completedAt ?? "";
+      const bTime = b.startedAt ?? b.completedAt ?? "";
+      if (!aTime && !bTime) return 0;
+      if (!aTime) return 1 * multiplier;
+      if (!bTime) return -1 * multiplier;
+      return (new Date(aTime).getTime() - new Date(bTime).getTime()) * multiplier;
+    }
+    if (sortBy === "duration") {
+      return (a.durationMs - b.durationMs) * multiplier;
+    }
+    if (sortBy === "status") {
+      return a.status.localeCompare(b.status) * multiplier;
+    }
+    return 0;
+  });
 }
 
 function matchesSearch(agent: NormalizedAgent, query: string): boolean {
@@ -184,13 +245,17 @@ export default function AgentListTable() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "");
   const [projectFilter, setProjectFilter] = useState(searchParams.get("project") ?? "all");
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "all");
+  const [sortBy, setSortBy] = useState<SortBy>((searchParams.get("sort") as SortBy) ?? "startTime");
+  const [sortDir, setSortDir] = useState<SortDir>((searchParams.get("dir") as SortDir) ?? "desc");
 
   const updateUrlParams = useCallback(
-    (q: string, project: string, status: string) => {
+    (q: string, project: string, status: string, sort: SortBy, dir: SortDir) => {
       const params = new URLSearchParams(searchParams.toString());
       if (q) params.set("q", q); else params.delete("q");
       if (project !== "all") params.set("project", project); else params.delete("project");
       if (status !== "all") params.set("status", status); else params.delete("status");
+      if (sort !== "startTime") params.set("sort", sort); else params.delete("sort");
+      if (dir !== "desc") params.set("dir", dir); else params.delete("dir");
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     },
     [router, pathname, searchParams]
@@ -199,26 +264,40 @@ export default function AgentListTable() {
   const handleSearchChange = useCallback(
     (value: string) => {
       setSearchQuery(value);
-      updateUrlParams(value, projectFilter, statusFilter);
+      updateUrlParams(value, projectFilter, statusFilter, sortBy, sortDir);
     },
-    [updateUrlParams, projectFilter, statusFilter]
+    [updateUrlParams, projectFilter, statusFilter, sortBy, sortDir]
   );
 
   const handleProjectChange = useCallback(
     (value: string) => {
       setProjectFilter(value);
-      updateUrlParams(searchQuery, value, statusFilter);
+      updateUrlParams(searchQuery, value, statusFilter, sortBy, sortDir);
     },
-    [updateUrlParams, searchQuery, statusFilter]
+    [updateUrlParams, searchQuery, statusFilter, sortBy, sortDir]
   );
 
   const handleStatusChange = useCallback(
     (value: string) => {
       setStatusFilter(value);
-      updateUrlParams(searchQuery, projectFilter, value);
+      updateUrlParams(searchQuery, projectFilter, value, sortBy, sortDir);
     },
-    [updateUrlParams, searchQuery, projectFilter]
+    [updateUrlParams, searchQuery, projectFilter, sortBy, sortDir]
   );
+
+  const handleSortByChange = useCallback(
+    (value: SortBy) => {
+      setSortBy(value);
+      updateUrlParams(searchQuery, projectFilter, statusFilter, value, sortDir);
+    },
+    [updateUrlParams, searchQuery, projectFilter, statusFilter, sortDir]
+  );
+
+  const handleSortDirToggle = useCallback(() => {
+    const newDir: SortDir = sortDir === "asc" ? "desc" : "asc";
+    setSortDir(newDir);
+    updateUrlParams(searchQuery, projectFilter, statusFilter, sortBy, newDir);
+  }, [updateUrlParams, searchQuery, projectFilter, statusFilter, sortBy, sortDir]);
 
   const fetchFleetState = useCallback(async () => {
     try {
@@ -261,6 +340,22 @@ export default function AgentListTable() {
       matchesStatusFilter(a, statusFilter) &&
       matchesSearch(a, searchQuery)
   );
+
+  const sorted = sortAgents(filtered, sortBy, sortDir);
+
+  const activeFilterChips: { label: string; onRemove: () => void }[] = [];
+  if (searchQuery) {
+    activeFilterChips.push({ label: `"${searchQuery}"`, onRemove: () => handleSearchChange("") });
+  }
+  if (statusFilter !== "all") {
+    activeFilterChips.push({
+      label: STATUS_FILTER_LABELS[statusFilter] ?? statusFilter,
+      onRemove: () => handleStatusChange("all"),
+    });
+  }
+  if (projectFilter !== "all") {
+    activeFilterChips.push({ label: projectFilter, onRemove: () => handleProjectChange("all") });
+  }
 
   const handleExport = useCallback(() => {
     const headers = ["Agent Name", "Repo", "Issue", "Status", "Started", "Completed", "Duration", "PR URL", "Files Modified"];
@@ -328,9 +423,64 @@ export default function AgentListTable() {
             <option value="active">Active</option>
             <option value="completed">Completed</option>
             <option value="error">Error</option>
+            <option value="failed">Failed</option>
+            <option value="timedOut">Timed Out</option>
           </select>
+
+          <div className="flex items-center gap-1">
+            <select
+              data-testid="sort-by"
+              value={sortBy}
+              onChange={(e) => handleSortByChange(e.target.value as SortBy)}
+              className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-sm text-gray-700 dark:text-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              aria-label="Sort by"
+            >
+              <option value="startTime">Start Time</option>
+              <option value="duration">Duration</option>
+              <option value="status">Status</option>
+            </select>
+            <button
+              data-testid="sort-dir-toggle"
+              onClick={handleSortDirToggle}
+              className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-1.5 text-gray-700 dark:text-white/80 hover:bg-gray-50 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors"
+              aria-label={sortDir === "asc" ? "Sort descending" : "Sort ascending"}
+              title={sortDir === "asc" ? "Sort descending" : "Sort ascending"}
+            >
+              <svg
+                className={`h-4 w-4 transition-transform ${sortDir === "asc" ? "rotate-180" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden="true"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
         </div>
       </FilterBar>
+
+      {activeFilterChips.length > 0 && (
+        <div
+          data-testid="active-filter-chips"
+          className="mb-3 flex flex-wrap gap-2"
+        >
+          {activeFilterChips.map((chip) => (
+            <button
+              key={chip.label}
+              data-testid="filter-chip"
+              onClick={chip.onRemove}
+              className="inline-flex items-center gap-1 rounded-full border border-blue-500/30 bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors"
+            >
+              {chip.label}
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          ))}
+        </div>
+      )}
 
       {isLoading ? (
         <div data-testid="agent-list-loading" className="space-y-2">
@@ -354,7 +504,7 @@ export default function AgentListTable() {
           data-testid="agent-list-empty"
           className="rounded-lg border border-gray-200 dark:border-white/10 px-4 py-8 text-center text-sm text-gray-500 dark:text-white/40"
         >
-          No agents match the current filters.
+          No agents match your filters.
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-white/10">
@@ -385,12 +535,12 @@ export default function AgentListTable() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((agent) => (
+              {sorted.map((agent) => (
                 <tr
                   key={agent.key}
                   data-testid="agent-list-row"
                   onClick={() => setSelectedAgent(agent.name)}
-                  className="border-b border-gray-200 dark:border-white/[0.06] last:border-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors"
+                  className="border-b border-gray-200 dark:border-white/[0.06] last:border-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors animate-fadeIn"
                 >
                   <td className="px-4 py-3 font-medium text-gray-900 dark:text-white truncate max-w-[200px]">
                     {agent.name}

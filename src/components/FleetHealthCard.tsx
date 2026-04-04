@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Card from "@/components/Card";
+import TrendIndicator from "@/components/TrendIndicator";
+import { useStatsComparison } from "@/hooks/useStatsComparison";
 import type { FleetHealthResponse, RepeatFailure } from "@/lib/fleetHealth";
 
 // SVG donut chart constants
@@ -176,6 +178,7 @@ function RepeatFailuresList({ failures }: RepeatFailuresListProps) {
 export default function FleetHealthCard() {
   const [data, setData] = useState<FleetHealthResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const comparison = useStatsComparison("7d");
 
   const fetchHealth = useCallback(async () => {
     try {
@@ -223,6 +226,13 @@ export default function FleetHealthCard() {
           Fleet Health
         </h2>
         <span className="text-[10px] text-gray-400 dark:text-white/30">last 7 days</span>
+        {comparison && (
+          <TrendIndicator
+            current={comparison.current.merged}
+            previous={comparison.previous.merged}
+            periodLabel="last week"
+          />
+        )}
       </div>
 
       {error && (

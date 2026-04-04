@@ -395,7 +395,7 @@ export default function FleetActivityTimeline({
                 {/* Tooltip */}
                 {isHovered && (
                   <div
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 p-2 shadow-lg z-50 pointer-events-none"
+                    className="dashboard-modal-panel absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded-lg p-2 shadow-lg z-50 pointer-events-none"
                     data-testid="timeline-tooltip"
                   >
                     <div className="flex items-center gap-1.5 mb-1">

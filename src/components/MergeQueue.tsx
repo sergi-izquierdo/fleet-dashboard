@@ -124,7 +124,7 @@ export default function MergeQueue() {
 
   return (
     <div
-      className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4"
+      className="dashboard-card p-4"
       data-testid="merge-queue"
     >
       {/* Header */}
@@ -274,7 +274,7 @@ export default function MergeQueue() {
                           className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
                             pr.hasConflicts
                               ? "border-orange-500/40 bg-orange-500/5"
-                              : "border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50"
+                              : "dashboard-card-item"
                           }`}
                           data-testid="merge-queue-item"
                         >

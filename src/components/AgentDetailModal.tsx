@@ -193,7 +193,7 @@ export function AgentDetailModal({
       data-testid="agent-detail-modal"
     >
       <motion.div
-        className="mx-4 w-full max-w-lg rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
+        className="dashboard-modal-panel mx-4 w-full max-w-lg rounded-2xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}

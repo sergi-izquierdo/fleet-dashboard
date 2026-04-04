@@ -132,7 +132,7 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg rounded-xl border border-white/[0.08] bg-[#0f1117] shadow-2xl">
+      <div className="dashboard-modal-panel relative w-full max-w-lg rounded-xl shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
           <h2
@@ -168,7 +168,7 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
               required
             >
               {repos.map((r) => (
-                <option key={r} value={r} className="bg-[#0f1117]">
+                <option key={r} value={r} className="dark:bg-[#0f1117]">
                   {r}
                 </option>
               ))}

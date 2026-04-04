@@ -69,13 +69,13 @@ export default function HealthPanel() {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-white/5">
+      <div className="dashboard-card p-4">
         <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
           Service Health
         </h2>
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-14 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-800" />
+            <div key={i} className="h-14 animate-pulse rounded-lg bg-gray-200 dark:bg-white/[0.05]" />
           ))}
         </div>
       </div>
@@ -84,7 +84,7 @@ export default function HealthPanel() {
 
   if (error && !health) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-white/5">
+      <div className="dashboard-card p-4">
         <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
           Service Health
         </h2>
@@ -103,7 +103,7 @@ export default function HealthPanel() {
   const overallStyle = STATUS_STYLES[health.status];
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+    <div className="dashboard-card p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Service Health
@@ -121,7 +121,7 @@ export default function HealthPanel() {
         {Object.entries(health.services).map(([key, service]) => (
           <div
             key={key}
-            className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-800/50"
+            className="dashboard-card-item flex items-center justify-between p-3"
             data-testid={`health-service-${key}`}
           >
             <div className="min-w-0 flex-1">

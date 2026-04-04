@@ -60,7 +60,7 @@ export function HealthTimelineModal({
       data-testid="health-timeline-modal"
     >
       <div
-        className="mx-4 w-full max-w-2xl rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-6 shadow-2xl"
+        className="dashboard-modal-panel mx-4 w-full max-w-2xl rounded-2xl p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">

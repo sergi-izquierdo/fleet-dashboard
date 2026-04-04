@@ -226,6 +226,43 @@ body {
 .stagger-children > *:nth-child(9) { animation-delay: 400ms; }
 .stagger-children > *:nth-child(10) { animation-delay: 450ms; }
 
+/* ── Design system shared classes ── */
+/* Standardized glassmorphic card (light: opaque white; dark: translucent) */
+.dashboard-card {
+  border-radius: 0.75rem;
+  border-width: 1px;
+  border-color: rgb(229 231 235); /* gray-200 */
+  background-color: rgb(255 255 255); /* white */
+}
+:where(.dark, .dark *) .dashboard-card {
+  border-color: rgb(255 255 255 / 0.06); /* white/[0.06] */
+  background-color: rgb(255 255 255 / 0.02); /* white/[0.02] */
+}
+
+/* Standardized card item rows */
+.dashboard-card-item {
+  border-radius: 0.5rem;
+  border-width: 1px;
+  border-color: rgb(229 231 235); /* gray-200 */
+  background-color: rgb(249 250 251); /* gray-50 */
+}
+:where(.dark, .dark *) .dashboard-card-item {
+  border-color: rgb(255 255 255 / 0.06); /* white/[0.06] */
+  background-color: rgb(255 255 255 / 0.03); /* white/[0.03] */
+}
+
+/* Standardized modal panel (ONE dark value: #0f1117) */
+.dashboard-modal-panel {
+  border-radius: 0.75rem;
+  border-width: 1px;
+  border-color: rgb(229 231 235); /* gray-200 */
+  background-color: rgb(249 250 251); /* gray-50 */
+}
+:where(.dark, .dark *) .dashboard-modal-panel {
+  border-color: rgb(255 255 255 / 0.08); /* white/[0.08] */
+  background-color: #0f1117;
+}
+
 /* ── Grid layout utilities ── */
 
 @media (min-width: 1024px) {

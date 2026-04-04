@@ -88,7 +88,7 @@ export default function RecentPRs() {
   }, [fetchPRs]);
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 animate-fade-in">
+    <div className="dashboard-card p-4 animate-fade-in">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent PRs</h2>
         <span className="text-xs text-gray-400 dark:text-gray-500">Auto-refreshes every 30s</span>
@@ -127,7 +127,7 @@ export default function RecentPRs() {
             return (
               <div
                 key={`${pr.repo}-${pr.number}`}
-                className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-3 transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-gray-800/80 animate-slide-up"
+                className="dashboard-card-item flex items-center gap-3 p-3 transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-white/[0.04] animate-slide-up"
                 style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
                 data-testid="pr-item"
               >

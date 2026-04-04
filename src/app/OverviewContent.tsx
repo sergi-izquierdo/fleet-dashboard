@@ -22,6 +22,7 @@ import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { ToastContainer, showToast } from "@/components/Toast";
 import { BottomNav, type MobileTab } from "@/components/BottomNav";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { usePRsData } from "@/hooks/usePRsData";
 import { useFleetState } from "@/hooks/useFleetState";
 import { useFleetEvents } from "@/hooks/useFleetEvents";
 import { useDashboardLayout, type SectionId } from "@/hooks/useDashboardLayout";
@@ -50,6 +51,7 @@ import {
   GripVertical,
   RotateCcw,
 } from "lucide-react";
+import type { RecentPR } from "@/types/prs";
 
 const SECTION_IDS: Record<MobileTab, string> = {
   agents: "section-agents",
@@ -158,9 +160,10 @@ interface SectionContentProps {
     description: string;
     project?: string;
   }[];
+  prs: RecentPR[];
 }
 
-function SectionContent({ sectionId, data, activityEvents }: SectionContentProps) {
+function SectionContent({ sectionId, data, activityEvents, prs }: SectionContentProps) {
   switch (sectionId) {
     case "agents":
       return (
@@ -202,10 +205,10 @@ function SectionContent({ sectionId, data, activityEvents }: SectionContentProps
       return (
         <div id="section-prs" className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <SectionErrorBoundary sectionName="Merge Queue">
-            <MergeQueue />
+            <MergeQueue prs={prs} />
           </SectionErrorBoundary>
           <SectionErrorBoundary sectionName="Recent PRs">
-            <RecentPRs />
+            <RecentPRs prs={prs} />
           </SectionErrorBoundary>
         </div>
       );
@@ -241,12 +244,18 @@ function SectionContent({ sectionId, data, activityEvents }: SectionContentProps
 
 export default function OverviewContent() {
   const { data, isLoading, error, refresh } = useDashboardData();
+  const { prs, refresh: refreshPRs } = usePRsData();
   useFleetState();
   const prevAgentsRef = useRef<Map<string, string>>(new Map());
   const { order, reorder, resetLayout } = useDashboardLayout();
 
+  const refreshAll = useCallback(() => {
+    refresh();
+    refreshPRs();
+  }, [refresh, refreshPRs]);
+
   // SSE: trigger immediate refresh on fleet events (polling stays as fallback)
-  useFleetEvents(refresh, {
+  useFleetEvents(refreshAll, {
     eventTypes: ["cycle", "agent-started", "agent-completed", "pr-created", "pr-merged"],
   });
   const [activeTab, setActiveTab] = useState<MobileTab>("agents");
@@ -398,6 +407,7 @@ export default function OverviewContent() {
                     sectionId={sectionId}
                     data={data}
                     activityEvents={activityEvents}
+                    prs={prs}
                   />
                 </SortableSection>
               ))}

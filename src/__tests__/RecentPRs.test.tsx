@@ -242,6 +242,37 @@ describe("RecentPRs", () => {
   });
 });
 
+describe("RecentPRs with prs prop", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("renders PR items from prop without fetching", () => {
+    const fetchMock = vi.fn();
+    global.fetch = fetchMock;
+    render(<RecentPRs prs={mockPRs} />);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getAllByTestId("pr-item")).toHaveLength(3);
+  });
+
+  it("does not show loading state when prs prop is provided", () => {
+    render(<RecentPRs prs={mockPRs} />);
+    expect(screen.queryByTestId("prs-loading")).not.toBeInTheDocument();
+  });
+
+  it("shows empty state when prs prop is empty array", () => {
+    render(<RecentPRs prs={[]} />);
+    expect(screen.getByTestId("prs-empty")).toBeInTheDocument();
+  });
+
+  it("renders correct PR titles from prop", () => {
+    render(<RecentPRs prs={mockPRs} />);
+    expect(screen.getByText(/feat: add CSV export/)).toBeInTheDocument();
+    expect(screen.getByText(/feat: dark mode toggle/)).toBeInTheDocument();
+    expect(screen.getByText(/fix: resolve memory leak/)).toBeInTheDocument();
+  });
+});
+
 describe("timeAgo", () => {
   it("returns seconds for < 1 minute", () => {
     const date = new Date(Date.now() - 30 * 1000).toISOString();

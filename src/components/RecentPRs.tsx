@@ -60,9 +60,13 @@ export function timeAgo(dateString: string): string {
   return `${diffDays}d ago`;
 }
 
-export default function RecentPRs() {
-  const [prs, setPrs] = useState<RecentPR[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+interface RecentPRsProps {
+  prs?: RecentPR[];
+}
+
+export default function RecentPRs({ prs: prsProp }: RecentPRsProps = {}) {
+  const [fetchedPrs, setFetchedPrs] = useState<RecentPR[]>([]);
+  const [isLoading, setIsLoading] = useState(prsProp === undefined);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPRs = useCallback(async () => {
@@ -72,7 +76,7 @@ export default function RecentPRs() {
         throw new Error(`Failed to fetch PRs: ${response.status}`);
       }
       const data = await response.json();
-      setPrs(Array.isArray(data) ? data : []);
+      setFetchedPrs(Array.isArray(data) ? data : []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load PRs");
@@ -82,10 +86,13 @@ export default function RecentPRs() {
   }, []);
 
   useEffect(() => {
+    if (prsProp !== undefined) return;
     fetchPRs();
     const interval = setInterval(fetchPRs, REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [fetchPRs]);
+  }, [fetchPRs, prsProp]);
+
+  const prs = prsProp ?? fetchedPrs;
 
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 animate-fade-in">

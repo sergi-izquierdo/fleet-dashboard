@@ -52,9 +52,13 @@ const statusConfig: Record<
 
 type FilterStatus = "all" | "open" | "merged" | "closed";
 
-export default function MergeQueue() {
-  const [prs, setPrs] = useState<RecentPR[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+interface MergeQueueProps {
+  prs?: RecentPR[];
+}
+
+export default function MergeQueue({ prs: prsProp }: MergeQueueProps = {}) {
+  const [fetchedPrs, setFetchedPrs] = useState<RecentPR[]>([]);
+  const [isLoading, setIsLoading] = useState(prsProp === undefined);
   const [error, setError] = useState<string | null>(null);
 
   const [filterRepo, setFilterRepo] = useState<string>("all");
@@ -68,7 +72,7 @@ export default function MergeQueue() {
         throw new Error(`Failed to fetch PRs: ${response.status}`);
       }
       const data = await response.json();
-      setPrs(Array.isArray(data) ? data : []);
+      setFetchedPrs(Array.isArray(data) ? data : []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load PRs");
@@ -78,10 +82,13 @@ export default function MergeQueue() {
   }, []);
 
   useEffect(() => {
+    if (prsProp !== undefined) return;
     fetchPRs();
     const interval = setInterval(fetchPRs, REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [fetchPRs]);
+  }, [fetchPRs, prsProp]);
+
+  const prs = prsProp ?? fetchedPrs;
 
   const repos = useMemo(
     () => [...new Set(prs.map((pr) => pr.repo))].sort(),

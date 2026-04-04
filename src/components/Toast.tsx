@@ -70,7 +70,6 @@ export function ToastContainer() {
   return (
     <div
       className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 w-80"
-      aria-live="polite"
       data-testid="toast-container"
     >
       {toasts.map((toast) => {
@@ -79,10 +78,12 @@ export function ToastContainer() {
           <div
             key={toast.id}
             data-testid="toast"
+            role={toast.type === "error" ? "alert" : "status"}
+            aria-live={toast.type === "error" ? "assertive" : "polite"}
             className={`${toast.exiting ? "animate-toast-exit" : "animate-toast-enter"} rounded-lg border p-3 shadow-lg backdrop-blur-sm ${config.className}`}
           >
             <div className="flex items-start gap-2">
-              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold" aria-hidden="true">
                 {config.icon}
               </span>
               <div className="min-w-0 flex-1">
@@ -94,7 +95,7 @@ export function ToastContainer() {
               <button
                 onClick={() => removeToast(toast.id)}
                 className="shrink-0 text-xs opacity-60 hover:opacity-100 transition-opacity"
-                aria-label="Dismiss"
+                aria-label="Dismiss notification"
               >
                 &times;
               </button>

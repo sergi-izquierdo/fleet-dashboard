@@ -55,7 +55,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-0.5 px-2 py-3">
+      <nav aria-label="Main navigation" className="flex-1 space-y-0.5 px-2 py-3">
         {NAV_ITEMS.map((item) => {
           const isActive =
             item.href === "/"
@@ -70,7 +70,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               className={`group relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors ${
                 isActive
                   ? "bg-blue-50 dark:bg-white/[0.08] text-blue-700 dark:text-white"
-                  : "text-gray-500 dark:text-white/40 hover:bg-gray-100 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white/70"
+                  : "text-gray-600 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white/80"
               }`}
             >
               {/* Active indicator bar */}
@@ -88,7 +88,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               </AnimatePresence>
               <Icon
                 className={`h-4 w-4 shrink-0 ${
-                  isActive ? "text-blue-500 dark:text-blue-400" : "text-gray-400 dark:text-white/30 group-hover:text-gray-600 dark:group-hover:text-white/50"
+                  isActive ? "text-blue-500 dark:text-blue-400" : "text-gray-500 dark:text-white/50 group-hover:text-gray-700 dark:group-hover:text-white/70"
                 }`}
               />
               {!collapsed && <span>{item.label}</span>}
@@ -100,13 +100,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Bottom section */}
       <div className="border-t border-gray-200 dark:border-white/[0.06] px-3 py-3">
         {/* Fleet status */}
-        <div className="flex items-center gap-2.5 px-0.5">
-          <div className="relative flex h-2 w-2 shrink-0">
+        <div className="flex items-center gap-2.5 px-0.5" aria-label="Fleet status: online">
+          <div className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
           </div>
           {!collapsed && (
-            <span className="text-[11px] font-medium text-gray-400 dark:text-white/30">
+            <span className="text-[11px] font-medium text-gray-500 dark:text-white/50">
               Fleet Online
             </span>
           )}
@@ -115,7 +115,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {/* Collapse toggle */}
         <button
           onClick={onToggle}
-          className="mt-3 flex w-full items-center justify-center rounded-md py-1.5 text-gray-400 dark:text-white/20 hover:bg-gray-100 dark:hover:bg-white/[0.04] hover:text-gray-600 dark:hover:text-white/40 transition-colors"
+          className="mt-3 flex w-full items-center justify-center rounded-md py-1.5 text-gray-500 dark:text-white/40 hover:bg-gray-100 dark:hover:bg-white/[0.04] hover:text-gray-700 dark:hover:text-white/60 transition-colors"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? (
@@ -158,7 +158,7 @@ export function MobileSidebar({
             Fleet
           </span>
         </div>
-        <nav className="space-y-0.5 px-2 py-3">
+        <nav aria-label="Main navigation" className="space-y-0.5 px-2 py-3">
           {NAV_ITEMS.map((item) => {
             const isActive =
               item.href === "/"
@@ -174,7 +174,7 @@ export function MobileSidebar({
                 className={`group relative flex items-center gap-2.5 rounded-md px-2.5 py-2.5 text-[13px] font-medium transition-colors ${
                   isActive
                     ? "bg-blue-50 dark:bg-white/[0.08] text-blue-700 dark:text-white"
-                    : "text-gray-500 dark:text-white/40 hover:bg-gray-100 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white/70"
+                    : "text-gray-600 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white/80"
                 }`}
               >
                 <AnimatePresence>
@@ -191,7 +191,7 @@ export function MobileSidebar({
                 </AnimatePresence>
                 <Icon
                   className={`h-4 w-4 shrink-0 ${
-                    isActive ? "text-blue-500 dark:text-blue-400" : "text-gray-400 dark:text-white/30"
+                    isActive ? "text-blue-500 dark:text-blue-400" : "text-gray-500 dark:text-white/50"
                   }`}
                 />
                 <span>{item.label}</span>
@@ -204,7 +204,7 @@ export function MobileSidebar({
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
-          <span className="text-[11px] font-medium text-gray-400 dark:text-white/30">Fleet Online</span>
+          <span className="text-[11px] font-medium text-gray-500 dark:text-white/50">Fleet Online</span>
         </div>
       </aside>
     </>

@@ -16,6 +16,7 @@ import SystemHealthCard from "@/components/SystemHealthCard";
 import DispatcherPipelinePanel from "@/components/DispatcherPipelinePanel";
 import ProgressTracker from "@/components/ProgressTracker";
 import FleetHealthCard from "@/components/FleetHealthCard";
+import RepoHealthSection from "@/components/RepoHealthSection";
 import FleetStatusBanner from "@/components/FleetStatusBanner";
 import MetricsCard from "@/components/MetricsCard";
 import AutoRefreshIndicator from "@/components/AutoRefreshIndicator";
@@ -495,6 +496,11 @@ export default function OverviewContent() {
             <SectionErrorBoundary sectionName="Fleet Health">
               <FleetHealthCard />
             </SectionErrorBoundary>
+
+            {/* Repo Health */}
+            <SectionErrorBoundary sectionName="Repo Health">
+              <RepoHealthSection />
+            </SectionErrorBoundary>
           </div>
         </div>
 
@@ -543,6 +549,13 @@ export default function OverviewContent() {
           <motion.div variants={cardVariants} transition={{ duration: 0.18, ease: "easeOut" }}>
             <SectionErrorBoundary sectionName="Fleet Health">
               <FleetHealthCard />
+            </SectionErrorBoundary>
+          </motion.div>
+
+          {/* Repo Health */}
+          <motion.div variants={cardVariants} transition={{ duration: 0.18, ease: "easeOut" }}>
+            <SectionErrorBoundary sectionName="Repo Health">
+              <RepoHealthSection />
             </SectionErrorBoundary>
           </motion.div>
         </motion.div>

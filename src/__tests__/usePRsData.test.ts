@@ -2,6 +2,7 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { usePRsData } from "@/hooks/usePRsData";
 import type { RecentPR } from "@/types/prs";
+import * as apiCache from "@/lib/apiCache";
 
 const mockPRs: RecentPR[] = [
   {
@@ -19,6 +20,7 @@ const mockPRs: RecentPR[] = [
 
 describe("usePRsData", () => {
   beforeEach(() => {
+    apiCache.clear();
     global.fetch = vi.fn();
   });
 

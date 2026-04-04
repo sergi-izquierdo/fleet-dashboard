@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import type { ServicesResponse, ServiceStatus } from "@/app/api/services/route";
+import type { ServiceStatus } from "@/app/api/services/route";
+import { useServices } from "@/hooks/useServices";
 
 const STATUS_STYLES: Record<ServiceStatus["status"], { dot: string; label: string }> = {
   active: { dot: "bg-green-500", label: "active" },
@@ -31,31 +31,7 @@ function ServiceDot({ service }: { service: ServiceStatus }) {
 }
 
 export default function ServiceHealth() {
-  const [data, setData] = useState<ServicesResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchServices = useCallback(async () => {
-    try {
-      const res = await fetch("/api/services");
-      if (!res.ok) {
-        throw new Error(`Request failed: ${res.status}`);
-      }
-      const json: ServicesResponse = await res.json();
-      setData(json);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch service health");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchServices();
-    const interval = setInterval(fetchServices, 30_000);
-    return () => clearInterval(interval);
-  }, [fetchServices]);
+  const { data, isLoading, error } = useServices();
 
   if (isLoading) {
     return (

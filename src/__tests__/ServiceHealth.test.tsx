@@ -2,6 +2,7 @@ import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import ServiceHealth from "@/components/ServiceHealth";
 import type { ServicesResponse } from "@/app/api/services/route";
+import * as apiCache from "@/lib/apiCache";
 
 const mockServicesData: ServicesResponse = {
   services: [
@@ -17,6 +18,7 @@ const mockServicesData: ServicesResponse = {
 
 describe("ServiceHealth", () => {
   beforeEach(() => {
+    apiCache.clear();
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => mockServicesData,

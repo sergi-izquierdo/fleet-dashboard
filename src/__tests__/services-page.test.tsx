@@ -4,6 +4,7 @@ import ServicesPageContent from "@/components/ServicesPageContent";
 import type { ServicesResponse } from "@/app/api/services/route";
 import type { DispatcherStatus } from "@/types/dispatcherStatus";
 import type { SystemHealthResponse } from "@/app/api/system-health/route";
+import * as apiCache from "@/lib/apiCache";
 
 const mockServicesData: ServicesResponse = {
   services: [
@@ -67,6 +68,7 @@ function makeFetchMock() {
 
 describe("ServicesPageContent", () => {
   beforeEach(() => {
+    apiCache.clear();
     global.fetch = makeFetchMock();
   });
 

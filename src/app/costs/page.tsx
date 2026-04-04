@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import CostAnalytics from "@/components/CostAnalytics";
 import CostByProject from "@/components/CostByProject";
+import CostTimeline from "@/components/CostTimeline";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 
 export const metadata: Metadata = {
@@ -19,6 +20,11 @@ export default function CostsPage() {
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
         <SectionErrorBoundary sectionName="Cost by Project">
           <CostByProject />
+        </SectionErrorBoundary>
+      </div>
+      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+        <SectionErrorBoundary sectionName="Cost Timeline">
+          <CostTimeline />
         </SectionErrorBoundary>
       </div>
     </div>

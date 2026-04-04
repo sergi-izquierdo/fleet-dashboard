@@ -13,6 +13,7 @@ interface Project {
 interface CreateIssueDialogProps {
   open: boolean;
   onClose: () => void;
+  initialRepo?: string;
 }
 
 const AVAILABLE_LABELS = [
@@ -24,7 +25,7 @@ const AVAILABLE_LABELS = [
   "blocked",
 ];
 
-export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
+export function CreateIssueDialog({ open, onClose, initialRepo }: CreateIssueDialogProps) {
   const [repos, setRepos] = useState<string[]>([]);
   const [repo, setRepo] = useState("");
   const [title, setTitle] = useState("");
@@ -40,7 +41,9 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
       .then((data: { projects?: Project[] }) => {
         const repoList = (data.projects ?? []).map((p: Project) => p.repo);
         setRepos(repoList);
-        if (repoList.length > 0 && !repo) {
+        if (initialRepo && repoList.includes(initialRepo)) {
+          setRepo(initialRepo);
+        } else if (repoList.length > 0 && !repo) {
           setRepo(repoList[0]);
         }
       })

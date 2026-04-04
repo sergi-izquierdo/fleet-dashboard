@@ -111,6 +111,7 @@ vi.mock("@/components/SectionErrorBoundary", () => ({
 }));
 vi.mock("@/components/LoadingSkeleton", () => ({
   LoadingSkeleton: () => <div data-testid="loading-skeleton">Loading...</div>,
+  Skeleton: () => <div data-testid="skeleton" />,
 }));
 vi.mock("@/components/Toast", () => ({
   ToastContainer: () => <div data-testid="toast-container" />,

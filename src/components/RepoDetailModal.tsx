@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import type { RepoDetailData } from "@/types/issues";
+import { Modal } from "@/components/ui/Modal";
 
 interface RepoDetailModalProps {
   repo: string;
@@ -46,18 +47,6 @@ export function RepoDetailModal({ repo, onClose }: RepoDetailModalProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    },
-    [onClose]
-  );
-
-  useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
-
   useEffect(() => {
     async function fetchDetails() {
       try {
@@ -83,13 +72,9 @@ export function RepoDetailModal({ repo, onClose }: RepoDetailModalProps) {
   const repoShort = repo.split("/").pop() ?? repo;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={onClose}
-      data-testid="repo-detail-modal"
-    >
+    <Modal open={true} onClose={onClose} data-testid="repo-detail-modal">
       <div
-        className="mx-4 w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-6 shadow-2xl animate-slide-up"
+        className="w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-6 shadow-2xl animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -291,6 +276,6 @@ export function RepoDetailModal({ repo, onClose }: RepoDetailModalProps) {
           </div>
         ) : null}
       </div>
-    </div>
+    </Modal>
   );
 }

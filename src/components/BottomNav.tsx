@@ -49,7 +49,7 @@ const tabs: { id: MobileTab; label: string; icon: React.ReactNode }[] = [
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-sm dark:border-white/10 dark:bg-gray-900/95 md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur-sm dark:border-white/10 dark:bg-gray-900/95 md:hidden"
       aria-label="Mobile navigation"
     >
       <div className="flex items-stretch justify-around">

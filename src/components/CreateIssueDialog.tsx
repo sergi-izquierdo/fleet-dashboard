@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Plus, Loader2 } from "lucide-react";
 import { showToast } from "@/components/Toast";
+import { Modal } from "@/components/ui/Modal";
 
 interface Project {
   repo: string;
@@ -118,21 +119,12 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="create-issue-title"
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
+    <Modal open={open} onClose={onClose} aria-labelledby="create-issue-title">
       {/* Modal */}
-      <div className="relative w-full max-w-lg rounded-xl border border-white/[0.08] bg-[#0f1117] shadow-2xl">
+      <div
+        className="relative w-full max-w-lg rounded-xl border border-white/[0.08] bg-[#0f1117] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
           <h2
@@ -275,6 +267,6 @@ export function CreateIssueDialog({ open, onClose }: CreateIssueDialogProps) {
           </div>
         </form>
       </div>
-    </div>
+    </Modal>
   );
 }

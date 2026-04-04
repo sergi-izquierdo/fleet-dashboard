@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import type { Agent, PR } from "@/types/dashboard";
 import { AgentLifecycleTimeline } from "@/components/AgentLifecycleTimeline";
 import { AgentLogViewer } from "@/components/AgentLogViewer";
 import { AgentTerminalView } from "@/components/AgentTerminalView";
+import { Modal } from "@/components/ui/Modal";
 
 type ModalTab = "details" | "terminal";
 
@@ -99,12 +100,7 @@ export function AgentDetailModal({
   const [showKillConfirm, setShowKillConfirm] = useState(false);
   const [isKilling, setIsKilling] = useState(false);
   const [killError, setKillError] = useState<string | null>(null);
-  const [isVisible, setIsVisible] = useState(true);
   const [activeTab, setActiveTab] = useState<ModalTab>("details");
-
-  const handleClose = useCallback(() => {
-    setIsVisible(false);
-  }, []);
 
   async function handleKillConfirm() {
     setIsKilling(true);
@@ -117,7 +113,7 @@ export function AgentDetailModal({
       if (res.ok) {
         setShowKillConfirm(false);
         onKilled?.();
-        handleClose();
+        onClose();
       } else {
         const data = await res.json();
         setKillError(
@@ -130,18 +126,6 @@ export function AgentDetailModal({
       setIsKilling(false);
     }
   }
-
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") handleClose();
-    },
-    [handleClose]
-  );
-
-  useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
 
   useEffect(() => {
     async function fetchAgentData() {
@@ -181,22 +165,11 @@ export function AgentDetailModal({
     : undefined;
 
   return (
-    <AnimatePresence onExitComplete={onClose}>
-      {isVisible && (
-    <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      onClick={handleClose}
-      data-testid="agent-detail-modal"
-    >
+    <Modal open={true} onClose={onClose} data-testid="agent-detail-modal">
       <motion.div
-        className="mx-4 w-full max-w-lg rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
+        className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -209,7 +182,7 @@ export function AgentDetailModal({
             {sessionName}
           </h2>
           <button
-            onClick={handleClose}
+            onClick={onClose}
             className="ml-3 shrink-0 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/10 dark:hover:text-white"
             aria-label="Close agent detail"
             data-testid="close-agent-detail-modal"
@@ -471,8 +444,6 @@ export function AgentDetailModal({
           </div>
         ) : null}
       </motion.div>
-    </motion.div>
-      )}
-    </AnimatePresence>
+    </Modal>
   );
 }

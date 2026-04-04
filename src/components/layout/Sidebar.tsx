@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   LayoutDashboard,
   Bot,
@@ -74,9 +74,18 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               }`}
             >
               {/* Active indicator bar */}
-              {isActive && (
-                <div className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]" />
-              )}
+              <AnimatePresence>
+                {isActive && (
+                  <motion.div
+                    layoutId="sidebar-active-indicator"
+                    className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                  />
+                )}
+              </AnimatePresence>
               <Icon
                 className={`h-4 w-4 shrink-0 ${
                   isActive ? "text-blue-500 dark:text-blue-400" : "text-gray-400 dark:text-white/30 group-hover:text-gray-600 dark:group-hover:text-white/50"
@@ -168,9 +177,18 @@ export function MobileSidebar({
                     : "text-gray-500 dark:text-white/40 hover:bg-gray-100 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white/70"
                 }`}
               >
-                {isActive && (
-                  <div className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-blue-500" />
-                )}
+                <AnimatePresence>
+                  {isActive && (
+                    <motion.div
+                      layoutId="mobile-sidebar-active-indicator"
+                      className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-blue-500"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                    />
+                  )}
+                </AnimatePresence>
                 <Icon
                   className={`h-4 w-4 shrink-0 ${
                     isActive ? "text-blue-500 dark:text-blue-400" : "text-gray-400 dark:text-white/30"

@@ -16,6 +16,39 @@ import { DispatcherToggle } from "@/components/DispatcherToggle";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
+const ROUTE_TITLES: Record<string, string> = {
+  "/": "Overview",
+  "/agents": "Agents",
+  "/prs": "Pull Requests",
+  "/queue": "Queue",
+  "/services": "Services",
+  "/costs": "Costs",
+  "/reports": "Reports",
+  "/settings": "Settings",
+};
+
+export function getPageTitle(pathname: string): string {
+  // Exact match first
+  if (ROUTE_TITLES[pathname]) return ROUTE_TITLES[pathname];
+  // Prefix match for nested routes
+  for (const [route, title] of Object.entries(ROUTE_TITLES)) {
+    if (route !== "/" && pathname.startsWith(route)) return title;
+  }
+  return "Dashboard";
+}
+
+function PageTitle({ pathname }: { pathname: string }) {
+  const title = getPageTitle(pathname);
+  return (
+    <span
+      className="text-sm font-medium text-gray-400 dark:text-white/30"
+      data-testid="page-title"
+    >
+      {title}
+    </span>
+  );
+}
+
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
@@ -107,7 +140,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           >
             <Menu className="h-4.5 w-4.5" />
           </button>
-          <div className="hidden lg:block" />
+          <div className="hidden lg:block">
+            <PageTitle pathname={pathname} />
+          </div>
           <div className="flex items-center gap-2">
             <DispatcherToggle />
             <button
